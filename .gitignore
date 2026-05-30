@@ -29,3 +29,6 @@ yarn-error.log*
 
 # Drizzle
 /drizzle/.cache
+
+# TS build info
+*.tsbuildinfo
