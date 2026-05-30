@@ -56,6 +56,11 @@ export interface ProposalData {
   costFinancial: string;
   costStrategic: string;
 
+  // ---- Visibilidade de blocos opcionais ----
+  showStrategy: boolean;
+  showInvestment: boolean;
+  showConsultantRec: boolean;
+
   // ---- 4. Estratégia recomendada (convicção) ----
   strategyHeading: string;
   strategyIntro: string;

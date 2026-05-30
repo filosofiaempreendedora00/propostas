@@ -73,11 +73,27 @@ export function LineList({
   );
 }
 
-export function SectionTitle({ children }: { children: React.ReactNode }) {
+export function SectionTitle({
+  n,
+  right,
+  children,
+}: {
+  n?: number;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <h2 className="mb-4 mt-9 border-b border-line pb-2 text-sm font-semibold uppercase tracking-[0.16em] text-accent first:mt-0">
-      {children}
-    </h2>
+    <div className="mb-4 mt-9 flex items-center justify-between gap-2 border-b border-line pb-2 first:mt-0">
+      <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-accent">
+        {n != null && (
+          <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-accent/50 text-[10px] font-semibold">
+            {n}
+          </span>
+        )}
+        {children}
+      </h2>
+      {right}
+    </div>
   );
 }
 

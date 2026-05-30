@@ -278,14 +278,18 @@ export function renderProposalHTML(d: ProposalData): string {
 </section>
 
 <!-- 4. ESTRATÉGIA RECOMENDADA -->
-<section class="pad strategy">
+${
+  d.showStrategy
+    ? `<section class="pad strategy">
   <div class="wrap">
     <span class="eyebrow">Estratégia recomendada</span>
     <h2 class="display h2" data-edit="strategyHeading">${esc(d.strategyHeading)}</h2>
     <p class="lead" style="margin-top:18px" data-edit="strategyIntro">${esc(d.strategyIntro)}</p>
     <div class="pillars">${pillarsHtml(d.pillars)}</div>
   </div>
-</section>
+</section>`
+    : ""
+}
 
 <!-- 5. SOLUÇÕES RECOMENDADAS -->
 <section class="pad solutions">
@@ -298,7 +302,9 @@ export function renderProposalHTML(d: ProposalData): string {
 </section>
 
 <!-- 6. INVESTIMENTO -->
-<section class="invest pad">
+${
+  d.showInvestment
+    ? `<section class="invest pad">
   <div class="wrap">
     <span class="eyebrow">Investimento</span>
     <h2 class="display h2" data-edit="investHeading">${esc(d.investHeading)}</h2>
@@ -309,10 +315,14 @@ export function renderProposalHTML(d: ProposalData): string {
         : ""
     }
   </div>
-</section>
+</section>`
+    : ""
+}
 
 <!-- 7. RECOMENDAÇÃO DO CONSULTOR -->
-<section class="pad consultant-rec">
+${
+  d.showConsultantRec
+    ? `<section class="pad consultant-rec">
   <div class="wrap">
     <span class="eyebrow">Recomendação do consultor</span>
     <div class="rec-card">
@@ -321,7 +331,9 @@ export function renderProposalHTML(d: ProposalData): string {
       <ul class="rec-reasons">${reasonsHtml(d.consultantRecReasons)}</ul>
     </div>
   </div>
-</section>
+</section>`
+    : ""
+}
 
 <!-- 8. PRÓXIMOS PASSOS -->
 <section class="pad nextsteps">

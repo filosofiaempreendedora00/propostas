@@ -280,7 +280,7 @@ export default function ClientBuilder() {
             .
           </div>
 
-          <SectionTitle>Identificação</SectionTitle>
+          <SectionTitle n={1}>Identificação</SectionTitle>
           <label className="block">
             <Label>
               Nome da empresa (capa) <span className="text-amber-400">*</span>
@@ -340,15 +340,27 @@ export default function ClientBuilder() {
             </div>
           </div>
 
-          <SectionTitle>Estratégia — pilares</SectionTitle>
-          <ListControl
-            items={form.pillars.map((p) => p.title)}
-            onAdd={addPillar}
-            onRemove={removePillar}
-            addLabel="+ adicionar pilar"
-          />
+          <SectionTitle
+            n={2}
+            right={
+              <EyeToggle
+                on={form.showStrategy}
+                onClick={() => set("showStrategy", !form.showStrategy)}
+              />
+            }
+          >
+            Estratégia — pilares
+          </SectionTitle>
+          <div className={form.showStrategy ? "" : "opacity-40"}>
+            <ListControl
+              items={form.pillars.map((p) => p.title)}
+              onAdd={addPillar}
+              onRemove={removePillar}
+              addLabel="+ adicionar pilar"
+            />
+          </div>
 
-          <SectionTitle>Soluções da proposta</SectionTitle>
+          <SectionTitle n={3}>Soluções da proposta</SectionTitle>
           {solReady && solutions.length === 0 ? (
             <EmptyCatalog label="solução" />
           ) : (
@@ -368,36 +380,62 @@ export default function ClientBuilder() {
             </div>
           )}
 
-          <SectionTitle>Planos (Investimento)</SectionTitle>
-          {planReady && plans.length === 0 ? (
-            <EmptyCatalog label="plano" />
-          ) : (
-            <div className="space-y-2">
-              <p className="mb-1 text-xs text-ink-mute">
-                Selecione os planos que aparecem na proposta.
-              </p>
-              {plans.map((p) => (
-                <SelectCard
-                  key={p.id}
-                  on={selPlans.has(p.id)}
-                  onClick={() => toggle(setSelPlans, p.id)}
-                  title={`${p.name}${p.featured ? " ★" : ""}`}
-                  subtitle={`${p.price}${p.priceSuffix} · ${p.solutionIds.length} solução(ões)`}
-                />
-              ))}
-            </div>
-          )}
+          <SectionTitle
+            n={4}
+            right={
+              <EyeToggle
+                on={form.showInvestment}
+                onClick={() => set("showInvestment", !form.showInvestment)}
+              />
+            }
+          >
+            Planos (Investimento)
+          </SectionTitle>
+          <div className={form.showInvestment ? "" : "opacity-40"}>
+            {planReady && plans.length === 0 ? (
+              <EmptyCatalog label="plano" />
+            ) : (
+              <div className="space-y-2">
+                <p className="mb-1 text-xs text-ink-mute">
+                  Selecione os planos que aparecem na proposta.
+                </p>
+                {plans.map((p) => (
+                  <SelectCard
+                    key={p.id}
+                    on={selPlans.has(p.id)}
+                    onClick={() => toggle(setSelPlans, p.id)}
+                    title={`${p.name}${p.featured ? " ★" : ""}`}
+                    subtitle={`${p.price}${p.priceSuffix} · ${p.solutionIds.length} solução(ões)`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
 
-          <SectionTitle>Recomendação — motivos</SectionTitle>
-          <ListControl
-            items={form.consultantRecReasons}
-            onAdd={addReason}
-            onRemove={removeReason}
-            addLabel="+ adicionar motivo"
-            numbered={false}
-          />
+          <SectionTitle
+            n={5}
+            right={
+              <EyeToggle
+                on={form.showConsultantRec}
+                onClick={() =>
+                  set("showConsultantRec", !form.showConsultantRec)
+                }
+              />
+            }
+          >
+            Recomendação — motivos
+          </SectionTitle>
+          <div className={form.showConsultantRec ? "" : "opacity-40"}>
+            <ListControl
+              items={form.consultantRecReasons}
+              onAdd={addReason}
+              onRemove={removeReason}
+              addLabel="+ adicionar motivo"
+              numbered={false}
+            />
+          </div>
 
-          <SectionTitle>Próximos passos</SectionTitle>
+          <SectionTitle n={6}>Próximos passos</SectionTitle>
           <ListControl
             items={form.steps.map((s) => s.title)}
             onAdd={addStep}
@@ -405,7 +443,7 @@ export default function ClientBuilder() {
             addLabel="+ adicionar passo"
           />
 
-          <SectionTitle>Consultor responsável</SectionTitle>
+          <SectionTitle n={7}>Consultor responsável</SectionTitle>
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -471,7 +509,7 @@ export default function ClientBuilder() {
             </div>
           )}
 
-          <SectionTitle>Aparência</SectionTitle>
+          <SectionTitle n={8}>Aparência</SectionTitle>
           <div className="grid grid-cols-[1fr_80px] items-start gap-3">
             <div>
               <Label>Cor de acento</Label>
@@ -517,6 +555,48 @@ export default function ClientBuilder() {
         </div>
       </div>
     </div>
+  );
+}
+
+function EyeToggle({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={on ? "Ocultar este bloco da proposta" : "Mostrar este bloco na proposta"}
+      className={`rounded-md p-1 transition ${
+        on ? "text-ink-mute hover:text-ink" : "text-accent"
+      }`}
+    >
+      {on ? (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+        >
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      ) : (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+        >
+          <path d="M3 3l18 18" />
+          <path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.3 4.1" />
+          <path d="M6.7 6.7A17 17 0 0 0 2 12s3.5 7 10 7a10.9 10.9 0 0 0 4.3-.9" />
+        </svg>
+      )}
+    </button>
   );
 }
 
