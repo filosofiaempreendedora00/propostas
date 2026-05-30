@@ -4,10 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { DEFAULT_PROPOSAL } from "@/lib/proposal/defaults";
 import { renderProposalHTML, slugify } from "@/lib/proposal/render";
-import type { ProposalData, Pain, Tier } from "@/lib/proposal/types";
+import type { ProposalData, Tier } from "@/lib/proposal/types";
 import { useCatalog, usePlans, useConsultants } from "@/lib/catalog/store";
 import type { CatalogSolution, CatalogPlan } from "@/lib/catalog/types";
-import { Label, TextInput, TextArea, SectionTitle, MiniBtn } from "./fields";
+import { Label, SectionTitle, MiniBtn } from "./fields";
 
 type ClientForm = Omit<
   ProposalData,
@@ -78,6 +78,7 @@ export default function ClientBuilder() {
   const seededPlan = useRef(false);
   const seededCons = useRef(false);
   const [dragOver, setDragOver] = useState(false);
+  const skipRender = useRef(false);
 
   useEffect(() => {
     if (solReady && !seededSol.current) {
@@ -128,25 +129,50 @@ export default function ClientBuilder() {
     };
   }, [form, solutions, plans, selSolutions, selPlans, consultant]);
 
-  // ----- pains -----
-  const setPain = (i: number, patch: Partial<Pain>) =>
-    setForm((f) => ({
-      ...f,
-      pains: f.pains.map((p, idx) => (idx === i ? { ...p, ...patch } : p)),
-    }));
+  // ----- edição inline vinda do preview -----
+  useEffect(() => {
+    function onMsg(e: MessageEvent) {
+      const m = e.data;
+      if (!m || m.source !== "proposal-edit" || typeof m.field !== "string")
+        return;
+      const field: string = m.field;
+      const value = String(m.value ?? "");
+      skipRender.current = true; // o iframe já mostra a edição; não recarregar
+      if (field.startsWith("pain.")) {
+        const [, idxStr, key] = field.split(".");
+        const idx = Number(idxStr);
+        setForm((f) => ({
+          ...f,
+          pains: f.pains.map((p, i) =>
+            i === idx ? { ...p, [key]: value } : p,
+          ),
+        }));
+      } else {
+        setForm((f) => ({ ...f, [field]: value }) as ClientForm);
+      }
+    }
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
+
+  // ----- pains (estrutura) -----
   const addPain = () =>
     setForm((f) => ({
       ...f,
-      pains: [...f.pains, { title: "Nova dor", description: "" }],
+      pains: [...f.pains, { title: "Nova dor", description: "Descrição." }],
     }));
   const removePain = (i: number) =>
     setForm((f) => ({ ...f, pains: f.pains.filter((_, idx) => idx !== i) }));
 
-  // ----- preview (debounced) -----
+  // ----- preview (debounced; pulado em edição inline) -----
   const [previewHtml, setPreviewHtml] = useState<string>(() =>
     renderProposalHTML(DEFAULT_PROPOSAL),
   );
   useEffect(() => {
+    if (skipRender.current) {
+      skipRender.current = false;
+      return;
+    }
     const id = setTimeout(() => setPreviewHtml(renderProposalHTML(data)), 300);
     return () => clearTimeout(id);
   }, [data]);
@@ -190,76 +216,153 @@ export default function ClientBuilder() {
         <a ref={exportRef} className="hidden" />
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(380px,440px)_1fr]">
-        {/* Form — ordem segue a leitura da proposta */}
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(320px,380px)_1fr]">
+        {/* Painel: só controles. Os textos editam-se no preview. */}
         <div className="form-scroll overflow-y-auto border-r border-line px-6 py-6">
-          {/* 1. Cliente */}
-          <SectionTitle>Cliente &amp; Datas</SectionTitle>
-          <label className="block">
-            <Label>Nome da empresa (destaque na capa)</Label>
-            <TextInput
-              value={form.clientName}
-              onChange={(v) => set("clientName", v)}
-            />
-          </label>
-          <label className="mt-3 block">
-            <Label>Nome do cliente</Label>
-            <TextInput
-              value={form.clientLegalName}
-              onChange={(v) => set("clientLegalName", v)}
-            />
-          </label>
-          <label className="mt-3 block">
-            <Label>Subtítulo da capa</Label>
-            <TextArea
-              value={form.headlineLead}
-              onChange={(v) => set("headlineLead", v)}
-              rows={2}
-            />
-          </label>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <label>
-              <Label>Data</Label>
-              <TextInput
-                value={form.dateLabel}
-                onChange={(v) => set("dateLabel", v)}
-              />
-            </label>
-            <label>
-              <Label>Válida até</Label>
-              <TextInput
-                value={form.validUntilLabel}
-                onChange={(v) => set("validUntilLabel", v)}
-              />
-            </label>
+          <div className="rounded-lg border border-accent/40 bg-accent/10 p-3 text-xs leading-relaxed text-ink-soft">
+            ✏️ <strong className="text-ink">Edite os textos no preview.</strong>{" "}
+            Passe o mouse sobre títulos, subtítulos, o desafio, dores e
+            fechamento — aparece um contorno tracejado. Clique e edite ali
+            mesmo. Soluções, planos e consultor vêm de{" "}
+            <Link href="/empresa" className="text-accent hover:underline">
+              Sua Empresa
+            </Link>
+            .
           </div>
 
-          {/* 2. Sua empresa / estilo (marca da capa) */}
-          <SectionTitle>Sua empresa &amp; estilo</SectionTitle>
-          <div className="grid grid-cols-[1fr_80px] gap-3">
-            <label>
-              <Label>Sua empresa</Label>
-              <TextInput
-                value={form.companyName}
-                onChange={(v) => set("companyName", v)}
-              />
-            </label>
-            <label>
-              <Label>Inicial</Label>
-              <TextInput
-                value={form.companyInitial}
-                onChange={(v) => set("companyInitial", v.slice(0, 2))}
-              />
-            </label>
+          <SectionTitle>Soluções da proposta</SectionTitle>
+          {solReady && solutions.length === 0 ? (
+            <EmptyCatalog label="solução" />
+          ) : (
+            <div className="space-y-2">
+              <p className="mb-1 text-xs text-ink-mute">
+                Selecione quais soluções entram nesta proposta.
+              </p>
+              {solutions.map((s) => (
+                <SelectCard
+                  key={s.id}
+                  on={selSolutions.has(s.id)}
+                  onClick={() => toggle(setSelSolutions, s.id)}
+                  title={`${s.icon} ${s.name}`}
+                  subtitle={s.tagline}
+                />
+              ))}
+            </div>
+          )}
+
+          <SectionTitle>Planos (Investimento)</SectionTitle>
+          {planReady && plans.length === 0 ? (
+            <EmptyCatalog label="plano" />
+          ) : (
+            <div className="space-y-2">
+              <p className="mb-1 text-xs text-ink-mute">
+                Selecione os planos que aparecem na proposta.
+              </p>
+              {plans.map((p) => (
+                <SelectCard
+                  key={p.id}
+                  on={selPlans.has(p.id)}
+                  onClick={() => toggle(setSelPlans, p.id)}
+                  title={`${p.name}${p.featured ? " ★" : ""}`}
+                  subtitle={`${p.price}${p.priceSuffix} · ${p.solutionIds.length} solução(ões)`}
+                />
+              ))}
+            </div>
+          )}
+
+          <SectionTitle>Consultor responsável</SectionTitle>
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            className={`rounded-lg border border-dashed p-3 transition ${
+              dragOver ? "border-accent bg-accent/10" : "border-line bg-panel"
+            }`}
+          >
+            {consultant ? (
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium">
+                    {consultant.name}
+                  </div>
+                  <div className="truncate text-xs text-ink-mute">
+                    {consultant.email || "sem e-mail"}
+                    {consultant.phone ? ` · ${consultant.phone}` : ""}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setConsultantId(null)}
+                  className="shrink-0 text-xs text-ink-mute hover:text-red-400"
+                >
+                  limpar
+                </button>
+              </div>
+            ) : (
+              <div className="text-center text-xs text-ink-mute">
+                Arraste um consultor para cá (ou clique abaixo)
+              </div>
+            )}
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <label>
-              <Label>Nº da proposta</Label>
-              <TextInput
-                value={form.proposalNumber}
-                onChange={(v) => set("proposalNumber", v)}
-              />
-            </label>
+          {consReady && consultants.length === 0 ? (
+            <div className="mt-2">
+              <EmptyCatalog label="consultor" />
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {consultants.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData(DND_TYPE, c.id);
+                    e.dataTransfer.setData("text/plain", c.id);
+                    e.dataTransfer.effectAllowed = "copy";
+                  }}
+                  onClick={() => setConsultantId(c.id)}
+                  title="Arraste ou clique para puxar"
+                  className={`cursor-grab rounded-full border px-3 py-1.5 text-xs font-medium transition active:cursor-grabbing ${
+                    consultantId === c.id
+                      ? "border-accent bg-accent/15 text-accent"
+                      : "border-line text-ink-soft hover:border-ink-mute"
+                  }`}
+                >
+                  ⠿ {c.name || "Sem nome"}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <SectionTitle>Dores (O Desafio)</SectionTitle>
+          <p className="mb-2 text-xs text-ink-mute">
+            Adicione ou remova cards. O texto edita-se no preview.
+          </p>
+          <div className="space-y-2">
+            {form.pains.map((p, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between gap-2 rounded-lg border border-line bg-panel px-3 py-2"
+              >
+                <span className="min-w-0 truncate text-sm">
+                  <span className="text-ink-mute">
+                    {String(i + 1).padStart(2, "0")} ·{" "}
+                  </span>
+                  {p.title || "Sem título"}
+                </span>
+                <MiniBtn danger onClick={() => removePain(i)}>
+                  remover
+                </MiniBtn>
+              </div>
+            ))}
+            <MiniBtn onClick={addPain}>+ adicionar dor</MiniBtn>
+          </div>
+
+          <SectionTitle>Aparência</SectionTitle>
+          <div className="grid grid-cols-[1fr_80px] items-start gap-3">
             <div>
               <Label>Cor de acento</Label>
               <div className="flex flex-wrap gap-1.5 pt-0.5">
@@ -279,216 +382,22 @@ export default function ClientBuilder() {
                 ))}
               </div>
             </div>
-          </div>
-
-          {/* 3. O Desafio */}
-          <SectionTitle>O Desafio</SectionTitle>
-          <label className="block">
-            <Label>Título</Label>
-            <TextInput
-              value={form.challengeHeading}
-              onChange={(v) => set("challengeHeading", v)}
-            />
-          </label>
-          <label className="mt-3 block">
-            <Label>Texto (use **negrito** para destacar)</Label>
-            <TextArea
-              value={form.challengeStatement}
-              onChange={(v) => set("challengeStatement", v)}
-              rows={4}
-            />
-          </label>
-          <div className="mt-4 space-y-3">
-            {form.pains.map((p, i) => (
-              <div key={i} className="rounded-lg border border-line bg-panel p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-medium text-ink-mute">
-                    Dor {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <MiniBtn danger onClick={() => removePain(i)}>
-                    remover
-                  </MiniBtn>
-                </div>
-                <TextInput
-                  value={p.title}
-                  onChange={(v) => setPain(i, { title: v })}
-                  placeholder="Título da dor"
-                />
-                <div className="mt-2">
-                  <TextArea
-                    value={p.description}
-                    onChange={(v) => setPain(i, { description: v })}
-                    rows={2}
-                  />
-                </div>
-              </div>
-            ))}
-            <MiniBtn onClick={addPain}>+ adicionar dor</MiniBtn>
-          </div>
-
-          {/* 4. Soluções (modular) */}
-          <SectionTitle>Soluções da proposta</SectionTitle>
-          {solReady && solutions.length === 0 ? (
-            <EmptyCatalog label="solução" />
-          ) : (
-            <div className="space-y-2">
-              <p className="mb-1 text-xs text-ink-mute">
-                Selecione quais soluções entram nesta proposta.
-              </p>
-              {solutions.map((s) => (
-                <SelectCard
-                  key={s.id}
-                  on={selSolutions.has(s.id)}
-                  onClick={() => toggle(setSelSolutions, s.id)}
-                  title={`${s.icon} ${s.name}`}
-                  subtitle={s.tagline}
-                />
-              ))}
-              <Link
-                href="/empresa"
-                className="mt-1 inline-block text-xs text-ink-mute hover:text-accent"
-              >
-                + gerenciar catálogo em Sua Empresa
-              </Link>
-            </div>
-          )}
-
-          {/* 5. Investimento */}
-          <SectionTitle>Investimento</SectionTitle>
-          <label className="block">
-            <Label>Título da seção</Label>
-            <TextInput
-              value={form.investHeading}
-              onChange={(v) => set("investHeading", v)}
-            />
-          </label>
-          {planReady && plans.length === 0 ? (
-            <div className="mt-3">
-              <EmptyCatalog label="plano" />
-            </div>
-          ) : (
-            <div className="mt-3 space-y-2">
-              <p className="mb-1 text-xs text-ink-mute">
-                Selecione os planos que aparecem na proposta.
-              </p>
-              {plans.map((p) => (
-                <SelectCard
-                  key={p.id}
-                  on={selPlans.has(p.id)}
-                  onClick={() => toggle(setSelPlans, p.id)}
-                  title={`${p.name}${p.featured ? " ★" : ""}`}
-                  subtitle={`${p.price}${p.priceSuffix} · ${p.solutionIds.length} solução(ões)`}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* 6. Fechamento */}
-          <SectionTitle>Fechamento</SectionTitle>
-          <label className="block">
-            <Label>Título</Label>
-            <TextInput
-              value={form.closingHeading}
-              onChange={(v) => set("closingHeading", v)}
-            />
-          </label>
-          <label className="mt-3 block">
-            <Label>Texto</Label>
-            <TextArea
-              value={form.closingLead}
-              onChange={(v) => set("closingLead", v)}
-              rows={2}
-            />
-          </label>
-          <label className="mt-3 block">
-            <Label>Texto do botão</Label>
-            <TextInput
-              value={form.ctaLabel}
-              onChange={(v) => set("ctaLabel", v)}
-            />
-          </label>
-
-          {/* Consultor — puxar via drag & drop */}
-          <div className="mt-4">
-            <Label>Consultor responsável</Label>
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragOver(true);
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={handleDrop}
-              className={`rounded-lg border border-dashed p-3 transition ${
-                dragOver ? "border-accent bg-accent/10" : "border-line bg-panel"
-              }`}
-            >
-              {consultant ? (
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium">
-                      {consultant.name}
-                    </div>
-                    <div className="truncate text-xs text-ink-mute">
-                      {consultant.email || "sem e-mail"}
-                      {consultant.phone ? ` · ${consultant.phone}` : ""}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setConsultantId(null)}
-                    className="shrink-0 text-xs text-ink-mute hover:text-red-400"
-                  >
-                    limpar
-                  </button>
-                </div>
-              ) : (
-                <div className="text-center text-xs text-ink-mute">
-                  Arraste um consultor para cá (ou clique abaixo)
-                </div>
-              )}
-            </div>
-
-            {consReady && consultants.length === 0 ? (
-              <div className="mt-2">
-                <EmptyCatalog label="consultor" />
-              </div>
-            ) : (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {consultants.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData(DND_TYPE, c.id);
-                      e.dataTransfer.setData("text/plain", c.id);
-                      e.dataTransfer.effectAllowed = "copy";
-                    }}
-                    onClick={() => setConsultantId(c.id)}
-                    title="Arraste ou clique para puxar"
-                    className={`cursor-grab rounded-full border px-3 py-1.5 text-xs font-medium transition active:cursor-grabbing ${
-                      consultantId === c.id
-                        ? "border-accent bg-accent/15 text-accent"
-                        : "border-line text-ink-soft hover:border-ink-mute"
-                    }`}
-                  >
-                    ⠿ {c.name || "Sem nome"}
-                  </button>
-                ))}
-              </div>
-            )}
-            <Link
-              href="/empresa"
-              className="mt-1.5 inline-block text-xs text-ink-mute hover:text-accent"
-            >
-              + gerenciar consultores em Sua Empresa
-            </Link>
+            <label>
+              <Label>Inicial</Label>
+              <input
+                value={form.companyInitial}
+                onChange={(e) =>
+                  set("companyInitial", e.target.value.slice(0, 2))
+                }
+                className="w-full rounded-lg border border-line bg-panel-2 px-3 py-2 text-center text-sm text-ink outline-none focus:border-accent/60"
+              />
+            </label>
           </div>
 
           <div className="h-10" />
         </div>
 
-        {/* Preview */}
+        {/* Preview (editável) */}
         <div className="min-h-0 bg-[#0A0B0D]">
           <iframe
             title="Preview da proposta"

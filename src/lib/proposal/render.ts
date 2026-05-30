@@ -30,8 +30,8 @@ function painsHtml(pains: Pain[]): string {
       (p, i) => `
         <div class="pain">
           <div class="n">${String(i + 1).padStart(2, "0")}</div>
-          <h3>${esc(p.title)}</h3>
-          <p>${esc(p.description)}</p>
+          <h3 data-edit="pain.${i}.title">${esc(p.title)}</h3>
+          <p data-edit="pain.${i}.description">${esc(p.description)}</p>
         </div>`,
     )
     .join("");
@@ -161,27 +161,27 @@ export function renderProposalHTML(d: ProposalData): string {
 
 <section class="cover">
   <div class="wrap cover-top">
-    <div class="brandmark"><span class="dot">${esc(d.companyInitial)}</span><span>${esc(d.companyName)}</span></div>
-    <div class="cover-meta">PROPOSTA COMERCIAL · Nº ${esc(d.proposalNumber)}</div>
+    <div class="brandmark"><span class="dot">${esc(d.companyInitial)}</span><span data-edit="companyName">${esc(d.companyName)}</span></div>
+    <div class="cover-meta">PROPOSTA COMERCIAL · Nº <span data-edit="proposalNumber">${esc(d.proposalNumber)}</span></div>
   </div>
   <div class="wrap cover-mid">
     <span class="eyebrow">Preparado exclusivamente para</span>
-    <h1 class="display">Uma proposta para<br>impulsionar a <em>${esc(d.clientName)}</em>.</h1>
-    <p class="lead">${esc(d.headlineLead)}</p>
+    <h1 class="display">Uma proposta para<br>impulsionar a <em data-edit="clientName">${esc(d.clientName)}</em>.</h1>
+    <p class="lead" data-edit="headlineLead">${esc(d.headlineLead)}</p>
   </div>
   <div class="wrap cover-foot">
-    <div class="fact"><div class="k">Cliente</div><div class="v">${esc(d.clientLegalName)}</div></div>
-    <div class="fact"><div class="k">Preparado por</div><div class="v">${esc(d.companyName)}</div></div>
-    <div class="fact"><div class="k">Data</div><div class="v">${esc(d.dateLabel)}</div></div>
-    <div class="fact"><div class="k">Válida até</div><div class="v">${esc(d.validUntilLabel)}</div></div>
+    <div class="fact"><div class="k">Cliente</div><div class="v" data-edit="clientLegalName">${esc(d.clientLegalName)}</div></div>
+    <div class="fact"><div class="k">Preparado por</div><div class="v" data-edit="companyName">${esc(d.companyName)}</div></div>
+    <div class="fact"><div class="k">Data</div><div class="v" data-edit="dateLabel">${esc(d.dateLabel)}</div></div>
+    <div class="fact"><div class="k">Válida até</div><div class="v" data-edit="validUntilLabel">${esc(d.validUntilLabel)}</div></div>
   </div>
 </section>
 
 <section class="challenge pad">
   <div class="wrap">
     <span class="eyebrow">O Desafio</span>
-    <h2 class="display">${esc(d.challengeHeading)}</h2>
-    <p class="statement">${rich(d.challengeStatement)}</p>
+    <h2 class="display" data-edit="challengeHeading">${esc(d.challengeHeading)}</h2>
+    <p class="statement" data-edit="challengeStatement">${rich(d.challengeStatement)}</p>
     <div class="pains">${painsHtml(d.pains)}</div>
   </div>
 </section>
@@ -191,9 +191,9 @@ export function renderProposalHTML(d: ProposalData): string {
     <div class="sol-head">
       <div>
         <span class="eyebrow">Nossa abordagem</span>
-        <h2 class="display">${esc(d.solutionsHeading)}</h2>
+        <h2 class="display" data-edit="solutionsHeading">${esc(d.solutionsHeading)}</h2>
       </div>
-      <p class="lead" style="max-width:34ch;margin:0">${esc(d.solutionsNote)}</p>
+      <p class="lead" style="max-width:34ch;margin:0" data-edit="solutionsNote">${esc(d.solutionsNote)}</p>
     </div>
     ${solutionsHtml(d.solutions)}
   </div>
@@ -202,17 +202,17 @@ export function renderProposalHTML(d: ProposalData): string {
 <section class="invest pad">
   <div class="wrap">
     <span class="eyebrow">Investimento</span>
-    <h2 class="display">${esc(d.investHeading)}</h2>
+    <h2 class="display" data-edit="investHeading">${esc(d.investHeading)}</h2>
     <div class="tiers">${tiersHtml(d.tiers)}</div>
   </div>
 </section>
 
 <section class="closing pad">
   <div class="wrap">
-    <span class="validity">Proposta válida até ${esc(d.validUntilLabel)}</span>
-    <h2 class="display">${esc(d.closingHeading)}</h2>
-    <p class="lead">${esc(d.closingLead)}</p>
-    <a href="#" class="cta">${esc(d.ctaLabel)} &nbsp;→</a>
+    <span class="validity">Proposta válida até <span data-edit="validUntilLabel">${esc(d.validUntilLabel)}</span></span>
+    <h2 class="display" data-edit="closingHeading">${esc(d.closingHeading)}</h2>
+    <p class="lead" data-edit="closingLead">${esc(d.closingLead)}</p>
+    <a href="#" class="cta"><span data-edit="ctaLabel">${esc(d.ctaLabel)}</span> &nbsp;→</a>
     <div class="contact">
       <div><div class="k">Responsável</div><div class="v">${esc(d.responsible)}</div></div>
       <div><div class="k">Telefone</div><div class="v">${esc(d.phone)}</div></div>
@@ -222,6 +222,35 @@ export function renderProposalHTML(d: ProposalData): string {
 </section>
 
 <footer>© ${esc(d.dateLabel.replace(/.*\b(\d{4})\b.*/, "$1") || "")} ${esc(d.companyName)} · Proposta confidencial preparada para ${esc(d.clientLegalName)}.</footer>
+
+<style>
+  [data-edit]{outline:1px dashed transparent;outline-offset:4px;border-radius:3px;transition:outline-color .12s ease}
+  [data-edit]:hover{outline-color:color-mix(in srgb, var(--accent) 55%, transparent);cursor:text}
+  [data-edit]:focus{outline:1px dashed var(--accent);outline-offset:4px}
+</style>
+<script>
+(function(){
+  function commit(el){
+    var f=el.getAttribute('data-edit');
+    var val=el.innerText.trim();
+    el.removeAttribute('contenteditable');
+    try{ parent.postMessage({source:'proposal-edit',field:f,value:val},'*'); }catch(e){}
+    document.querySelectorAll('[data-edit="'+f+'"]').forEach(function(o){ if(o!==el){ o.textContent=val; } });
+  }
+  document.addEventListener('click',function(e){
+    var el=e.target.closest?e.target.closest('[data-edit]'):null;
+    if(!el||el.isContentEditable) return;
+    el.setAttribute('contenteditable','true'); el.focus();
+    try{ var r=document.createRange(); r.selectNodeContents(el); var s=getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){}
+  });
+  document.addEventListener('blur',function(e){ var el=e.target; if(el&&el.isContentEditable) commit(el); },true);
+  document.addEventListener('keydown',function(e){
+    var el=e.target; if(!el||!el.isContentEditable) return;
+    if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); el.blur(); }
+    else if(e.key==='Escape'){ e.preventDefault(); el.blur(); }
+  });
+})();
+</script>
 
 </body>
 </html>`;

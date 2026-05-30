@@ -66,9 +66,16 @@ npm run dev   # http://localhost:3000
     Vínculo inteligente → as features do plano derivam das soluções incluídas.
   - *Consultores*: nome, e-mail, telefone — puxados na proposta.
   - Master-detail com auto-save.
-- **`/cliente` (Seu Cliente)** — monta a proposta, na ordem da leitura: Cliente & Datas →
-  Sua empresa & estilo → O Desafio → **seleção de soluções** → **seleção de planos** →
-  Fechamento (com **consultor puxado via drag-and-drop**). Preview ao vivo + export.
+- **`/cliente` (Seu Cliente)** — monta a proposta. O painel esquerdo tem só **controles**
+  (seleção de soluções/planos, consultor via drag-and-drop, estrutura das dores, aparência).
+  Os **textos editam-se direto no preview** (edição inline: hover tracejado → clique → edita
+  no lugar; sai → salva). Não-editáveis inline: soluções, planos e consultor (vêm dos catálogos).
+  Preview ao vivo + export.
+
+### Edição inline (preview)
+`render.ts` marca os textos livres com `data-edit="campo"` e injeta um script no HTML que faz
+hover/contenteditable e `postMessage` pro app. `ClientBuilder` ouve as mensagens e atualiza o
+estado sem recarregar o iframe (`skipRender`). Campos de catálogo ficam sem `data-edit`.
 
 Arquivos:
 - `src/lib/catalog/types.ts` — `CatalogSolution`, `CatalogPlan`.
