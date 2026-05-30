@@ -9,27 +9,6 @@ import { useCatalog, usePlans, useConsultants } from "@/lib/catalog/store";
 import type { CatalogSolution, CatalogPlan } from "@/lib/catalog/types";
 import { Label, TextInput, SectionTitle, MiniBtn } from "./fields";
 
-const MONTHS_PT = [
-  "janeiro",
-  "fevereiro",
-  "março",
-  "abril",
-  "maio",
-  "junho",
-  "julho",
-  "agosto",
-  "setembro",
-  "outubro",
-  "novembro",
-  "dezembro",
-];
-
-function formatPtDate(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  if (!y || !m || !d) return "";
-  return `${d} de ${MONTHS_PT[m - 1]} de ${y}`;
-}
-
 type ClientForm = Omit<
   ProposalData,
   "solutions" | "tiers" | "responsible" | "phone" | "email"
@@ -46,14 +25,24 @@ const ACCENT_PRESETS = [
 
 const DND_TYPE = "application/x-consultant-id";
 
+const MONTHS_PT = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+function formatPtDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return "";
+  return `${d} de ${MONTHS_PT[m - 1]} de ${y}`;
+}
+
 function toRenderSolution(s: CatalogSolution) {
-  const features =
-    s.deliverables.length > 0
-      ? s.deliverables
-      : s.highlights.length > 0
-        ? s.highlights
-        : s.scope;
-  return { title: s.name, description: s.description || s.tagline, features };
+  return {
+    name: s.name,
+    problemSolved: s.problemSolved,
+    howItWorks: s.howItWorks,
+    expectedBenefit: s.expectedBenefit,
+    deliverables: s.deliverables,
+  };
 }
 
 function planToTier(p: CatalogPlan, solutions: CatalogSolution[]): Tier {
@@ -77,18 +66,9 @@ export default function ClientBuilder() {
 
   const [form, setForm] = useState<ClientForm>(() => {
     const {
-      solutions: _s,
-      tiers: _t,
-      responsible: _r,
-      phone: _p,
-      email: _e,
-      ...rest
+      solutions: _s, tiers: _t, responsible: _r, phone: _p, email: _e, ...rest
     } = DEFAULT_PROPOSAL;
-    void _s;
-    void _t;
-    void _r;
-    void _p;
-    void _e;
+    void _s; void _t; void _r; void _p; void _e;
     return rest;
   });
 
@@ -106,9 +86,7 @@ export default function ClientBuilder() {
     setValidISO(iso);
     setForm((f) => ({ ...f, validUntilLabel: formatPtDate(iso) }));
   };
-
-  const clientMissing =
-    !form.clientName.trim() || !form.clientLegalName.trim();
+  const clientMissing = !form.clientName.trim() || !form.clientLegalName.trim();
 
   useEffect(() => {
     if (solReady && !seededSol.current) {
@@ -143,16 +121,14 @@ export default function ClientBuilder() {
   const consultant = consultants.find((c) => c.id === consultantId) ?? null;
 
   const data: ProposalData = useMemo(() => {
-    const chosenSolutions = solutions
-      .filter((s) => selSolutions.has(s.id))
-      .map(toRenderSolution);
-    const chosenTiers = plans
-      .filter((p) => selPlans.has(p.id))
-      .map((p) => planToTier(p, solutions));
     return {
       ...form,
-      solutions: chosenSolutions,
-      tiers: chosenTiers,
+      solutions: solutions
+        .filter((s) => selSolutions.has(s.id))
+        .map(toRenderSolution),
+      tiers: plans
+        .filter((p) => selPlans.has(p.id))
+        .map((p) => planToTier(p, solutions)),
       responsible: consultant?.name ?? "",
       phone: consultant?.phone ?? "",
       email: consultant?.email ?? "",
@@ -167,14 +143,30 @@ export default function ClientBuilder() {
         return;
       const field: string = m.field;
       const value = String(m.value ?? "");
-      skipRender.current = true; // o iframe já mostra a edição; não recarregar
-      if (field.startsWith("pain.")) {
-        const [, idxStr, key] = field.split(".");
-        const idx = Number(idxStr);
+      skipRender.current = true;
+      if (field.startsWith("pillar.")) {
+        const [, i, k] = field.split(".");
+        const idx = Number(i);
         setForm((f) => ({
           ...f,
-          pains: f.pains.map((p, i) =>
-            i === idx ? { ...p, [key]: value } : p,
+          pillars: f.pillars.map((p, j) =>
+            j === idx ? { ...p, [k]: value } : p,
+          ),
+        }));
+      } else if (field.startsWith("step.")) {
+        const [, i, k] = field.split(".");
+        const idx = Number(i);
+        setForm((f) => ({
+          ...f,
+          steps: f.steps.map((s, j) => (j === idx ? { ...s, [k]: value } : s)),
+        }));
+      } else if (field.startsWith("reason.")) {
+        const [, i] = field.split(".");
+        const idx = Number(i);
+        setForm((f) => ({
+          ...f,
+          consultantRecReasons: f.consultantRecReasons.map((r, j) =>
+            j === idx ? value : r,
           ),
         }));
       } else {
@@ -185,14 +177,31 @@ export default function ClientBuilder() {
     return () => window.removeEventListener("message", onMsg);
   }, []);
 
-  // ----- pains (estrutura) -----
-  const addPain = () =>
+  // ----- estrutura (listas) -----
+  const addPillar = () =>
     setForm((f) => ({
       ...f,
-      pains: [...f.pains, { title: "Nova dor", description: "Descrição." }],
+      pillars: [...f.pillars, { title: "Novo pilar", description: "Descrição." }],
     }));
-  const removePain = (i: number) =>
-    setForm((f) => ({ ...f, pains: f.pains.filter((_, idx) => idx !== i) }));
+  const removePillar = (i: number) =>
+    setForm((f) => ({ ...f, pillars: f.pillars.filter((_, j) => j !== i) }));
+  const addStep = () =>
+    setForm((f) => ({
+      ...f,
+      steps: [...f.steps, { title: "Novo passo", description: "Descrição." }],
+    }));
+  const removeStep = (i: number) =>
+    setForm((f) => ({ ...f, steps: f.steps.filter((_, j) => j !== i) }));
+  const addReason = () =>
+    setForm((f) => ({
+      ...f,
+      consultantRecReasons: [...f.consultantRecReasons, "Novo motivo."],
+    }));
+  const removeReason = (i: number) =>
+    setForm((f) => ({
+      ...f,
+      consultantRecReasons: f.consultantRecReasons.filter((_, j) => j !== i),
+    }));
 
   // ----- preview (debounced; pulado em edição inline) -----
   const [previewHtml, setPreviewHtml] = useState<string>(() =>
@@ -249,11 +258,6 @@ export default function ClientBuilder() {
         <button
           onClick={handleExport}
           disabled={clientMissing}
-          title={
-            clientMissing
-              ? "Preencha o nome da empresa e o nome do cliente"
-              : undefined
-          }
           className="rounded-full px-5 py-2 text-sm font-semibold text-bg transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           style={{ background: form.accent }}
         >
@@ -263,13 +267,13 @@ export default function ClientBuilder() {
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(320px,380px)_1fr]">
-        {/* Painel: só controles. Os textos editam-se no preview. */}
+        {/* Painel — controles. Os textos editam-se no preview. */}
         <div className="form-scroll overflow-y-auto border-r border-line px-6 py-6">
           <div className="rounded-lg border border-accent/40 bg-accent/10 p-3 text-xs leading-relaxed text-ink-soft">
             ✏️ <strong className="text-ink">Edite os textos no preview.</strong>{" "}
-            Passe o mouse sobre títulos, subtítulos, o desafio, dores e
-            fechamento — aparece um contorno tracejado. Clique e edite ali
-            mesmo. Soluções, planos e consultor vêm de{" "}
+            Diagnóstico, custo, estratégia, recomendação e próximos passos —
+            passe o mouse e clique para editar no lugar. Soluções, planos e
+            consultor vêm de{" "}
             <Link href="/empresa" className="text-accent hover:underline">
               Sua Empresa
             </Link>
@@ -279,8 +283,7 @@ export default function ClientBuilder() {
           <SectionTitle>Identificação</SectionTitle>
           <label className="block">
             <Label>
-              Nome da empresa (capa){" "}
-              <span className="text-amber-400">*</span>
+              Nome da empresa (capa) <span className="text-amber-400">*</span>
             </Label>
             <TextInput
               value={form.clientName}
@@ -298,9 +301,6 @@ export default function ClientBuilder() {
               placeholder="Ex: João Silva / razão social"
             />
           </label>
-          <p className="mt-1.5 text-[11px] text-ink-mute">
-            Obrigatórios. Também podem ser editados no preview.
-          </p>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <label>
               <Label>Validade da proposta</Label>
@@ -317,9 +317,7 @@ export default function ClientBuilder() {
                 <input
                   type="checkbox"
                   checked={form.showProposalNumber}
-                  onChange={(e) =>
-                    set("showProposalNumber", e.target.checked)
-                  }
+                  onChange={(e) => set("showProposalNumber", e.target.checked)}
                   className="accent-[var(--color-accent)]"
                 />
                 Mostrar na capa
@@ -336,29 +334,13 @@ export default function ClientBuilder() {
             </div>
           </div>
 
-          <SectionTitle>Dores (O Desafio)</SectionTitle>
-          <p className="mb-2 text-xs text-ink-mute">
-            Adicione ou remova cards. O texto edita-se no preview.
-          </p>
-          <div className="space-y-2">
-            {form.pains.map((p, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between gap-2 rounded-lg border border-line bg-panel px-3 py-2"
-              >
-                <span className="min-w-0 truncate text-sm">
-                  <span className="text-ink-mute">
-                    {String(i + 1).padStart(2, "0")} ·{" "}
-                  </span>
-                  {p.title || "Sem título"}
-                </span>
-                <MiniBtn danger onClick={() => removePain(i)}>
-                  remover
-                </MiniBtn>
-              </div>
-            ))}
-            <MiniBtn onClick={addPain}>+ adicionar dor</MiniBtn>
-          </div>
+          <SectionTitle>Estratégia — pilares</SectionTitle>
+          <ListControl
+            items={form.pillars.map((p) => p.title)}
+            onAdd={addPillar}
+            onRemove={removePillar}
+            addLabel="+ adicionar pilar"
+          />
 
           <SectionTitle>Soluções da proposta</SectionTitle>
           {solReady && solutions.length === 0 ? (
@@ -399,6 +381,23 @@ export default function ClientBuilder() {
               ))}
             </div>
           )}
+
+          <SectionTitle>Recomendação — motivos</SectionTitle>
+          <ListControl
+            items={form.consultantRecReasons}
+            onAdd={addReason}
+            onRemove={removeReason}
+            addLabel="+ adicionar motivo"
+            numbered={false}
+          />
+
+          <SectionTitle>Próximos passos</SectionTitle>
+          <ListControl
+            items={form.steps.map((s) => s.title)}
+            onAdd={addStep}
+            onRemove={removeStep}
+            addLabel="+ adicionar passo"
+          />
 
           <SectionTitle>Consultor responsável</SectionTitle>
           <div
@@ -454,7 +453,6 @@ export default function ClientBuilder() {
                     e.dataTransfer.effectAllowed = "copy";
                   }}
                   onClick={() => setConsultantId(c.id)}
-                  title="Arraste ou clique para puxar"
                   className={`cursor-grab rounded-full border px-3 py-1.5 text-xs font-medium transition active:cursor-grabbing ${
                     consultantId === c.id
                       ? "border-accent bg-accent/15 text-accent"
@@ -512,6 +510,47 @@ export default function ClientBuilder() {
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+function ListControl({
+  items,
+  onAdd,
+  onRemove,
+  addLabel,
+  numbered = true,
+}: {
+  items: string[];
+  onAdd: () => void;
+  onRemove: (i: number) => void;
+  addLabel: string;
+  numbered?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="mb-1 text-xs text-ink-mute">
+        Adicione/remova itens. O texto edita-se no preview.
+      </p>
+      {items.map((t, i) => (
+        <div
+          key={i}
+          className="flex items-center justify-between gap-2 rounded-lg border border-line bg-panel px-3 py-2"
+        >
+          <span className="min-w-0 truncate text-sm">
+            {numbered && (
+              <span className="text-ink-mute">
+                {String(i + 1).padStart(2, "0")} ·{" "}
+              </span>
+            )}
+            {t || "Sem título"}
+          </span>
+          <MiniBtn danger onClick={() => onRemove(i)}>
+            remover
+          </MiniBtn>
+        </div>
+      ))}
+      <MiniBtn onClick={onAdd}>{addLabel}</MiniBtn>
     </div>
   );
 }

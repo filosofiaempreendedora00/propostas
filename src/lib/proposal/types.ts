@@ -1,62 +1,87 @@
-// Modelo de dados da proposta. Fonte única de verdade — alimenta o preview e o export.
-
-export interface Pain {
-  title: string;
-  description: string;
-}
+// Modelo de dados da proposta — estrutura focada em CONVERSÃO.
+// Lógica: Diagnóstico → Convicção → Solução → Decisão.
 
 export interface Solution {
-  title: string;
-  description: string;
-  features: string[];
+  name: string;
+  problemSolved: string; // o problema que resolve
+  howItWorks: string; // como funciona
+  expectedBenefit: string; // benefício esperado
+  deliverables: string[]; // entregáveis
 }
 
 export interface Tier {
   name: string;
-  price: string; // ex: "R$ 4.997"
-  priceSuffix: string; // ex: "/mês"
+  price: string;
+  priceSuffix: string;
   description: string;
   features: string[];
   featured?: boolean;
 }
 
+export interface Pillar {
+  title: string;
+  description: string;
+}
+
+export interface Step {
+  title: string;
+  description: string;
+}
+
 export interface ProposalData {
-  // Identidade
+  // ---- Marca / identidade ----
   companyName: string;
   companyInitial: string;
   proposalNumber: string;
-  showProposalNumber: boolean; // exibir "Nº X" na capa
-  accent: string; // cor de acento (futuro: cor do cliente)
+  showProposalNumber: boolean;
+  accent: string;
 
-  // Cliente
-  clientName: string; // nome em destaque na capa
-  clientLegalName: string; // razão social (meta/rodapé)
-
-  // Datas (já formatadas para exibição)
-  dateLabel: string; // ex: "30 de maio de 2026"
-  validUntilLabel: string; // ex: "29 de junho de 2026"
-
-  // Capa
+  // ---- 1. Capa ----
+  clientName: string;
+  clientLegalName: string;
+  dateLabel: string;
+  validUntilLabel: string;
   headlineLead: string;
 
-  // O Desafio
-  challengeHeading: string;
-  challengeStatement: string; // suporta **negrito**
-  pains: Pain[];
+  // ---- 2. O que entendemos (diagnóstico) ----
+  understandingHeading: string;
+  currentSituation: string;
+  mainBottleneck: string;
+  opportunity: string;
+  objective: string;
 
-  // Soluções
+  // ---- 3. O custo de continuar igual (urgência) ----
+  costQuestion: string;
+  costOperational: string;
+  costFinancial: string;
+  costStrategic: string;
+
+  // ---- 4. Estratégia recomendada (convicção) ----
+  strategyHeading: string;
+  strategyIntro: string;
+  pillars: Pillar[];
+
+  // ---- 5. Soluções recomendadas (execução; vêm do catálogo) ----
   solutionsHeading: string;
   solutionsNote: string;
   solutions: Solution[];
 
-  // Investimento
+  // ---- 6. Investimento ----
   investHeading: string;
   tiers: Tier[];
+  recommendationReason: string; // justificativa do plano recomendado
 
-  // Fechamento
-  closingHeading: string;
-  closingLead: string;
+  // ---- 7. Recomendação do consultor (decisão) ----
+  consultantRecHeading: string;
+  consultantRecText: string;
+  consultantRecReasons: string[];
+
+  // ---- 8. Próximos passos ----
+  nextStepsHeading: string;
+  steps: Step[];
   ctaLabel: string;
+
+  // ---- Consultor (rodapé) ----
   responsible: string;
   phone: string;
   email: string;

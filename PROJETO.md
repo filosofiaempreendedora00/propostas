@@ -95,9 +95,21 @@ Arquivos:
 > Persistência atual = localStorage (cadastro do catálogo sobrevive a reload). Migração pra
 > Postgres/Drizzle fica no passo dedicado de banco.
 
-## Estrutura da proposta (template padrão)
-1. **Capa** — "Proposta para {Cliente}", de {Sua Empresa}, validade.
-2. **O Desafio** — dores/contexto do cliente final.
-3. **Soluções** — Solução 1..N (título, descrição, features), genéricas e preenchíveis.
-4. **Investimento** — pacotes/tiers com preços configuráveis.
-5. **Próximos Passos / Fechamento** — contato, validade, CTA.
+## Filosofia (foco em CONVERSÃO)
+O produto NÃO é "mais um gerador de propostas bonitas". É uma ferramenta que ajuda
+prestadores, consultores e agências a **fechar mais negócios**. A proposta segue a lógica
+psicológica **Diagnóstico → Convicção → Solução → Decisão** (não "Empresa → Serviços → Preço").
+Princípio: todo bloco deve responder *"isto ajuda o cliente final a decidir?"*.
+
+## Estrutura da proposta (8 blocos)
+1. **Capa** — percepção premium + contexto (empresa, cliente, validade, número opcional).
+2. **O que entendemos** — diagnóstico: situação atual, gargalo principal, oportunidade, objetivo.
+3. **O custo de continuar igual** — urgência: consequência operacional, financeira, estratégica.
+4. **Estratégia recomendada** — convicção: pilares (estratégia antes da execução).
+5. **Soluções recomendadas** — cada uma: problema que resolve, como funciona, benefício, entregáveis (catálogo).
+6. **Investimento** — planos + justificativa do plano recomendado.
+7. **Recomendação do consultor** — "Nossa recomendação" + motivos (reduz indecisão).
+8. **Próximos passos** — passos claros (aprovação → kickoff → início) + CTA.
+
+> Inputs de diagnóstico/custo/recomendação são o que mais impacta fechamento — futura camada
+> de IA deve ajudar a *construí-los*, não só escrever bonito.

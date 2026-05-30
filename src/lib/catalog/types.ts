@@ -6,9 +6,11 @@ export interface CatalogSolution {
   icon: string; // emoji
   name: string;
   tagline: string; // resumo de uma linha
-  description: string; // descrição completa (parágrafo)
-  scope: string[]; // o que está incluído
+  problemSolved: string; // o problema que resolve
+  howItWorks: string; // como funciona
+  expectedBenefit: string; // benefício esperado
   deliverables: string[]; // entregáveis concretos
+  scope: string[]; // o que está incluído (uso interno / seleção)
   timeline: string; // prazo de execução (ex: "30 dias úteis")
   highlights: string[]; // diferenciais / destaques
   requirements: string[]; // o que precisamos do cliente

@@ -125,35 +125,47 @@ export default function CatalogManager() {
               </label>
 
               <label className="block">
-                <Label>Descrição (vai pra proposta)</Label>
+                <Label>O problema que resolve</Label>
                 <TextArea
-                  value={selected.description}
-                  onChange={(v) => update(selected.id, { description: v })}
-                  rows={3}
-                  placeholder="O que é, como funciona e que problema resolve."
+                  value={selected.problemSolved}
+                  onChange={(v) => update(selected.id, { problemSolved: v })}
+                  rows={2}
+                  placeholder="Qual dor concreta do cliente esta solução elimina."
                 />
               </label>
 
               <div className="grid grid-cols-2 gap-5">
                 <label className="block">
-                  <Label>Escopo (um por linha)</Label>
-                  <LineList
-                    value={selected.scope}
-                    onChange={(v) => update(selected.id, { scope: v })}
-                    rows={5}
-                    placeholder={"O que está incluído\nItem por linha"}
+                  <Label>Como funciona</Label>
+                  <TextArea
+                    value={selected.howItWorks}
+                    onChange={(v) => update(selected.id, { howItWorks: v })}
+                    rows={3}
+                    placeholder="Como a solução funciona na prática."
                   />
                 </label>
                 <label className="block">
-                  <Label>Entregáveis (um por linha)</Label>
-                  <LineList
-                    value={selected.deliverables}
-                    onChange={(v) => update(selected.id, { deliverables: v })}
-                    rows={5}
-                    placeholder={"Entregáveis concretos\nItem por linha"}
+                  <Label>Benefício esperado</Label>
+                  <TextArea
+                    value={selected.expectedBenefit}
+                    onChange={(v) =>
+                      update(selected.id, { expectedBenefit: v })
+                    }
+                    rows={3}
+                    placeholder="O resultado tangível esperado."
                   />
                 </label>
               </div>
+
+              <label className="block">
+                <Label>Entregáveis (um por linha)</Label>
+                <LineList
+                  value={selected.deliverables}
+                  onChange={(v) => update(selected.id, { deliverables: v })}
+                  rows={4}
+                  placeholder={"Entregáveis concretos\nItem por linha"}
+                />
+              </label>
 
               <label className="block">
                 <Label>Prazo de execução</Label>

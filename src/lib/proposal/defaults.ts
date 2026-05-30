@@ -1,6 +1,5 @@
 import type { ProposalData } from "./types";
 
-// Conteúdo "coringa" padrão — qualquer empresa preenche por cima.
 export const DEFAULT_PROPOSAL: ProposalData = {
   companyName: "Sua Empresa",
   companyInitial: "S",
@@ -8,113 +7,96 @@ export const DEFAULT_PROPOSAL: ProposalData = {
   showProposalNumber: true,
   accent: "#C9A876",
 
-  // Vazios de propósito: nome da empresa e do cliente são obrigatórios (evita vazar exemplo).
+  // Vazios de propósito: obrigatórios (evita vazar exemplo).
   clientName: "",
   clientLegalName: "",
-
   dateLabel: "30 de maio de 2026",
   validUntilLabel: "29 de junho de 2026",
-
   headlineLead:
     "Um plano claro, sob medida para o momento atual da sua operação — desenhado a partir do que conversamos.",
 
-  challengeHeading: "Entendemos onde você está hoje.",
-  challengeStatement:
-    "A sua operação cresceu, mas **os processos não acompanharam o ritmo**. O resultado é previsível: esforço disperso, custo de aquisição subindo e dificuldade de enxergar com clareza o que realmente move o ponteiro. Esta proposta nasce exatamente desses pontos.",
-  pains: [
+  // 2. O que entendemos
+  understandingHeading: "Entendemos o seu momento.",
+  currentSituation:
+    "A operação cresceu de forma consistente, mas a estrutura e os processos ainda acompanham o ritmo de antes.",
+  mainBottleneck:
+    "O principal bloqueio hoje é a dependência de esforço manual, que limita a previsibilidade e a escala.",
+  opportunity:
+    "Há uma base sólida pronta para crescer — falta apenas o sistema certo para destravar esse potencial.",
+  objective:
+    "Crescer com previsibilidade, reduzindo o custo de aquisição e ganhando eficiência operacional.",
+
+  // 3. O custo de continuar igual
+  costQuestion: "O que acontece se nada mudar?",
+  costOperational:
+    "A equipe segue operando no limite, apagando incêndios em vez de construir o que escala.",
+  costFinancial:
+    "O custo de aquisição continua subindo e a margem é corroída mês após mês.",
+  costStrategic:
+    "Oportunidades de crescimento seguem sendo desperdiçadas e a concorrência ganha terreno.",
+
+  // 4. Estratégia recomendada
+  strategyHeading: "A estratégia antes da execução.",
+  strategyIntro:
+    "Antes de falar de serviços, este é o raciocínio que guia a recomendação — você compra estratégia; os serviços são a execução dela.",
+  pillars: [
     {
-      title: "Aquisição cara",
+      title: "Aquisição",
       description:
-        "O custo de trazer cada novo cliente cresceu e a margem sente o impacto mês a mês.",
+        "Construir um motor de geração de demanda previsível, com canais e mensagem certos para o seu público.",
     },
     {
-      title: "Falta de previsibilidade",
+      title: "Conversão",
       description:
-        "Sem um funil estruturado, o resultado oscila e o planejamento vira aposta.",
+        "Transformar interesse em receita com um funil estruturado e pontos de fricção removidos.",
     },
     {
-      title: "Execução fragmentada",
+      title: "Retenção",
       description:
-        "Iniciativas soltas, sem um fio condutor que conecte esforço a resultado.",
+        "Aumentar o valor de cada cliente ao longo do tempo, reduzindo a dependência de aquisição constante.",
     },
   ],
 
-  solutionsHeading: "As soluções que propomos.",
-  solutionsNote: "Cada frente endereça diretamente um dos desafios acima.",
-  solutions: [
-    {
-      title: "Solução 1",
-      description:
-        "Descreva aqui a primeira solução: o que é, como funciona e qual problema do cliente ela resolve. Mantenha objetivo e concreto.",
-      features: [
-        "Entregável ou benefício principal",
-        "Segundo entregável relevante",
-        "Terceiro ponto de valor",
-      ],
-    },
-    {
-      title: "Solução 2",
-      description:
-        "Descreva a segunda solução. A ideia é que cada bloco seja totalmente preenchível — título, descrição e itens de entrega — para servir a qualquer empresa.",
-      features: [
-        "Entregável ou benefício principal",
-        "Segundo entregável relevante",
-        "Terceiro ponto de valor",
-      ],
-    },
-    {
-      title: "Solução 3",
-      description:
-        "Descreva a terceira solução. O número de soluções é flexível — adicione ou remova conforme o escopo da proposta.",
-      features: [
-        "Entregável ou benefício principal",
-        "Segundo entregável relevante",
-        "Terceiro ponto de valor",
-      ],
-    },
-  ],
+  // 5. Soluções recomendadas
+  solutionsHeading: "Como vamos executar.",
+  solutionsNote: "Cada solução resolve um problema específico do diagnóstico.",
+  solutions: [],
 
+  // 6. Investimento
   investHeading: "Escolha o nível ideal.",
-  tiers: [
-    {
-      name: "Starter",
-      price: "R$ 2.997",
-      priceSuffix: "/mês",
-      description: "Ideal para começar com o essencial.",
-      features: ["Inclui a Solução 1", "Suporte por e-mail", "Relatório mensal"],
-    },
-    {
-      name: "Scale",
-      price: "R$ 4.997",
-      priceSuffix: "/mês",
-      description: "O equilíbrio entre escopo e resultado.",
-      features: [
-        "Soluções 1 e 2",
-        "Suporte prioritário",
-        "Reunião quinzenal",
-        "Dashboard de acompanhamento",
-      ],
-      featured: true,
-    },
-    {
-      name: "Enterprise",
-      price: "R$ 7.497",
-      priceSuffix: "/mês",
-      description: "Operação completa, sob medida.",
-      features: [
-        "Todas as soluções",
-        "Gerente dedicado",
-        "Reunião semanal",
-        "SLA personalizado",
-      ],
-    },
+  tiers: [],
+  recommendationReason:
+    "Recomendamos o plano em destaque por oferecer o melhor equilíbrio entre velocidade de implementação e retorno esperado para o momento atual da operação.",
+
+  // 7. Recomendação do consultor
+  consultantRecHeading: "Nossa recomendação.",
+  consultantRecText:
+    "Depois de analisar o cenário atual, acreditamos que esta é a opção mais adequada para este momento da sua empresa.",
+  consultantRecReasons: [
+    "Endereça diretamente o principal gargalo identificado.",
+    "Entrega resultado no menor tempo de implementação.",
+    "Cria base para escalar sem aumentar o esforço manual.",
   ],
 
-  closingHeading: "Vamos começar?",
-  closingLead:
-    "Estamos prontos para colocar este plano em prática. O próximo passo é uma conversa para alinhar os detalhes e dar o start.",
+  // 8. Próximos passos
+  nextStepsHeading: "Por onde começamos.",
+  steps: [
+    {
+      title: "Aprovação da proposta",
+      description: "Você aprova o escopo e o plano escolhido.",
+    },
+    {
+      title: "Kickoff",
+      description: "Alinhamos detalhes, acessos e cronograma com o seu time.",
+    },
+    {
+      title: "Início da implementação",
+      description: "Colocamos a estratégia em prática desde a primeira semana.",
+    },
+  ],
   ctaLabel: "Aprovar proposta",
-  responsible: "Nome do Closer",
+
+  responsible: "Nome do Consultor",
   phone: "(00) 00000-0000",
   email: "contato@suaempresa.com",
 };
