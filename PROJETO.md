@@ -72,6 +72,12 @@ npm run dev   # http://localhost:3000
   no lugar; sai → salva). Não-editáveis inline: soluções, planos e consultor (vêm dos catálogos).
   Preview ao vivo + export.
 
+### Campos obrigatórios e controlados (painel)
+- **Nome da empresa (capa)** e **Nome do cliente**: obrigatórios no painel (começam vazios,
+  bloqueiam o export até preencher — evita vazar exemplo). Também editáveis no preview, sincronizados.
+- **Validade da proposta**: campo de data (`input[type=date]`) → formata pt-BR; não editável no texto.
+- **Número da proposta**: opcional via toggle "Mostrar na capa" (`showProposalNumber`), com nº padrão.
+
 ### Edição inline (preview)
 `render.ts` marca os textos livres com `data-edit="campo"` e injeta um script no HTML que faz
 hover/contenteditable e `postMessage` pro app. `ClientBuilder` ouve as mensagens e atualiza o

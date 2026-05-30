@@ -25,6 +25,7 @@ export interface ProposalData {
   companyName: string;
   companyInitial: string;
   proposalNumber: string;
+  showProposalNumber: boolean; // exibir "Nº X" na capa
   accent: string; // cor de acento (futuro: cor do cliente)
 
   // Cliente

@@ -162,18 +162,18 @@ export function renderProposalHTML(d: ProposalData): string {
 <section class="cover">
   <div class="wrap cover-top">
     <div class="brandmark"><span class="dot">${esc(d.companyInitial)}</span><span data-edit="companyName">${esc(d.companyName)}</span></div>
-    <div class="cover-meta">PROPOSTA COMERCIAL · Nº <span data-edit="proposalNumber">${esc(d.proposalNumber)}</span></div>
+    <div class="cover-meta">PROPOSTA COMERCIAL${d.showProposalNumber ? ` · Nº ${esc(d.proposalNumber)}` : ""}</div>
   </div>
   <div class="wrap cover-mid">
     <span class="eyebrow">Preparado exclusivamente para</span>
-    <h1 class="display">Uma proposta para<br>impulsionar a <em data-edit="clientName">${esc(d.clientName)}</em>.</h1>
+    <h1 class="display">Uma proposta para<br>impulsionar a <em data-edit="clientName" data-placeholder="[ nome da empresa ]">${esc(d.clientName)}</em>.</h1>
     <p class="lead" data-edit="headlineLead">${esc(d.headlineLead)}</p>
   </div>
   <div class="wrap cover-foot">
-    <div class="fact"><div class="k">Cliente</div><div class="v" data-edit="clientLegalName">${esc(d.clientLegalName)}</div></div>
+    <div class="fact"><div class="k">Cliente</div><div class="v" data-edit="clientLegalName" data-placeholder="[ nome do cliente ]">${esc(d.clientLegalName)}</div></div>
     <div class="fact"><div class="k">Preparado por</div><div class="v" data-edit="companyName">${esc(d.companyName)}</div></div>
     <div class="fact"><div class="k">Data</div><div class="v" data-edit="dateLabel">${esc(d.dateLabel)}</div></div>
-    <div class="fact"><div class="k">Válida até</div><div class="v" data-edit="validUntilLabel">${esc(d.validUntilLabel)}</div></div>
+    <div class="fact"><div class="k">Válida até</div><div class="v">${esc(d.validUntilLabel)}</div></div>
   </div>
 </section>
 
@@ -209,7 +209,7 @@ export function renderProposalHTML(d: ProposalData): string {
 
 <section class="closing pad">
   <div class="wrap">
-    <span class="validity">Proposta válida até <span data-edit="validUntilLabel">${esc(d.validUntilLabel)}</span></span>
+    <span class="validity">Proposta válida até ${esc(d.validUntilLabel)}</span>
     <h2 class="display" data-edit="closingHeading">${esc(d.closingHeading)}</h2>
     <p class="lead" data-edit="closingLead">${esc(d.closingLead)}</p>
     <a href="#" class="cta"><span data-edit="ctaLabel">${esc(d.ctaLabel)}</span> &nbsp;→</a>
@@ -227,6 +227,7 @@ export function renderProposalHTML(d: ProposalData): string {
   [data-edit]{outline:1px dashed transparent;outline-offset:4px;border-radius:3px;transition:outline-color .12s ease}
   [data-edit]:hover{outline-color:color-mix(in srgb, var(--accent) 55%, transparent);cursor:text}
   [data-edit]:focus{outline:1px dashed var(--accent);outline-offset:4px}
+  [data-edit]:empty::before{content:attr(data-placeholder);color:var(--ink-mute);opacity:.65}
 </style>
 <script>
 (function(){

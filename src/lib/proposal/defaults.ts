@@ -5,10 +5,12 @@ export const DEFAULT_PROPOSAL: ProposalData = {
   companyName: "Sua Empresa",
   companyInitial: "S",
   proposalNumber: "0001",
+  showProposalNumber: true,
   accent: "#C9A876",
 
-  clientName: "Cliente Exemplo",
-  clientLegalName: "Cliente Exemplo Ltda.",
+  // Vazios de propósito: nome da empresa e do cliente são obrigatórios (evita vazar exemplo).
+  clientName: "",
+  clientLegalName: "",
 
   dateLabel: "30 de maio de 2026",
   validUntilLabel: "29 de junho de 2026",

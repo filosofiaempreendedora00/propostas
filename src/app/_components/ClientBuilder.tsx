@@ -7,7 +7,28 @@ import { renderProposalHTML, slugify } from "@/lib/proposal/render";
 import type { ProposalData, Tier } from "@/lib/proposal/types";
 import { useCatalog, usePlans, useConsultants } from "@/lib/catalog/store";
 import type { CatalogSolution, CatalogPlan } from "@/lib/catalog/types";
-import { Label, SectionTitle, MiniBtn } from "./fields";
+import { Label, TextInput, SectionTitle, MiniBtn } from "./fields";
+
+const MONTHS_PT = [
+  "janeiro",
+  "fevereiro",
+  "março",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro",
+];
+
+function formatPtDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return "";
+  return `${d} de ${MONTHS_PT[m - 1]} de ${y}`;
+}
 
 type ClientForm = Omit<
   ProposalData,
@@ -78,7 +99,16 @@ export default function ClientBuilder() {
   const seededPlan = useRef(false);
   const seededCons = useRef(false);
   const [dragOver, setDragOver] = useState(false);
+  const [validISO, setValidISO] = useState("2026-06-29");
   const skipRender = useRef(false);
+
+  const setValidity = (iso: string) => {
+    setValidISO(iso);
+    setForm((f) => ({ ...f, validUntilLabel: formatPtDate(iso) }));
+  };
+
+  const clientMissing =
+    !form.clientName.trim() || !form.clientLegalName.trim();
 
   useEffect(() => {
     if (solReady && !seededSol.current) {
@@ -180,6 +210,7 @@ export default function ClientBuilder() {
   // ----- export -----
   const exportRef = useRef<HTMLAnchorElement | null>(null);
   const handleExport = () => {
+    if (clientMissing) return;
     const html = renderProposalHTML(data);
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -204,11 +235,26 @@ export default function ClientBuilder() {
       {/* Sub-header */}
       <div className="flex items-center justify-between border-b border-line px-6 py-2.5">
         <div className="text-[11px] text-ink-mute">
-          {data.solutions.length} solução(ões) · {data.tiers.length} plano(s)
+          {clientMissing ? (
+            <span className="text-amber-400/90">
+              ⚠ Preencha nome da empresa e do cliente para baixar
+            </span>
+          ) : (
+            <>
+              {data.solutions.length} solução(ões) · {data.tiers.length}{" "}
+              plano(s)
+            </>
+          )}
         </div>
         <button
           onClick={handleExport}
-          className="rounded-full px-5 py-2 text-sm font-semibold text-bg transition hover:opacity-90"
+          disabled={clientMissing}
+          title={
+            clientMissing
+              ? "Preencha o nome da empresa e o nome do cliente"
+              : undefined
+          }
+          className="rounded-full px-5 py-2 text-sm font-semibold text-bg transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           style={{ background: form.accent }}
         >
           ⬇ Baixar HTML
@@ -228,6 +274,66 @@ export default function ClientBuilder() {
               Sua Empresa
             </Link>
             .
+          </div>
+
+          <SectionTitle>Identificação</SectionTitle>
+          <label className="block">
+            <Label>
+              Nome da empresa (capa){" "}
+              <span className="text-amber-400">*</span>
+            </Label>
+            <TextInput
+              value={form.clientName}
+              onChange={(v) => set("clientName", v)}
+              placeholder="Ex: Magazine Luiza"
+            />
+          </label>
+          <label className="mt-3 block">
+            <Label>
+              Nome do cliente <span className="text-amber-400">*</span>
+            </Label>
+            <TextInput
+              value={form.clientLegalName}
+              onChange={(v) => set("clientLegalName", v)}
+              placeholder="Ex: João Silva / razão social"
+            />
+          </label>
+          <p className="mt-1.5 text-[11px] text-ink-mute">
+            Obrigatórios. Também podem ser editados no preview.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <label>
+              <Label>Validade da proposta</Label>
+              <input
+                type="date"
+                value={validISO}
+                onChange={(e) => setValidity(e.target.value)}
+                className="w-full rounded-lg border border-line bg-panel-2 px-3 py-2 text-sm text-ink outline-none [color-scheme:dark] focus:border-accent/60"
+              />
+            </label>
+            <div>
+              <Label>Número da proposta</Label>
+              <label className="flex items-center gap-2 pt-1.5 text-xs text-ink-soft">
+                <input
+                  type="checkbox"
+                  checked={form.showProposalNumber}
+                  onChange={(e) =>
+                    set("showProposalNumber", e.target.checked)
+                  }
+                  className="accent-[var(--color-accent)]"
+                />
+                Mostrar na capa
+              </label>
+              {form.showProposalNumber && (
+                <div className="mt-2">
+                  <TextInput
+                    value={form.proposalNumber}
+                    onChange={(v) => set("proposalNumber", v)}
+                    placeholder="0001"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           <SectionTitle>Soluções da proposta</SectionTitle>
