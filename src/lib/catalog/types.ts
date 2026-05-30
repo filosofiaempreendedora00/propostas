@@ -14,3 +14,16 @@ export interface CatalogSolution {
   requirements: string[]; // o que precisamos do cliente
   notes: string; // observações internas (não vão pra proposta)
 }
+
+// Planos / níveis de investimento (ambiente "Sua Empresa").
+// Vinculados às soluções: as features do plano derivam das soluções incluídas.
+export interface CatalogPlan {
+  id: string;
+  name: string; // ex: "Starter", "Scale"
+  price: string; // ex: "R$ 4.997"
+  priceSuffix: string; // ex: "/mês"
+  description: string; // subtítulo curto do plano
+  featured: boolean; // destaque "Recomendado"
+  solutionIds: string[]; // soluções incluídas (link inteligente)
+  extraFeatures: string[]; // itens adicionais além das soluções
+}

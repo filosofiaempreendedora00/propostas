@@ -1,5 +1,5 @@
-import CatalogManager from "../_components/CatalogManager";
+import EmpresaWorkspace from "../_components/EmpresaWorkspace";
 
 export default function EmpresaPage() {
-  return <CatalogManager />;
+  return <EmpresaWorkspace />;
 }

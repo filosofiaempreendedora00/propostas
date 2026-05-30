@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { CatalogSolution } from "./types";
+import type { CatalogSolution, CatalogPlan } from "./types";
 
 const KEY = "propostas.catalog.v1";
+const PLANS_KEY = "propostas.plans.v1";
 
 // Camada de persistência isolada — hoje localStorage, amanhã trocamos por API/Postgres
 // mexendo só aqui.
@@ -124,6 +125,116 @@ export function useCatalog() {
     setItems((prev) => {
       const next = prev.filter((s) => s.id !== id);
       save(next);
+      return next;
+    });
+  }, []);
+
+  return { items, ready, add, update, remove };
+}
+
+// ===================== PLANOS =====================
+
+function loadPlans(): CatalogPlan[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(PLANS_KEY);
+    return raw ? (JSON.parse(raw) as CatalogPlan[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePlans(items: CatalogPlan[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PLANS_KEY, JSON.stringify(items));
+  } catch {
+    /* ignora */
+  }
+}
+
+export function blankPlan(): CatalogPlan {
+  return {
+    id: uid(),
+    name: "Novo plano",
+    price: "R$ 0",
+    priceSuffix: "/mês",
+    description: "",
+    featured: false,
+    solutionIds: [],
+    extraFeatures: [],
+  };
+}
+
+const SEED_PLANS: CatalogPlan[] = [
+  {
+    id: "plan-1",
+    name: "Starter",
+    price: "R$ 2.997",
+    priceSuffix: "/mês",
+    description: "Ideal para começar com o essencial.",
+    featured: false,
+    solutionIds: ["seed-1"],
+    extraFeatures: ["Suporte por e-mail", "Relatório mensal"],
+  },
+  {
+    id: "plan-2",
+    name: "Scale",
+    price: "R$ 4.997",
+    priceSuffix: "/mês",
+    description: "O equilíbrio entre escopo e resultado.",
+    featured: true,
+    solutionIds: ["seed-1", "seed-2"],
+    extraFeatures: ["Suporte prioritário", "Reunião quinzenal"],
+  },
+  {
+    id: "plan-3",
+    name: "Enterprise",
+    price: "R$ 7.497",
+    priceSuffix: "/mês",
+    description: "Operação completa, sob medida.",
+    featured: false,
+    solutionIds: ["seed-1", "seed-2"],
+    extraFeatures: ["Gerente dedicado", "SLA personalizado"],
+  },
+];
+
+export function usePlans() {
+  const [items, setItems] = useState<CatalogPlan[]>([]);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let initial = loadPlans();
+    if (initial.length === 0) {
+      initial = SEED_PLANS;
+      savePlans(initial);
+    }
+    setItems(initial);
+    setReady(true);
+  }, []);
+
+  const add = useCallback((): string => {
+    const p = blankPlan();
+    setItems((prev) => {
+      const next = [...prev, p];
+      savePlans(next);
+      return next;
+    });
+    return p.id;
+  }, []);
+
+  const update = useCallback((id: string, patch: Partial<CatalogPlan>) => {
+    setItems((prev) => {
+      const next = prev.map((p) => (p.id === id ? { ...p, ...patch } : p));
+      savePlans(next);
+      return next;
+    });
+  }, []);
+
+  const remove = useCallback((id: string) => {
+    setItems((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      savePlans(next);
       return next;
     });
   }, []);

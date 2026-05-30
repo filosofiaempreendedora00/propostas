@@ -59,18 +59,23 @@ npm run dev   # http://localhost:3000
 ```
 
 ## Arquitetura (passo 2)
-Dois ambientes no menu (rotas):
-- **`/empresa` (Sua Empresa)** — catálogo de soluções, cadastrado UMA vez e reaproveitado.
-  Master-detail (lista + editor), auto-save. Campos: escopo, entregáveis, prazo, destaques, etc.
-- **`/cliente` (Seu Cliente)** — monta a proposta: dados do cliente + **seleção** das soluções
-  do catálogo (entram modularmente) + investimento + preview/export.
+**Menu lateral colapsável** (Sidebar, ícones) com dois ambientes:
+- **`/empresa` (Sua Empresa)** — workspace com sub-abas **Soluções** e **Planos**:
+  - *Soluções*: catálogo cadastrado UMA vez (escopo, entregáveis, prazo, destaques, requisitos).
+  - *Planos*: níveis de investimento (preço + **soluções vinculadas** + itens extras).
+    Vínculo inteligente → as features do plano derivam das soluções incluídas.
+  - Master-detail com auto-save.
+- **`/cliente` (Seu Cliente)** — monta a proposta: **seleciona soluções e planos** do catálogo
+  (entram modularmente) + dados do cliente/desafio/fechamento + preview/export.
 
 Arquivos:
-- `src/lib/catalog/types.ts` — `CatalogSolution`.
-- `src/lib/catalog/store.ts` — `useCatalog()` (persistência localStorage; trocar por API/Postgres depois).
+- `src/lib/catalog/types.ts` — `CatalogSolution`, `CatalogPlan`.
+- `src/lib/catalog/store.ts` — `useCatalog()` (soluções) e `usePlans()` (planos), localStorage
+  (camada isolada; trocar por API/Postgres depois).
 - `src/lib/proposal/{types,defaults,render}.ts` — `renderProposalHTML(data)`: HTML standalone
   (fonte única pro preview e export). Estratégia herdada do Octopus: 1 função monta tudo.
-- `src/app/_components/` — `NavBar`, `CatalogManager` (empresa), `ClientBuilder` (cliente), `fields`.
+- `src/app/_components/` — `Sidebar`, `EmpresaWorkspace` (sub-abas), `CatalogManager` (soluções),
+  `PlansManager` (planos), `ClientBuilder` (cliente), `fields` (inputs compartilhados).
 
 > Persistência atual = localStorage (cadastro do catálogo sobrevive a reload). Migração pra
 > Postgres/Drizzle fica no passo dedicado de banco.

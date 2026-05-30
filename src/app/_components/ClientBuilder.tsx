@@ -5,11 +5,11 @@ import Link from "next/link";
 import { DEFAULT_PROPOSAL } from "@/lib/proposal/defaults";
 import { renderProposalHTML, slugify } from "@/lib/proposal/render";
 import type { ProposalData, Pain, Tier } from "@/lib/proposal/types";
-import { useCatalog } from "@/lib/catalog/store";
-import type { CatalogSolution } from "@/lib/catalog/types";
+import { useCatalog, usePlans } from "@/lib/catalog/store";
+import type { CatalogSolution, CatalogPlan } from "@/lib/catalog/types";
 import { Label, TextInput, TextArea, SectionTitle, MiniBtn } from "./fields";
 
-type ClientForm = Omit<ProposalData, "solutions">;
+type ClientForm = Omit<ProposalData, "solutions" | "tiers">;
 
 const ACCENT_PRESETS = [
   { name: "Champagne", value: "#C9A876" },
@@ -27,48 +27,75 @@ function toRenderSolution(s: CatalogSolution) {
       : s.highlights.length > 0
         ? s.highlights
         : s.scope;
+  return { title: s.name, description: s.description || s.tagline, features };
+}
+
+function planToTier(p: CatalogPlan, solutions: CatalogSolution[]): Tier {
+  const solNames = p.solutionIds
+    .map((id) => solutions.find((s) => s.id === id)?.name)
+    .filter((n): n is string => Boolean(n));
   return {
-    title: s.name,
-    description: s.description || s.tagline,
-    features,
+    name: p.name,
+    price: p.price,
+    priceSuffix: p.priceSuffix,
+    description: p.description,
+    features: [...solNames, ...p.extraFeatures],
+    featured: p.featured,
   };
 }
 
 export default function ClientBuilder() {
-  const { items, ready } = useCatalog();
+  const { items: solutions, ready: solReady } = useCatalog();
+  const { items: plans, ready: planReady } = usePlans();
 
   const [form, setForm] = useState<ClientForm>(() => {
-    const { solutions: _omit, ...rest } = DEFAULT_PROPOSAL;
-    void _omit;
+    const { solutions: _s, tiers: _t, ...rest } = DEFAULT_PROPOSAL;
+    void _s;
+    void _t;
     return rest;
   });
 
-  // Seleção de soluções (ids do catálogo).
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const seededSelection = useRef(false);
+  // Seleções (ids do catálogo).
+  const [selSolutions, setSelSolutions] = useState<Set<string>>(new Set());
+  const [selPlans, setSelPlans] = useState<Set<string>>(new Set());
+  const seededSol = useRef(false);
+  const seededPlan = useRef(false);
+
   useEffect(() => {
-    if (ready && !seededSelection.current) {
-      seededSelection.current = true;
-      setSelected(new Set(items.map((s) => s.id)));
+    if (solReady && !seededSol.current) {
+      seededSol.current = true;
+      setSelSolutions(new Set(solutions.map((s) => s.id)));
     }
-  }, [ready, items]);
+  }, [solReady, solutions]);
+
+  useEffect(() => {
+    if (planReady && !seededPlan.current) {
+      seededPlan.current = true;
+      setSelPlans(new Set(plans.map((p) => p.id)));
+    }
+  }, [planReady, plans]);
 
   const set = <K extends keyof ClientForm>(key: K, value: ClientForm[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  const toggleSolution = (id: string) =>
-    setSelected((prev) => {
+  const toggle = (setter: typeof setSelSolutions, id: string) =>
+    setter((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
 
-  // Dados finais da proposta (form + soluções selecionadas, em ordem do catálogo).
+  // Dados finais da proposta.
   const data: ProposalData = useMemo(() => {
-    const chosen = items.filter((s) => selected.has(s.id)).map(toRenderSolution);
-    return { ...form, solutions: chosen };
-  }, [form, items, selected]);
+    const chosenSolutions = solutions
+      .filter((s) => selSolutions.has(s.id))
+      .map(toRenderSolution);
+    const chosenTiers = plans
+      .filter((p) => selPlans.has(p.id))
+      .map((p) => planToTier(p, solutions));
+    return { ...form, solutions: chosenSolutions, tiers: chosenTiers };
+  }, [form, solutions, plans, selSolutions, selPlans]);
 
   // ----- pains -----
   const setPain = (i: number, patch: Partial<Pain>) =>
@@ -83,36 +110,6 @@ export default function ClientBuilder() {
     }));
   const removePain = (i: number) =>
     setForm((f) => ({ ...f, pains: f.pains.filter((_, idx) => idx !== i) }));
-
-  // ----- tiers -----
-  const setTier = (i: number, patch: Partial<Tier>) =>
-    setForm((f) => ({
-      ...f,
-      tiers: f.tiers.map((t, idx) => (idx === i ? { ...t, ...patch } : t)),
-    }));
-  const setTierFeatures = (i: number, raw: string) =>
-    setTier(i, { features: raw.split("\n").filter((x) => x.trim() !== "") });
-  const setFeatured = (i: number) =>
-    setForm((f) => ({
-      ...f,
-      tiers: f.tiers.map((t, idx) => ({ ...t, featured: idx === i })),
-    }));
-  const addTier = () =>
-    setForm((f) => ({
-      ...f,
-      tiers: [
-        ...f.tiers,
-        {
-          name: "Novo nível",
-          price: "R$ 0",
-          priceSuffix: "/mês",
-          description: "",
-          features: ["Item incluso"],
-        },
-      ],
-    }));
-  const removeTier = (i: number) =>
-    setForm((f) => ({ ...f, tiers: f.tiers.filter((_, idx) => idx !== i) }));
 
   // ----- preview (debounced) -----
   const [previewHtml, setPreviewHtml] = useState<string>(() =>
@@ -136,14 +133,12 @@ export default function ClientBuilder() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
-  const selectedCount = data.solutions.length;
-
   return (
     <div className="flex h-full flex-col">
       {/* Sub-header */}
       <div className="flex items-center justify-between border-b border-line px-6 py-2.5">
         <div className="text-[11px] text-ink-mute">
-          {selectedCount} solução(ões) na proposta · {data.tiers.length} níveis
+          {data.solutions.length} solução(ões) · {data.tiers.length} plano(s)
         </div>
         <button
           onClick={handleExport}
@@ -159,63 +154,57 @@ export default function ClientBuilder() {
         {/* Form */}
         <div className="form-scroll overflow-y-auto border-r border-line px-6 py-6">
           <SectionTitle>Soluções da proposta</SectionTitle>
-          {ready && items.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-line p-4 text-center text-sm text-ink-soft">
-              Nenhuma solução cadastrada.
-              <br />
-              <Link
-                href="/empresa"
-                className="mt-2 inline-block font-medium text-accent hover:underline"
-              >
-                → Cadastrar em Sua Empresa
-              </Link>
-            </div>
+          {solReady && solutions.length === 0 ? (
+            <EmptyCatalog label="solução" />
           ) : (
             <div className="space-y-2">
               <p className="mb-1 text-xs text-ink-mute">
                 Selecione quais soluções entram nesta proposta.
               </p>
-              {items.map((s) => {
-                const on = selected.has(s.id);
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => toggleSolution(s.id)}
-                    className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition ${
-                      on
-                        ? "border-accent/60 bg-accent/10"
-                        : "border-line bg-panel hover:border-line"
-                    }`}
-                  >
-                    <span
-                      className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border text-[10px] ${
-                        on
-                          ? "border-accent bg-accent text-bg"
-                          : "border-ink-mute text-transparent"
-                      }`}
-                    >
-                      ✓
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium">
-                        {s.icon} {s.name}
-                      </span>
-                      {s.tagline && (
-                        <span className="block truncate text-xs text-ink-mute">
-                          {s.tagline}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
+              {solutions.map((s) => (
+                <SelectCard
+                  key={s.id}
+                  on={selSolutions.has(s.id)}
+                  onClick={() => toggle(setSelSolutions, s.id)}
+                  title={`${s.icon} ${s.name}`}
+                  subtitle={s.tagline}
+                />
+              ))}
               <Link
                 href="/empresa"
                 className="mt-1 inline-block text-xs text-ink-mute hover:text-accent"
               >
                 + gerenciar catálogo em Sua Empresa
               </Link>
+            </div>
+          )}
+
+          <SectionTitle>Investimento</SectionTitle>
+          <label className="block">
+            <Label>Título da seção</Label>
+            <TextInput
+              value={form.investHeading}
+              onChange={(v) => set("investHeading", v)}
+            />
+          </label>
+          {planReady && plans.length === 0 ? (
+            <div className="mt-3">
+              <EmptyCatalog label="plano" />
+            </div>
+          ) : (
+            <div className="mt-3 space-y-2">
+              <p className="mb-1 text-xs text-ink-mute">
+                Selecione os planos que aparecem na proposta.
+              </p>
+              {plans.map((p) => (
+                <SelectCard
+                  key={p.id}
+                  on={selPlans.has(p.id)}
+                  onClick={() => toggle(setSelPlans, p.id)}
+                  title={`${p.name}${p.featured ? " ★" : ""}`}
+                  subtitle={`${p.price}${p.priceSuffix} · ${p.solutionIds.length} solução(ões)`}
+                />
+              ))}
             </div>
           )}
 
@@ -356,69 +345,6 @@ export default function ClientBuilder() {
             <MiniBtn onClick={addPain}>+ adicionar dor</MiniBtn>
           </div>
 
-          <SectionTitle>Investimento</SectionTitle>
-          <label className="block">
-            <Label>Título</Label>
-            <TextInput
-              value={form.investHeading}
-              onChange={(v) => set("investHeading", v)}
-            />
-          </label>
-          <div className="mt-4 space-y-3">
-            {form.tiers.map((t, i) => (
-              <div key={i} className="rounded-lg border border-line bg-panel p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="flex items-center gap-1.5 text-xs font-medium text-ink-mute">
-                    <input
-                      type="radio"
-                      name="featured"
-                      checked={!!t.featured}
-                      onChange={() => setFeatured(i)}
-                      className="accent-[var(--color-accent)]"
-                    />
-                    Recomendado
-                  </label>
-                  <MiniBtn danger onClick={() => removeTier(i)}>
-                    remover
-                  </MiniBtn>
-                </div>
-                <div className="grid grid-cols-[1fr_90px_70px] gap-2">
-                  <TextInput
-                    value={t.name}
-                    onChange={(v) => setTier(i, { name: v })}
-                    placeholder="Nome"
-                  />
-                  <TextInput
-                    value={t.price}
-                    onChange={(v) => setTier(i, { price: v })}
-                    placeholder="R$ 0"
-                  />
-                  <TextInput
-                    value={t.priceSuffix}
-                    onChange={(v) => setTier(i, { priceSuffix: v })}
-                    placeholder="/mês"
-                  />
-                </div>
-                <div className="mt-2">
-                  <TextInput
-                    value={t.description}
-                    onChange={(v) => setTier(i, { description: v })}
-                    placeholder="Descrição curta"
-                  />
-                </div>
-                <div className="mt-2">
-                  <Label>Itens (um por linha)</Label>
-                  <TextArea
-                    value={t.features.join("\n")}
-                    onChange={(v) => setTierFeatures(i, v)}
-                    rows={3}
-                  />
-                </div>
-              </div>
-            ))}
-            <MiniBtn onClick={addTier}>+ adicionar nível</MiniBtn>
-          </div>
-
           <SectionTitle>Fechamento</SectionTitle>
           <label className="block">
             <Label>Título</Label>
@@ -480,6 +406,57 @@ export default function ClientBuilder() {
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+function SelectCard({
+  on,
+  onClick,
+  title,
+  subtitle,
+}: {
+  on: boolean;
+  onClick: () => void;
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition ${
+        on ? "border-accent/60 bg-accent/10" : "border-line bg-panel"
+      }`}
+    >
+      <span
+        className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border text-[10px] ${
+          on ? "border-accent bg-accent text-bg" : "border-ink-mute text-transparent"
+        }`}
+      >
+        ✓
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-medium">{title}</span>
+        {subtitle && (
+          <span className="block truncate text-xs text-ink-mute">{subtitle}</span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+function EmptyCatalog({ label }: { label: string }) {
+  return (
+    <div className="rounded-lg border border-dashed border-line p-4 text-center text-sm text-ink-soft">
+      Nenhum(a) {label} cadastrado(a).
+      <br />
+      <Link
+        href="/empresa"
+        className="mt-2 inline-block font-medium text-accent hover:underline"
+      >
+        → Cadastrar em Sua Empresa
+      </Link>
     </div>
   );
 }
