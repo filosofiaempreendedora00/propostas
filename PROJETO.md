@@ -42,11 +42,28 @@ Turbo (comprovado), mas tudo é genérico e preenchível pelo usuário.
 5. Saída HTML standalone (CSS inline, imagens base64, sem dependências externas).
 
 ## Roadmap
-- [ ] **Passo 1 — Visual**: template universal sofisticado (HTML estático) aprovado pelo Roberto.
-- [ ] **Passo 2 — App**: scaffold Next.js + TS + Postgres/Drizzle; formulário de input; geração
-      determinística (compõe a partir dos inputs, sem IA); export HTML; persistência (CRUD).
+- [x] **Passo 1 — Visual**: template universal sofisticado (HTML estático) aprovado pelo Roberto.
+- [~] **Passo 2 — App** (Next.js 16 + React 19 + TS + Tailwind 4):
+  - [x] Scaffold + modelo de dados (`src/lib/proposal/`) + renderizador (`render.ts`)
+  - [x] Builder: formulário completo + preview ao vivo (iframe) + export HTML standalone
+  - [x] Cor de acento trocável (presets) — fundação pro "modelo personalizado"
+  - [ ] Persistência (Postgres/Drizzle): salvar/listar/editar propostas — passo dedicado
 - [ ] **Passo 3 — IA**: porta a inteligência (DIFF, audit, agentic) pra personalizar a partir de briefing.
 - [ ] **Futuro**: modelo personalizado com cores/branding do cliente; export PDF; telemetria.
+
+## Como rodar o app
+```bash
+cd "/Users/roberto/Projetos do Claude/Propostas"
+npm install   # primeira vez
+npm run dev   # http://localhost:3000
+```
+
+## Arquitetura (passo 2)
+- `src/lib/proposal/types.ts` — modelo `ProposalData`.
+- `src/lib/proposal/defaults.ts` — conteúdo coringa padrão.
+- `src/lib/proposal/render.ts` — `renderProposalHTML(data)`: gera o HTML standalone (fonte única
+  pro preview e pro export). Estratégia herdada do Octopus: 1 função monta tudo.
+- `src/app/_components/Builder.tsx` — UI (form + preview iframe + download).
 
 ## Estrutura da proposta (template padrão)
 1. **Capa** — "Proposta para {Cliente}", de {Sua Empresa}, validade.
