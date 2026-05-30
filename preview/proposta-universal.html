@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposta — {{Cliente}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Paleta neutra premium. --accent será trocável no futuro (cores do cliente). */
+    --bg:        #0A0B0D;
+    --bg-soft:   #101216;
+    --panel:     #14171C;
+    --panel-2:   #181C22;
+    --line:      rgba(255,255,255,.08);
+    --line-2:    rgba(255,255,255,.14);
+    --ink:       #ECECE7;
+    --ink-soft:  #A7ABB2;
+    --ink-mute:  #6E737B;
+    --accent:    #C9A876;          /* champagne/bronze sóbrio */
+    --accent-dim:rgba(201,168,118,.14);
+    --radius:    18px;
+    --maxw:      1080px;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    font-weight:400;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 40px}
+
+  /* ---------- Tipografia ---------- */
+  .display{font-family:'Fraunces',serif;font-weight:400;letter-spacing:-.01em;line-height:1.04}
+  .eyebrow{
+    font-size:12px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent);display:inline-flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--accent);opacity:.7}
+  .lead{font-size:19px;color:var(--ink-soft);font-weight:300;max-width:62ch}
+  .muted{color:var(--ink-mute)}
+
+  /* ---------- Seções ---------- */
+  section{position:relative;border-top:1px solid var(--line)}
+  .pad{padding:120px 0}
+  .pad-sm{padding:88px 0}
+
+  /* ---------- Capa ---------- */
+  .cover{
+    border-top:none;min-height:100vh;display:flex;flex-direction:column;
+    justify-content:space-between;padding:48px 0 56px;
+    background:
+      radial-gradient(1200px 600px at 78% -10%, rgba(201,168,118,.10), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(120,140,200,.07), transparent 55%);
+  }
+  .cover .wrap{width:100%}
+  .cover-top{display:flex;justify-content:space-between;align-items:center}
+  .brandmark{display:flex;align-items:center;gap:12px;font-weight:600;letter-spacing:.02em}
+  .brandmark .dot{width:30px;height:30px;border-radius:9px;background:linear-gradient(140deg,var(--accent),#8c7044);
+    display:grid;place-items:center;color:#0A0B0D;font-family:'Fraunces',serif;font-weight:600;font-size:16px}
+  .cover-meta{font-size:13px;color:var(--ink-mute);letter-spacing:.04em}
+  .cover-mid{padding:40px 0}
+  .cover h1{font-size:clamp(46px,7vw,88px);margin:26px 0 30px}
+  .cover h1 em{font-style:italic;color:var(--accent)}
+  .cover-foot{display:flex;flex-wrap:wrap;gap:48px;border-top:1px solid var(--line);padding-top:32px}
+  .fact .k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:7px}
+  .fact .v{font-size:16px;color:var(--ink);font-weight:500}
+
+  /* ---------- O Desafio ---------- */
+  .challenge h2{font-size:clamp(30px,4vw,46px);margin:28px 0 24px;max-width:18ch}
+  .challenge .statement{font-size:22px;color:var(--ink-soft);font-weight:300;max-width:70ch;line-height:1.5}
+  .challenge .statement strong{color:var(--ink);font-weight:500}
+  .pains{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:56px}
+  .pain{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:28px}
+  .pain .n{font-family:'Fraunces',serif;font-size:15px;color:var(--accent);margin-bottom:14px}
+  .pain h3{font-size:17px;font-weight:600;margin-bottom:9px}
+  .pain p{font-size:14.5px;color:var(--ink-soft);font-weight:300}
+
+  /* ---------- Soluções ---------- */
+  .sol-head{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;flex-wrap:wrap;margin-bottom:64px}
+  .sol-head h2{font-size:clamp(30px,4vw,46px);margin-top:24px}
+  .solution{
+    display:grid;grid-template-columns:88px 1fr 300px;gap:36px;align-items:start;
+    padding:48px 0;border-top:1px solid var(--line);
+  }
+  .solution:first-of-type{border-top:none}
+  .sol-num{font-family:'Fraunces',serif;font-size:46px;color:var(--accent);line-height:1;opacity:.85}
+  .sol-body h3{font-size:25px;font-weight:600;margin-bottom:14px;letter-spacing:-.01em}
+  .sol-body p{font-size:16px;color:var(--ink-soft);font-weight:300;max-width:56ch}
+  .sol-features{list-style:none;display:flex;flex-direction:column;gap:13px}
+  .sol-features li{position:relative;padding-left:24px;font-size:14.5px;color:var(--ink-soft)}
+  .sol-features li::before{content:"";position:absolute;left:0;top:9px;width:7px;height:7px;border-radius:50%;
+    border:1px solid var(--accent);background:var(--accent-dim)}
+
+  /* ---------- Investimento ---------- */
+  .invest{background:var(--bg-soft)}
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:60px}
+  .tier{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:34px 30px;display:flex;flex-direction:column;
+  }
+  .tier.featured{border-color:var(--line-2);background:
+    linear-gradient(180deg,var(--accent-dim),transparent 42%),var(--panel-2);position:relative}
+  .tier.featured::after{content:"Recomendado";position:absolute;top:20px;right:20px;
+    font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+    border:1px solid var(--accent);border-radius:999px;padding:5px 11px}
+  .tier .tname{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:18px}
+  .tier .price{font-family:'Fraunces',serif;font-size:38px;line-height:1;margin-bottom:6px}
+  .tier .price small{font-size:15px;color:var(--ink-mute);font-family:'Inter';font-weight:400}
+  .tier .billing{font-size:13px;color:var(--ink-mute);margin-bottom:24px}
+  .tier ul{list-style:none;display:flex;flex-direction:column;gap:12px;margin-top:6px;padding-top:22px;border-top:1px solid var(--line)}
+  .tier li{position:relative;padding-left:22px;font-size:14px;color:var(--ink-soft)}
+  .tier li::before{content:"✓";position:absolute;left:0;color:var(--accent);font-size:13px}
+
+  /* ---------- Fechamento ---------- */
+  .closing{background:
+      radial-gradient(900px 500px at 50% 120%, rgba(201,168,118,.10), transparent 60%),var(--bg);
+    text-align:center}
+  .closing h2{font-size:clamp(34px,5vw,60px);margin:26px auto 24px;max-width:16ch}
+  .closing .lead{margin:0 auto 44px}
+  .cta{display:inline-flex;align-items:center;gap:12px;background:var(--accent);color:#0A0B0D;
+    font-weight:600;font-size:15px;padding:16px 30px;border-radius:999px;text-decoration:none;
+    transition:transform .2s ease}
+  .cta:hover{transform:translateY(-2px)}
+  .contact{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;margin-top:64px;
+    padding-top:40px;border-top:1px solid var(--line)}
+  .contact .k{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:6px}
+  .contact .v{font-size:15px;font-weight:500}
+  .validity{display:inline-block;margin-bottom:8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line-2);border-radius:999px;padding:8px 16px}
+
+  /* ---------- Rodapé ---------- */
+  footer{border-top:1px solid var(--line);padding:34px 0;text-align:center;color:var(--ink-mute);font-size:12.5px;letter-spacing:.04em}
+
+  @media(max-width:860px){
+    .wrap{padding:0 24px}
+    .pains,.tiers{grid-template-columns:1fr}
+    .solution{grid-template-columns:1fr;gap:18px;padding:40px 0}
+    .sol-num{font-size:38px}
+    .pad{padding:80px 0}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ CAPA ============ -->
+<section class="cover">
+  <div class="wrap cover-top">
+    <div class="brandmark"><span class="dot">S</span><span>Sua Empresa</span></div>
+    <div class="cover-meta">PROPOSTA COMERCIAL · Nº 0001</div>
+  </div>
+
+  <div class="wrap cover-mid">
+    <span class="eyebrow">Preparado exclusivamente para</span>
+    <h1 class="display">Uma proposta para<br>impulsionar a <em>Cliente Exemplo</em>.</h1>
+    <p class="lead">Um plano claro, sob medida para o momento atual da sua operação — desenhado a partir do que conversamos.</p>
+  </div>
+
+  <div class="wrap cover-foot">
+    <div class="fact"><div class="k">Cliente</div><div class="v">Cliente Exemplo Ltda.</div></div>
+    <div class="fact"><div class="k">Preparado por</div><div class="v">Sua Empresa</div></div>
+    <div class="fact"><div class="k">Data</div><div class="v">30 de maio de 2026</div></div>
+    <div class="fact"><div class="k">Válida até</div><div class="v">29 de junho de 2026</div></div>
+  </div>
+</section>
+
+<!-- ============ O DESAFIO ============ -->
+<section class="challenge pad">
+  <div class="wrap">
+    <span class="eyebrow">O Desafio</span>
+    <h2 class="display">Entendemos onde você está hoje.</h2>
+    <p class="statement">A sua operação cresceu, mas <strong>os processos não acompanharam o ritmo</strong>. O resultado é previsível: esforço disperso, custo de aquisição subindo e dificuldade de enxergar com clareza o que realmente move o ponteiro. Esta proposta nasce exatamente desses pontos.</p>
+
+    <div class="pains">
+      <div class="pain">
+        <div class="n">01</div>
+        <h3>Aquisição cara</h3>
+        <p>O custo de trazer cada novo cliente cresceu e a margem sente o impacto mês a mês.</p>
+      </div>
+      <div class="pain">
+        <div class="n">02</div>
+        <h3>Falta de previsibilidade</h3>
+        <p>Sem um funil estruturado, o resultado oscila e o planejamento vira aposta.</p>
+      </div>
+      <div class="pain">
+        <div class="n">03</div>
+        <h3>Execução fragmentada</h3>
+        <p>Iniciativas soltas, sem um fio condutor que conecte esforço a resultado.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SOLUÇÕES ============ -->
+<section class="solutions pad">
+  <div class="wrap">
+    <div class="sol-head">
+      <div>
+        <span class="eyebrow">Nossa abordagem</span>
+        <h2 class="display">As soluções que propomos.</h2>
+      </div>
+      <p class="lead" style="max-width:34ch;margin:0">Cada frente endereça diretamente um dos desafios acima.</p>
+    </div>
+
+    <div class="solution">
+      <div class="sol-num">01</div>
+      <div class="sol-body">
+        <h3>Solução 1</h3>
+        <p>Descreva aqui a primeira solução: o que é, como funciona e qual problema do cliente ela resolve. Mantenha objetivo e concreto.</p>
+      </div>
+      <ul class="sol-features">
+        <li>Entregável ou benefício principal</li>
+        <li>Segundo entregável relevante</li>
+        <li>Terceiro ponto de valor</li>
+      </ul>
+    </div>
+
+    <div class="solution">
+      <div class="sol-num">02</div>
+      <div class="sol-body">
+        <h3>Solução 2</h3>
+        <p>Descreva a segunda solução. A ideia é que cada bloco seja totalmente preenchível — título, descrição e itens de entrega — para servir a qualquer empresa.</p>
+      </div>
+      <ul class="sol-features">
+        <li>Entregável ou benefício principal</li>
+        <li>Segundo entregável relevante</li>
+        <li>Terceiro ponto de valor</li>
+      </ul>
+    </div>
+
+    <div class="solution">
+      <div class="sol-num">03</div>
+      <div class="sol-body">
+        <h3>Solução 3</h3>
+        <p>Descreva a terceira solução. O número de soluções é flexível — adicione ou remova conforme o escopo da proposta.</p>
+      </div>
+      <ul class="sol-features">
+        <li>Entregável ou benefício principal</li>
+        <li>Segundo entregável relevante</li>
+        <li>Terceiro ponto de valor</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INVESTIMENTO ============ -->
+<section class="invest pad">
+  <div class="wrap">
+    <span class="eyebrow">Investimento</span>
+    <h2 class="display" style="font-size:clamp(30px,4vw,46px);margin-top:24px">Escolha o nível ideal.</h2>
+
+    <div class="tiers">
+      <div class="tier">
+        <div class="tname">Starter</div>
+        <div class="price">R$ 2.997<small>/mês</small></div>
+        <div class="billing">Ideal para começar com o essencial.</div>
+        <ul>
+          <li>Inclui a Solução 1</li>
+          <li>Suporte por e-mail</li>
+          <li>Relatório mensal</li>
+        </ul>
+      </div>
+      <div class="tier featured">
+        <div class="tname">Scale</div>
+        <div class="price">R$ 4.997<small>/mês</small></div>
+        <div class="billing">O equilíbrio entre escopo e resultado.</div>
+        <ul>
+          <li>Soluções 1 e 2</li>
+          <li>Suporte prioritário</li>
+          <li>Reunião quinzenal</li>
+          <li>Dashboard de acompanhamento</li>
+        </ul>
+      </div>
+      <div class="tier">
+        <div class="tname">Enterprise</div>
+        <div class="price">R$ 7.497<small>/mês</small></div>
+        <div class="billing">Operação completa, sob medida.</div>
+        <ul>
+          <li>Todas as soluções</li>
+          <li>Gerente dedicado</li>
+          <li>Reunião semanal</li>
+          <li>SLA personalizado</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FECHAMENTO ============ -->
+<section class="closing pad">
+  <div class="wrap">
+    <span class="validity">Proposta válida até 29/06/2026</span>
+    <h2 class="display">Vamos começar?</h2>
+    <p class="lead">Estamos prontos para colocar este plano em prática. O próximo passo é uma conversa para alinhar os detalhes e dar o start.</p>
+    <a href="#" class="cta">Aprovar proposta &nbsp;→</a>
+
+    <div class="contact">
+      <div><div class="k">Responsável</div><div class="v">Nome do Closer</div></div>
+      <div><div class="k">Telefone</div><div class="v">(00) 00000-0000</div></div>
+      <div><div class="k">E-mail</div><div class="v">contato@suaempresa.com</div></div>
+    </div>
+  </div>
+</section>
+
+<footer>© 2026 Sua Empresa · Proposta confidencial preparada para Cliente Exemplo Ltda.</footer>
+
+</body>
+</html>
