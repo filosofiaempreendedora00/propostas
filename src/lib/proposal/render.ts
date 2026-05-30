@@ -251,7 +251,9 @@ export function renderProposalHTML(d: ProposalData): string {
 </section>
 
 <!-- 2. O QUE ENTENDEMOS -->
-<section class="pad understand">
+${
+  d.showUnderstanding
+    ? `<section class="pad understand">
   <div class="wrap">
     <span class="eyebrow">O que entendemos</span>
     <h2 class="display h2" data-edit="understandingHeading">${esc(d.understandingHeading)}</h2>
@@ -262,10 +264,14 @@ export function renderProposalHTML(d: ProposalData): string {
       <div class="block"><div class="k">Objetivo</div><p data-edit="objective">${esc(d.objective)}</p></div>
     </div>
   </div>
-</section>
+</section>`
+    : ""
+}
 
 <!-- 3. O CUSTO DE CONTINUAR IGUAL -->
-<section class="pad cost">
+${
+  d.showCost
+    ? `<section class="pad cost">
   <div class="wrap">
     <span class="eyebrow">O custo de continuar igual</span>
     <h2 class="display h2" data-edit="costQuestion">${esc(d.costQuestion)}</h2>
@@ -275,7 +281,9 @@ export function renderProposalHTML(d: ProposalData): string {
       <div class="block"><div class="k">Estratégico</div><p data-edit="costStrategic">${esc(d.costStrategic)}</p></div>
     </div>
   </div>
-</section>
+</section>`
+    : ""
+}
 
 <!-- 4. ESTRATÉGIA RECOMENDADA -->
 ${
@@ -292,14 +300,18 @@ ${
 }
 
 <!-- 5. SOLUÇÕES RECOMENDADAS -->
-<section class="pad solutions">
+${
+  d.showSolutions
+    ? `<section class="pad solutions">
   <div class="wrap">
     <span class="eyebrow">Soluções recomendadas</span>
     <h2 class="display h2" data-edit="solutionsHeading">${esc(d.solutionsHeading)}</h2>
     <p class="lead" style="margin-top:14px" data-edit="solutionsNote">${esc(d.solutionsNote)}</p>
     <div style="margin-top:44px">${solutionsHtml(d.solutions)}</div>
   </div>
-</section>
+</section>`
+    : ""
+}
 
 <!-- 6. INVESTIMENTO -->
 ${
@@ -336,7 +348,9 @@ ${
 }
 
 <!-- 8. PRÓXIMOS PASSOS -->
-<section class="pad nextsteps">
+${
+  d.showNextSteps
+    ? `<section class="pad nextsteps">
   <div class="wrap">
     <span class="eyebrow">Próximos passos</span>
     <h2 class="display h2" data-edit="nextStepsHeading">${esc(d.nextStepsHeading)}</h2>
@@ -351,7 +365,9 @@ ${
       <div><div class="ck">E-mail</div><div class="cv">${esc(d.email)}</div></div>
     </div>
   </div>
-</section>
+</section>`
+    : ""
+}
 
 <footer>© ${esc(d.dateLabel.replace(/.*\b(\d{4})\b.*/, "$1") || "")} ${esc(d.companyName)} · Proposta confidencial preparada para ${esc(d.clientLegalName)}.</footer>
 

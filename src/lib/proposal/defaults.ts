@@ -35,10 +35,14 @@ export const DEFAULT_PROPOSAL: ProposalData = {
   costStrategic:
     "Oportunidades de crescimento seguem sendo desperdiçadas e a concorrência ganha terreno.",
 
-  // Visibilidade de blocos opcionais
+  // Visibilidade de blocos (olho) — padrão: todos visíveis
+  showUnderstanding: true,
+  showCost: true,
   showStrategy: true,
+  showSolutions: true,
   showInvestment: true,
   showConsultantRec: true,
+  showNextSteps: true,
 
   // 4. Estratégia recomendada
   strategyHeading: "A estratégia antes da execução.",

@@ -344,6 +344,44 @@ export default function ClientBuilder() {
             n={2}
             right={
               <EyeToggle
+                on={form.showUnderstanding}
+                onClick={() =>
+                  set("showUnderstanding", !form.showUnderstanding)
+                }
+              />
+            }
+          >
+            O que entendemos
+          </SectionTitle>
+          <p
+            className={`text-xs text-ink-mute ${form.showUnderstanding ? "" : "opacity-40"}`}
+          >
+            Diagnóstico — situação, gargalo, oportunidade e objetivo. Edite no
+            preview.
+          </p>
+
+          <SectionTitle
+            n={3}
+            right={
+              <EyeToggle
+                on={form.showCost}
+                onClick={() => set("showCost", !form.showCost)}
+              />
+            }
+          >
+            O custo de continuar igual
+          </SectionTitle>
+          <p
+            className={`text-xs text-ink-mute ${form.showCost ? "" : "opacity-40"}`}
+          >
+            Urgência — consequência operacional, financeira e estratégica.
+            Edite no preview.
+          </p>
+
+          <SectionTitle
+            n={4}
+            right={
+              <EyeToggle
                 on={form.showStrategy}
                 onClick={() => set("showStrategy", !form.showStrategy)}
               />
@@ -360,28 +398,40 @@ export default function ClientBuilder() {
             />
           </div>
 
-          <SectionTitle n={3}>Soluções da proposta</SectionTitle>
-          {solReady && solutions.length === 0 ? (
-            <EmptyCatalog label="solução" />
-          ) : (
-            <div className="space-y-2">
-              <p className="mb-1 text-xs text-ink-mute">
-                Selecione quais soluções entram nesta proposta.
-              </p>
-              {solutions.map((s) => (
-                <SelectCard
-                  key={s.id}
-                  on={selSolutions.has(s.id)}
-                  onClick={() => toggle(setSelSolutions, s.id)}
-                  title={`${s.icon} ${s.name}`}
-                  subtitle={s.tagline}
-                />
-              ))}
-            </div>
-          )}
+          <SectionTitle
+            n={5}
+            right={
+              <EyeToggle
+                on={form.showSolutions}
+                onClick={() => set("showSolutions", !form.showSolutions)}
+              />
+            }
+          >
+            Soluções da proposta
+          </SectionTitle>
+          <div className={form.showSolutions ? "" : "opacity-40"}>
+            {solReady && solutions.length === 0 ? (
+              <EmptyCatalog label="solução" />
+            ) : (
+              <div className="space-y-2">
+                <p className="mb-1 text-xs text-ink-mute">
+                  Selecione quais soluções entram nesta proposta.
+                </p>
+                {solutions.map((s) => (
+                  <SelectCard
+                    key={s.id}
+                    on={selSolutions.has(s.id)}
+                    onClick={() => toggle(setSelSolutions, s.id)}
+                    title={`${s.icon} ${s.name}`}
+                    subtitle={s.tagline}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
 
           <SectionTitle
-            n={4}
+            n={6}
             right={
               <EyeToggle
                 on={form.showInvestment}
@@ -413,7 +463,7 @@ export default function ClientBuilder() {
           </div>
 
           <SectionTitle
-            n={5}
+            n={7}
             right={
               <EyeToggle
                 on={form.showConsultantRec}
@@ -435,15 +485,27 @@ export default function ClientBuilder() {
             />
           </div>
 
-          <SectionTitle n={6}>Próximos passos</SectionTitle>
-          <ListControl
-            items={form.steps.map((s) => s.title)}
-            onAdd={addStep}
-            onRemove={removeStep}
-            addLabel="+ adicionar passo"
-          />
+          <SectionTitle
+            n={8}
+            right={
+              <EyeToggle
+                on={form.showNextSteps}
+                onClick={() => set("showNextSteps", !form.showNextSteps)}
+              />
+            }
+          >
+            Próximos passos
+          </SectionTitle>
+          <div className={form.showNextSteps ? "" : "opacity-40"}>
+            <ListControl
+              items={form.steps.map((s) => s.title)}
+              onAdd={addStep}
+              onRemove={removeStep}
+              addLabel="+ adicionar passo"
+            />
+          </div>
 
-          <SectionTitle n={7}>Consultor responsável</SectionTitle>
+          <SectionTitle>Consultor responsável</SectionTitle>
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -509,7 +571,7 @@ export default function ClientBuilder() {
             </div>
           )}
 
-          <SectionTitle n={8}>Aparência</SectionTitle>
+          <SectionTitle>Aparência</SectionTitle>
           <div className="grid grid-cols-[1fr_80px] items-start gap-3">
             <div>
               <Label>Cor de acento</Label>
