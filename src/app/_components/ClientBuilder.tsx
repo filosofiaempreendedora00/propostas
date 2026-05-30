@@ -302,8 +302,10 @@ export default function ClientBuilder() {
             />
           </label>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <label>
-              <Label>Validade da proposta</Label>
+            <label className="block">
+              <span className="mb-1.5 flex min-h-[28px] items-center text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute">
+                Validade
+              </span>
               <input
                 type="date"
                 value={validISO}
@@ -312,25 +314,29 @@ export default function ClientBuilder() {
               />
             </label>
             <div>
-              <Label>Número da proposta</Label>
-              <label className="flex items-center gap-2 pt-1.5 text-xs text-ink-soft">
-                <input
-                  type="checkbox"
-                  checked={form.showProposalNumber}
-                  onChange={(e) => set("showProposalNumber", e.target.checked)}
-                  className="accent-[var(--color-accent)]"
-                />
-                Mostrar na capa
-              </label>
-              {form.showProposalNumber && (
-                <div className="mt-2">
-                  <TextInput
-                    value={form.proposalNumber}
-                    onChange={(v) => set("proposalNumber", v)}
-                    placeholder="0001"
+              <div className="mb-1.5 flex min-h-[28px] items-center justify-between gap-2">
+                <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute">
+                  Nº proposta
+                </span>
+                <label className="flex shrink-0 items-center gap-1 text-[10px] text-ink-soft">
+                  <input
+                    type="checkbox"
+                    checked={form.showProposalNumber}
+                    onChange={(e) =>
+                      set("showProposalNumber", e.target.checked)
+                    }
+                    className="accent-[var(--color-accent)]"
                   />
-                </div>
-              )}
+                  Mostrar
+                </label>
+              </div>
+              <div className={form.showProposalNumber ? "" : "opacity-40"}>
+                <TextInput
+                  value={form.proposalNumber}
+                  onChange={(v) => set("proposalNumber", v)}
+                  placeholder="0001"
+                />
+              </div>
             </div>
           </div>
 
