@@ -59,11 +59,21 @@ npm run dev   # http://localhost:3000
 ```
 
 ## Arquitetura (passo 2)
-- `src/lib/proposal/types.ts` — modelo `ProposalData`.
-- `src/lib/proposal/defaults.ts` — conteúdo coringa padrão.
-- `src/lib/proposal/render.ts` — `renderProposalHTML(data)`: gera o HTML standalone (fonte única
-  pro preview e pro export). Estratégia herdada do Octopus: 1 função monta tudo.
-- `src/app/_components/Builder.tsx` — UI (form + preview iframe + download).
+Dois ambientes no menu (rotas):
+- **`/empresa` (Sua Empresa)** — catálogo de soluções, cadastrado UMA vez e reaproveitado.
+  Master-detail (lista + editor), auto-save. Campos: escopo, entregáveis, prazo, destaques, etc.
+- **`/cliente` (Seu Cliente)** — monta a proposta: dados do cliente + **seleção** das soluções
+  do catálogo (entram modularmente) + investimento + preview/export.
+
+Arquivos:
+- `src/lib/catalog/types.ts` — `CatalogSolution`.
+- `src/lib/catalog/store.ts` — `useCatalog()` (persistência localStorage; trocar por API/Postgres depois).
+- `src/lib/proposal/{types,defaults,render}.ts` — `renderProposalHTML(data)`: HTML standalone
+  (fonte única pro preview e export). Estratégia herdada do Octopus: 1 função monta tudo.
+- `src/app/_components/` — `NavBar`, `CatalogManager` (empresa), `ClientBuilder` (cliente), `fields`.
+
+> Persistência atual = localStorage (cadastro do catálogo sobrevive a reload). Migração pra
+> Postgres/Drizzle fica no passo dedicado de banco.
 
 ## Estrutura da proposta (template padrão)
 1. **Capa** — "Proposta para {Cliente}", de {Sua Empresa}, validade.
