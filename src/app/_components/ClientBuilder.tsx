@@ -5,11 +5,14 @@ import Link from "next/link";
 import { DEFAULT_PROPOSAL } from "@/lib/proposal/defaults";
 import { renderProposalHTML, slugify } from "@/lib/proposal/render";
 import type { ProposalData, Pain, Tier } from "@/lib/proposal/types";
-import { useCatalog, usePlans } from "@/lib/catalog/store";
+import { useCatalog, usePlans, useConsultants } from "@/lib/catalog/store";
 import type { CatalogSolution, CatalogPlan } from "@/lib/catalog/types";
 import { Label, TextInput, TextArea, SectionTitle, MiniBtn } from "./fields";
 
-type ClientForm = Omit<ProposalData, "solutions" | "tiers">;
+type ClientForm = Omit<
+  ProposalData,
+  "solutions" | "tiers" | "responsible" | "phone" | "email"
+>;
 
 const ACCENT_PRESETS = [
   { name: "Champagne", value: "#C9A876" },
@@ -19,6 +22,8 @@ const ACCENT_PRESETS = [
   { name: "Violeta", value: "#9B6DFF" },
   { name: "Prata", value: "#B8BCC4" },
 ];
+
+const DND_TYPE = "application/x-consultant-id";
 
 function toRenderSolution(s: CatalogSolution) {
   const features =
@@ -47,19 +52,32 @@ function planToTier(p: CatalogPlan, solutions: CatalogSolution[]): Tier {
 export default function ClientBuilder() {
   const { items: solutions, ready: solReady } = useCatalog();
   const { items: plans, ready: planReady } = usePlans();
+  const { items: consultants, ready: consReady } = useConsultants();
 
   const [form, setForm] = useState<ClientForm>(() => {
-    const { solutions: _s, tiers: _t, ...rest } = DEFAULT_PROPOSAL;
+    const {
+      solutions: _s,
+      tiers: _t,
+      responsible: _r,
+      phone: _p,
+      email: _e,
+      ...rest
+    } = DEFAULT_PROPOSAL;
     void _s;
     void _t;
+    void _r;
+    void _p;
+    void _e;
     return rest;
   });
 
-  // Seleções (ids do catálogo).
   const [selSolutions, setSelSolutions] = useState<Set<string>>(new Set());
   const [selPlans, setSelPlans] = useState<Set<string>>(new Set());
+  const [consultantId, setConsultantId] = useState<string | null>(null);
   const seededSol = useRef(false);
   const seededPlan = useRef(false);
+  const seededCons = useRef(false);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     if (solReady && !seededSol.current) {
@@ -67,13 +85,18 @@ export default function ClientBuilder() {
       setSelSolutions(new Set(solutions.map((s) => s.id)));
     }
   }, [solReady, solutions]);
-
   useEffect(() => {
     if (planReady && !seededPlan.current) {
       seededPlan.current = true;
       setSelPlans(new Set(plans.map((p) => p.id)));
     }
   }, [planReady, plans]);
+  useEffect(() => {
+    if (consReady && !seededCons.current) {
+      seededCons.current = true;
+      setConsultantId(consultants[0]?.id ?? null);
+    }
+  }, [consReady, consultants]);
 
   const set = <K extends keyof ClientForm>(key: K, value: ClientForm[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -86,7 +109,8 @@ export default function ClientBuilder() {
       return next;
     });
 
-  // Dados finais da proposta.
+  const consultant = consultants.find((c) => c.id === consultantId) ?? null;
+
   const data: ProposalData = useMemo(() => {
     const chosenSolutions = solutions
       .filter((s) => selSolutions.has(s.id))
@@ -94,8 +118,15 @@ export default function ClientBuilder() {
     const chosenTiers = plans
       .filter((p) => selPlans.has(p.id))
       .map((p) => planToTier(p, solutions));
-    return { ...form, solutions: chosenSolutions, tiers: chosenTiers };
-  }, [form, solutions, plans, selSolutions, selPlans]);
+    return {
+      ...form,
+      solutions: chosenSolutions,
+      tiers: chosenTiers,
+      responsible: consultant?.name ?? "",
+      phone: consultant?.phone ?? "",
+      email: consultant?.email ?? "",
+    };
+  }, [form, solutions, plans, selSolutions, selPlans, consultant]);
 
   // ----- pains -----
   const setPain = (i: number, patch: Partial<Pain>) =>
@@ -133,6 +164,15 @@ export default function ClientBuilder() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  // ----- consultor: drag & drop -----
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const id =
+      e.dataTransfer.getData(DND_TYPE) || e.dataTransfer.getData("text/plain");
+    if (id && consultants.some((c) => c.id === id)) setConsultantId(id);
+  };
+
   return (
     <div className="flex h-full flex-col">
       {/* Sub-header */}
@@ -151,109 +191,9 @@ export default function ClientBuilder() {
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(380px,440px)_1fr]">
-        {/* Form */}
+        {/* Form — ordem segue a leitura da proposta */}
         <div className="form-scroll overflow-y-auto border-r border-line px-6 py-6">
-          <SectionTitle>Soluções da proposta</SectionTitle>
-          {solReady && solutions.length === 0 ? (
-            <EmptyCatalog label="solução" />
-          ) : (
-            <div className="space-y-2">
-              <p className="mb-1 text-xs text-ink-mute">
-                Selecione quais soluções entram nesta proposta.
-              </p>
-              {solutions.map((s) => (
-                <SelectCard
-                  key={s.id}
-                  on={selSolutions.has(s.id)}
-                  onClick={() => toggle(setSelSolutions, s.id)}
-                  title={`${s.icon} ${s.name}`}
-                  subtitle={s.tagline}
-                />
-              ))}
-              <Link
-                href="/empresa"
-                className="mt-1 inline-block text-xs text-ink-mute hover:text-accent"
-              >
-                + gerenciar catálogo em Sua Empresa
-              </Link>
-            </div>
-          )}
-
-          <SectionTitle>Investimento</SectionTitle>
-          <label className="block">
-            <Label>Título da seção</Label>
-            <TextInput
-              value={form.investHeading}
-              onChange={(v) => set("investHeading", v)}
-            />
-          </label>
-          {planReady && plans.length === 0 ? (
-            <div className="mt-3">
-              <EmptyCatalog label="plano" />
-            </div>
-          ) : (
-            <div className="mt-3 space-y-2">
-              <p className="mb-1 text-xs text-ink-mute">
-                Selecione os planos que aparecem na proposta.
-              </p>
-              {plans.map((p) => (
-                <SelectCard
-                  key={p.id}
-                  on={selPlans.has(p.id)}
-                  onClick={() => toggle(setSelPlans, p.id)}
-                  title={`${p.name}${p.featured ? " ★" : ""}`}
-                  subtitle={`${p.price}${p.priceSuffix} · ${p.solutionIds.length} solução(ões)`}
-                />
-              ))}
-            </div>
-          )}
-
-          <SectionTitle>Identidade</SectionTitle>
-          <div className="grid grid-cols-[1fr_80px] gap-3">
-            <label>
-              <Label>Sua empresa</Label>
-              <TextInput
-                value={form.companyName}
-                onChange={(v) => set("companyName", v)}
-              />
-            </label>
-            <label>
-              <Label>Inicial</Label>
-              <TextInput
-                value={form.companyInitial}
-                onChange={(v) => set("companyInitial", v.slice(0, 2))}
-              />
-            </label>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <label>
-              <Label>Nº da proposta</Label>
-              <TextInput
-                value={form.proposalNumber}
-                onChange={(v) => set("proposalNumber", v)}
-              />
-            </label>
-            <div>
-              <Label>Cor de acento</Label>
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
-                {ACCENT_PRESETS.map((c) => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    title={c.name}
-                    onClick={() => set("accent", c.value)}
-                    className={`h-6 w-6 rounded-full border transition ${
-                      form.accent === c.value
-                        ? "border-white"
-                        : "border-transparent"
-                    }`}
-                    style={{ background: c.value }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
+          {/* 1. Cliente */}
           <SectionTitle>Cliente &amp; Datas</SectionTitle>
           <label className="block">
             <Label>Nome do cliente (destaque na capa)</Label>
@@ -301,6 +241,54 @@ export default function ClientBuilder() {
             </label>
           </div>
 
+          {/* 2. Sua empresa / estilo (marca da capa) */}
+          <SectionTitle>Sua empresa &amp; estilo</SectionTitle>
+          <div className="grid grid-cols-[1fr_80px] gap-3">
+            <label>
+              <Label>Sua empresa</Label>
+              <TextInput
+                value={form.companyName}
+                onChange={(v) => set("companyName", v)}
+              />
+            </label>
+            <label>
+              <Label>Inicial</Label>
+              <TextInput
+                value={form.companyInitial}
+                onChange={(v) => set("companyInitial", v.slice(0, 2))}
+              />
+            </label>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <label>
+              <Label>Nº da proposta</Label>
+              <TextInput
+                value={form.proposalNumber}
+                onChange={(v) => set("proposalNumber", v)}
+              />
+            </label>
+            <div>
+              <Label>Cor de acento</Label>
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {ACCENT_PRESETS.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    title={c.name}
+                    onClick={() => set("accent", c.value)}
+                    className={`h-6 w-6 rounded-full border transition ${
+                      form.accent === c.value
+                        ? "border-white"
+                        : "border-transparent"
+                    }`}
+                    style={{ background: c.value }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 3. O Desafio */}
           <SectionTitle>O Desafio</SectionTitle>
           <label className="block">
             <Label>Título</Label>
@@ -345,6 +333,64 @@ export default function ClientBuilder() {
             <MiniBtn onClick={addPain}>+ adicionar dor</MiniBtn>
           </div>
 
+          {/* 4. Soluções (modular) */}
+          <SectionTitle>Soluções da proposta</SectionTitle>
+          {solReady && solutions.length === 0 ? (
+            <EmptyCatalog label="solução" />
+          ) : (
+            <div className="space-y-2">
+              <p className="mb-1 text-xs text-ink-mute">
+                Selecione quais soluções entram nesta proposta.
+              </p>
+              {solutions.map((s) => (
+                <SelectCard
+                  key={s.id}
+                  on={selSolutions.has(s.id)}
+                  onClick={() => toggle(setSelSolutions, s.id)}
+                  title={`${s.icon} ${s.name}`}
+                  subtitle={s.tagline}
+                />
+              ))}
+              <Link
+                href="/empresa"
+                className="mt-1 inline-block text-xs text-ink-mute hover:text-accent"
+              >
+                + gerenciar catálogo em Sua Empresa
+              </Link>
+            </div>
+          )}
+
+          {/* 5. Investimento */}
+          <SectionTitle>Investimento</SectionTitle>
+          <label className="block">
+            <Label>Título da seção</Label>
+            <TextInput
+              value={form.investHeading}
+              onChange={(v) => set("investHeading", v)}
+            />
+          </label>
+          {planReady && plans.length === 0 ? (
+            <div className="mt-3">
+              <EmptyCatalog label="plano" />
+            </div>
+          ) : (
+            <div className="mt-3 space-y-2">
+              <p className="mb-1 text-xs text-ink-mute">
+                Selecione os planos que aparecem na proposta.
+              </p>
+              {plans.map((p) => (
+                <SelectCard
+                  key={p.id}
+                  on={selPlans.has(p.id)}
+                  onClick={() => toggle(setSelPlans, p.id)}
+                  title={`${p.name}${p.featured ? " ★" : ""}`}
+                  subtitle={`${p.price}${p.priceSuffix} · ${p.solutionIds.length} solução(ões)`}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* 6. Fechamento */}
           <SectionTitle>Fechamento</SectionTitle>
           <label className="block">
             <Label>Título</Label>
@@ -368,30 +414,82 @@ export default function ClientBuilder() {
               onChange={(v) => set("ctaLabel", v)}
             />
           </label>
-          <div className="mt-3 grid grid-cols-1 gap-3">
-            <label>
-              <Label>Responsável</Label>
-              <TextInput
-                value={form.responsible}
-                onChange={(v) => set("responsible", v)}
-              />
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <label>
-                <Label>Telefone</Label>
-                <TextInput
-                  value={form.phone}
-                  onChange={(v) => set("phone", v)}
-                />
-              </label>
-              <label>
-                <Label>E-mail</Label>
-                <TextInput
-                  value={form.email}
-                  onChange={(v) => set("email", v)}
-                />
-              </label>
+
+          {/* Consultor — puxar via drag & drop */}
+          <div className="mt-4">
+            <Label>Consultor responsável</Label>
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              className={`rounded-lg border border-dashed p-3 transition ${
+                dragOver ? "border-accent bg-accent/10" : "border-line bg-panel"
+              }`}
+            >
+              {consultant ? (
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">
+                      {consultant.name}
+                    </div>
+                    <div className="truncate text-xs text-ink-mute">
+                      {consultant.email || "sem e-mail"}
+                      {consultant.phone ? ` · ${consultant.phone}` : ""}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setConsultantId(null)}
+                    className="shrink-0 text-xs text-ink-mute hover:text-red-400"
+                  >
+                    limpar
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center text-xs text-ink-mute">
+                  Arraste um consultor para cá (ou clique abaixo)
+                </div>
+              )}
             </div>
+
+            {consReady && consultants.length === 0 ? (
+              <div className="mt-2">
+                <EmptyCatalog label="consultor" />
+              </div>
+            ) : (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {consultants.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData(DND_TYPE, c.id);
+                      e.dataTransfer.setData("text/plain", c.id);
+                      e.dataTransfer.effectAllowed = "copy";
+                    }}
+                    onClick={() => setConsultantId(c.id)}
+                    title="Arraste ou clique para puxar"
+                    className={`cursor-grab rounded-full border px-3 py-1.5 text-xs font-medium transition active:cursor-grabbing ${
+                      consultantId === c.id
+                        ? "border-accent bg-accent/15 text-accent"
+                        : "border-line text-ink-soft hover:border-ink-mute"
+                    }`}
+                  >
+                    ⠿ {c.name || "Sem nome"}
+                  </button>
+                ))}
+              </div>
+            )}
+            <Link
+              href="/empresa"
+              className="mt-1.5 inline-block text-xs text-ink-mute hover:text-accent"
+            >
+              + gerenciar consultores em Sua Empresa
+            </Link>
           </div>
 
           <div className="h-10" />

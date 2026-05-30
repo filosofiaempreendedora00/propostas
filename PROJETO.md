@@ -60,13 +60,15 @@ npm run dev   # http://localhost:3000
 
 ## Arquitetura (passo 2)
 **Menu lateral colapsável** (Sidebar, ícones) com dois ambientes:
-- **`/empresa` (Sua Empresa)** — workspace com sub-abas **Soluções** e **Planos**:
+- **`/empresa` (Sua Empresa)** — workspace com sub-abas **Soluções**, **Planos** e **Consultores**:
   - *Soluções*: catálogo cadastrado UMA vez (escopo, entregáveis, prazo, destaques, requisitos).
   - *Planos*: níveis de investimento (preço + **soluções vinculadas** + itens extras).
     Vínculo inteligente → as features do plano derivam das soluções incluídas.
+  - *Consultores*: nome, e-mail, telefone — puxados na proposta.
   - Master-detail com auto-save.
-- **`/cliente` (Seu Cliente)** — monta a proposta: **seleciona soluções e planos** do catálogo
-  (entram modularmente) + dados do cliente/desafio/fechamento + preview/export.
+- **`/cliente` (Seu Cliente)** — monta a proposta, na ordem da leitura: Cliente & Datas →
+  Sua empresa & estilo → O Desafio → **seleção de soluções** → **seleção de planos** →
+  Fechamento (com **consultor puxado via drag-and-drop**). Preview ao vivo + export.
 
 Arquivos:
 - `src/lib/catalog/types.ts` — `CatalogSolution`, `CatalogPlan`.

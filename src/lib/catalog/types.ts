@@ -27,3 +27,12 @@ export interface CatalogPlan {
   solutionIds: string[]; // soluções incluídas (link inteligente)
   extraFeatures: string[]; // itens adicionais além das soluções
 }
+
+// Consultores / responsáveis comerciais (ambiente "Sua Empresa").
+// Puxados na proposta (drag-and-drop) para o fechamento.
+export interface CatalogConsultant {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+}

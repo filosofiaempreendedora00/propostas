@@ -1,10 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { CatalogSolution, CatalogPlan } from "./types";
+import type {
+  CatalogSolution,
+  CatalogPlan,
+  CatalogConsultant,
+} from "./types";
 
 const KEY = "propostas.catalog.v1";
 const PLANS_KEY = "propostas.plans.v1";
+const CONSULTANTS_KEY = "propostas.consultants.v1";
 
 // Camada de persistência isolada — hoje localStorage, amanhã trocamos por API/Postgres
 // mexendo só aqui.
@@ -235,6 +240,86 @@ export function usePlans() {
     setItems((prev) => {
       const next = prev.filter((p) => p.id !== id);
       savePlans(next);
+      return next;
+    });
+  }, []);
+
+  return { items, ready, add, update, remove };
+}
+
+// ===================== CONSULTORES =====================
+
+function loadConsultants(): CatalogConsultant[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(CONSULTANTS_KEY);
+    return raw ? (JSON.parse(raw) as CatalogConsultant[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveConsultants(items: CatalogConsultant[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CONSULTANTS_KEY, JSON.stringify(items));
+  } catch {
+    /* ignora */
+  }
+}
+
+export function blankConsultant(): CatalogConsultant {
+  return { id: uid(), name: "Novo consultor", email: "", phone: "" };
+}
+
+const SEED_CONSULTANTS: CatalogConsultant[] = [
+  {
+    id: "cons-1",
+    name: "Nome do Consultor",
+    email: "consultor@suaempresa.com",
+    phone: "(00) 00000-0000",
+  },
+];
+
+export function useConsultants() {
+  const [items, setItems] = useState<CatalogConsultant[]>([]);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let initial = loadConsultants();
+    if (initial.length === 0) {
+      initial = SEED_CONSULTANTS;
+      saveConsultants(initial);
+    }
+    setItems(initial);
+    setReady(true);
+  }, []);
+
+  const add = useCallback((): string => {
+    const c = blankConsultant();
+    setItems((prev) => {
+      const next = [...prev, c];
+      saveConsultants(next);
+      return next;
+    });
+    return c.id;
+  }, []);
+
+  const update = useCallback(
+    (id: string, patch: Partial<CatalogConsultant>) => {
+      setItems((prev) => {
+        const next = prev.map((c) => (c.id === id ? { ...c, ...patch } : c));
+        saveConsultants(next);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const remove = useCallback((id: string) => {
+    setItems((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      saveConsultants(next);
       return next;
     });
   }, []);
