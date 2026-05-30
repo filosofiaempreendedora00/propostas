@@ -41,6 +41,23 @@ function IconCliente({ className = "" }: { className?: string }) {
   );
 }
 
+function IconTemplates({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M12 3l9 5-9 5-9-5 9-5Z" />
+      <path d="M3 13l9 5 9-5" />
+    </svg>
+  );
+}
+
 function Chevron({ collapsed }: { collapsed: boolean }) {
   return (
     <svg
@@ -59,6 +76,7 @@ function Chevron({ collapsed }: { collapsed: boolean }) {
 
 const ITEMS = [
   { href: "/empresa", label: "Sua Empresa", Icon: IconEmpresa },
+  { href: "/templates", label: "Templates", Icon: IconTemplates },
   { href: "/cliente", label: "Seu Cliente", Icon: IconCliente },
 ];
 

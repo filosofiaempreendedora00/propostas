@@ -66,6 +66,10 @@ npm run dev   # http://localhost:3000
     Vínculo inteligente → as features do plano derivam das soluções incluídas.
   - *Consultores*: nome, e-mail, telefone — puxados na proposta.
   - Master-detail com auto-save.
+- **`/templates` (Templates)** — biblioteca de **variações por bloco** (2,3,4,5,7,8). Abas por
+  bloco; cada um começa com 3 variações e a pessoa cria quantas quiser. Editor mostra os campos
+  específicos do bloco (ex.: pilares na Estratégia, passos em Próximos passos). Store em
+  `src/lib/templates/` (localStorage). *Próximo: aplicar uma variação no builder.*
 - **`/cliente` (Seu Cliente)** — monta a proposta. O painel esquerdo tem só **controles**
   (seleção de soluções/planos, consultor via drag-and-drop, estrutura das dores, aparência).
   Os **textos editam-se direto no preview** (edição inline: hover tracejado → clique → edita
