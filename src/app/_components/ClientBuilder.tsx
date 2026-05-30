@@ -196,14 +196,14 @@ export default function ClientBuilder() {
           {/* 1. Cliente */}
           <SectionTitle>Cliente &amp; Datas</SectionTitle>
           <label className="block">
-            <Label>Nome do cliente (destaque na capa)</Label>
+            <Label>Nome da empresa (destaque na capa)</Label>
             <TextInput
               value={form.clientName}
               onChange={(v) => set("clientName", v)}
             />
           </label>
           <label className="mt-3 block">
-            <Label>Razão social</Label>
+            <Label>Nome do cliente</Label>
             <TextInput
               value={form.clientLegalName}
               onChange={(v) => set("clientLegalName", v)}
@@ -217,7 +217,7 @@ export default function ClientBuilder() {
               rows={2}
             />
           </label>
-          <div className="mt-3 grid grid-cols-3 gap-3">
+          <div className="mt-3 grid grid-cols-2 gap-3">
             <label>
               <Label>Data</Label>
               <TextInput
@@ -230,13 +230,6 @@ export default function ClientBuilder() {
               <TextInput
                 value={form.validUntilLabel}
                 onChange={(v) => set("validUntilLabel", v)}
-              />
-            </label>
-            <label>
-              <Label>Curta (badge)</Label>
-              <TextInput
-                value={form.validUntilShort}
-                onChange={(v) => set("validUntilShort", v)}
               />
             </label>
           </div>

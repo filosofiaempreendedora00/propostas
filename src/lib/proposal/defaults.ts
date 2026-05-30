@@ -12,7 +12,6 @@ export const DEFAULT_PROPOSAL: ProposalData = {
 
   dateLabel: "30 de maio de 2026",
   validUntilLabel: "29 de junho de 2026",
-  validUntilShort: "29/06/2026",
 
   headlineLead:
     "Um plano claro, sob medida para o momento atual da sua operação — desenhado a partir do que conversamos.",

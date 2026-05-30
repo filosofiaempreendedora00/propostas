@@ -34,7 +34,6 @@ export interface ProposalData {
   // Datas (já formatadas para exibição)
   dateLabel: string; // ex: "30 de maio de 2026"
   validUntilLabel: string; // ex: "29 de junho de 2026"
-  validUntilShort: string; // ex: "29/06/2026"
 
   // Capa
   headlineLead: string;

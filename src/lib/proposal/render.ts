@@ -209,7 +209,7 @@ export function renderProposalHTML(d: ProposalData): string {
 
 <section class="closing pad">
   <div class="wrap">
-    <span class="validity">Proposta válida até ${esc(d.validUntilShort)}</span>
+    <span class="validity">Proposta válida até ${esc(d.validUntilLabel)}</span>
     <h2 class="display">${esc(d.closingHeading)}</h2>
     <p class="lead">${esc(d.closingLead)}</p>
     <a href="#" class="cta">${esc(d.ctaLabel)} &nbsp;→</a>
