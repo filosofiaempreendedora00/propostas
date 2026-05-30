@@ -336,6 +336,30 @@ export default function ClientBuilder() {
             </div>
           </div>
 
+          <SectionTitle>Dores (O Desafio)</SectionTitle>
+          <p className="mb-2 text-xs text-ink-mute">
+            Adicione ou remova cards. O texto edita-se no preview.
+          </p>
+          <div className="space-y-2">
+            {form.pains.map((p, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between gap-2 rounded-lg border border-line bg-panel px-3 py-2"
+              >
+                <span className="min-w-0 truncate text-sm">
+                  <span className="text-ink-mute">
+                    {String(i + 1).padStart(2, "0")} ·{" "}
+                  </span>
+                  {p.title || "Sem título"}
+                </span>
+                <MiniBtn danger onClick={() => removePain(i)}>
+                  remover
+                </MiniBtn>
+              </div>
+            ))}
+            <MiniBtn onClick={addPain}>+ adicionar dor</MiniBtn>
+          </div>
+
           <SectionTitle>Soluções da proposta</SectionTitle>
           {solReady && solutions.length === 0 ? (
             <EmptyCatalog label="solução" />
@@ -442,30 +466,6 @@ export default function ClientBuilder() {
               ))}
             </div>
           )}
-
-          <SectionTitle>Dores (O Desafio)</SectionTitle>
-          <p className="mb-2 text-xs text-ink-mute">
-            Adicione ou remova cards. O texto edita-se no preview.
-          </p>
-          <div className="space-y-2">
-            {form.pains.map((p, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between gap-2 rounded-lg border border-line bg-panel px-3 py-2"
-              >
-                <span className="min-w-0 truncate text-sm">
-                  <span className="text-ink-mute">
-                    {String(i + 1).padStart(2, "0")} ·{" "}
-                  </span>
-                  {p.title || "Sem título"}
-                </span>
-                <MiniBtn danger onClick={() => removePain(i)}>
-                  remover
-                </MiniBtn>
-              </div>
-            ))}
-            <MiniBtn onClick={addPain}>+ adicionar dor</MiniBtn>
-          </div>
 
           <SectionTitle>Aparência</SectionTitle>
           <div className="grid grid-cols-[1fr_80px] items-start gap-3">
