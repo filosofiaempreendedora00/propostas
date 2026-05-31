@@ -7,7 +7,21 @@ import { renderProposalHTML, slugify } from "@/lib/proposal/render";
 import type { ProposalData, Tier } from "@/lib/proposal/types";
 import { useCatalog, usePlans, useConsultants } from "@/lib/catalog/store";
 import type { CatalogSolution, CatalogPlan } from "@/lib/catalog/types";
+import { useTemplates } from "@/lib/templates/store";
+import { BLOCK_FIELDS, type BlockKey } from "@/lib/templates/types";
+import type { BlockTemplate } from "@/lib/templates/types";
 import { Label, TextInput, SectionTitle, MiniBtn } from "./fields";
+
+function extractPayload(
+  block: BlockKey,
+  src: Partial<ProposalData>,
+): Partial<ProposalData> {
+  const out: Record<string, unknown> = {};
+  for (const f of BLOCK_FIELDS[block]) {
+    out[f] = (src as Record<string, unknown>)[f];
+  }
+  return out as Partial<ProposalData>;
+}
 
 type ClientForm = Omit<
   ProposalData,
@@ -63,6 +77,11 @@ export default function ClientBuilder() {
   const { items: solutions, ready: solReady } = useCatalog();
   const { items: plans, ready: planReady } = usePlans();
   const { items: consultants, ready: consReady } = useConsultants();
+  const {
+    items: templates,
+    add: addTemplate,
+    update: updateTemplate,
+  } = useTemplates();
 
   const [form, setForm] = useState<ClientForm>(() => {
     const {
@@ -176,6 +195,19 @@ export default function ClientBuilder() {
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
   }, []);
+
+  // ----- variações (templates) -----
+  const applyVariation = (payload: Partial<ProposalData>) =>
+    setForm((f) => ({ ...f, ...payload }) as ClientForm);
+  const saveVariation = (block: BlockKey) => {
+    const name = window.prompt("Nome da nova variação:", "Minha variação");
+    if (!name || !name.trim()) return;
+    const id = addTemplate(block);
+    updateTemplate(id, {
+      name: name.trim(),
+      payload: extractPayload(block, form),
+    });
+  };
 
   // ----- estrutura (listas) -----
   const addPillar = () =>
@@ -353,6 +385,11 @@ export default function ClientBuilder() {
           >
             O que entendemos
           </SectionTitle>
+          <VariationBar
+            list={templates.filter((t) => t.block === "understanding")}
+            onLoad={applyVariation}
+            onSave={() => saveVariation("understanding")}
+          />
           <p
             className={`text-xs text-ink-mute ${form.showUnderstanding ? "" : "opacity-40"}`}
           >
@@ -371,6 +408,11 @@ export default function ClientBuilder() {
           >
             O custo de continuar igual
           </SectionTitle>
+          <VariationBar
+            list={templates.filter((t) => t.block === "cost")}
+            onLoad={applyVariation}
+            onSave={() => saveVariation("cost")}
+          />
           <p
             className={`text-xs text-ink-mute ${form.showCost ? "" : "opacity-40"}`}
           >
@@ -389,6 +431,11 @@ export default function ClientBuilder() {
           >
             Estratégia — pilares
           </SectionTitle>
+          <VariationBar
+            list={templates.filter((t) => t.block === "strategy")}
+            onLoad={applyVariation}
+            onSave={() => saveVariation("strategy")}
+          />
           <div className={form.showStrategy ? "" : "opacity-40"}>
             <ListControl
               items={form.pillars.map((p) => p.title)}
@@ -409,6 +456,11 @@ export default function ClientBuilder() {
           >
             Soluções da proposta
           </SectionTitle>
+          <VariationBar
+            list={templates.filter((t) => t.block === "solutions")}
+            onLoad={applyVariation}
+            onSave={() => saveVariation("solutions")}
+          />
           <div className={form.showSolutions ? "" : "opacity-40"}>
             {solReady && solutions.length === 0 ? (
               <EmptyCatalog label="solução" />
@@ -475,6 +527,11 @@ export default function ClientBuilder() {
           >
             Recomendação — motivos
           </SectionTitle>
+          <VariationBar
+            list={templates.filter((t) => t.block === "consultantRec")}
+            onLoad={applyVariation}
+            onSave={() => saveVariation("consultantRec")}
+          />
           <div className={form.showConsultantRec ? "" : "opacity-40"}>
             <ListControl
               items={form.consultantRecReasons}
@@ -496,6 +553,11 @@ export default function ClientBuilder() {
           >
             Próximos passos
           </SectionTitle>
+          <VariationBar
+            list={templates.filter((t) => t.block === "nextSteps")}
+            onLoad={applyVariation}
+            onSave={() => saveVariation("nextSteps")}
+          />
           <div className={form.showNextSteps ? "" : "opacity-40"}>
             <ListControl
               items={form.steps.map((s) => s.title)}
@@ -616,6 +678,44 @@ export default function ClientBuilder() {
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+function VariationBar({
+  list,
+  onLoad,
+  onSave,
+}: {
+  list: BlockTemplate[];
+  onLoad: (payload: Partial<ProposalData>) => void;
+  onSave: () => void;
+}) {
+  return (
+    <div className="mb-3 flex items-center gap-2">
+      <select
+        value=""
+        onChange={(e) => {
+          const t = list.find((x) => x.id === e.target.value);
+          if (t) onLoad(t.payload);
+        }}
+        className="min-w-0 flex-1 rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 text-xs text-ink-soft outline-none focus:border-accent/60"
+      >
+        <option value="">↧ Carregar variação…</option>
+        {list.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={onSave}
+        title="Salvar o conteúdo atual deste bloco como nova variação"
+        className="shrink-0 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-ink-soft transition hover:border-accent/60 hover:text-accent"
+      >
+        + salvar atual
+      </button>
     </div>
   );
 }

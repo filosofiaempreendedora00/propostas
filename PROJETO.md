@@ -69,7 +69,8 @@ npm run dev   # http://localhost:3000
 - **`/templates` (Templates)** — biblioteca de **variações por bloco** (2,3,4,5,7,8). Abas por
   bloco; cada um começa com 3 variações e a pessoa cria quantas quiser. Editor mostra os campos
   específicos do bloco (ex.: pilares na Estratégia, passos em Próximos passos). Store em
-  `src/lib/templates/` (localStorage). *Próximo: aplicar uma variação no builder.*
+  `src/lib/templates/` (localStorage). **Integrado ao builder**: cada bloco no Seu Cliente tem
+  "Carregar variação" (aplica) e "+ salvar atual" (cria nova variação reutilizável).
 - **`/cliente` (Seu Cliente)** — monta a proposta. O painel esquerdo tem só **controles**
   (seleção de soluções/planos, consultor via drag-and-drop, estrutura das dores, aparência).
   Os **textos editam-se direto no preview** (edição inline: hover tracejado → clique → edita
