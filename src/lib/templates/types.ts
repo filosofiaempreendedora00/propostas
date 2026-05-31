@@ -19,10 +19,18 @@ export interface BlockTemplate {
 export const BLOCKS: { key: BlockKey; label: string; n: number }[] = [
   { key: "understanding", label: "O que entendemos", n: 2 },
   { key: "cost", label: "O custo de continuar igual", n: 3 },
-  { key: "strategy", label: "Estratégia", n: 4 },
-  { key: "solutions", label: "Soluções (intro)", n: 5 },
-  { key: "consultantRec", label: "Recomendação", n: 7 },
+  { key: "strategy", label: "Estratégia — pilares", n: 4 },
+  { key: "solutions", label: "Soluções da proposta", n: 5 },
+  { key: "consultantRec", label: "Recomendação — motivos", n: 7 },
   { key: "nextSteps", label: "Próximos passos", n: 8 },
+];
+
+// Blocos da proposta que NÃO têm variações de texto reaproveitáveis
+// (aparecem no Templates apenas para referência, em cinza). A Capa vem da
+// Identificação e o Investimento vem dos planos do catálogo.
+export const NON_EDITABLE_BLOCKS: { n: number; label: string; hint: string }[] = [
+  { n: 1, label: "Capa", hint: "vem da Identificação" },
+  { n: 6, label: "Investimento", hint: "vem dos planos" },
 ];
 
 // Campos de ProposalData que pertencem a cada bloco.

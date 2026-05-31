@@ -2,10 +2,23 @@
 
 import { useMemo, useState } from "react";
 import { useTemplates } from "@/lib/templates/store";
-import { BLOCKS, type BlockKey } from "@/lib/templates/types";
+import { BLOCKS, NON_EDITABLE_BLOCKS, type BlockKey } from "@/lib/templates/types";
 import type { BlockTemplate } from "@/lib/templates/types";
 import { MiniBtn } from "./fields";
 import TemplateEditor from "./TemplateEditor";
+
+// Lista completa dos 8 blocos da proposta, na ordem dos números — junta os
+// editáveis (com variações) e os não-editáveis (só referência, em cinza).
+type DisplayBlock = {
+  n: number;
+  label: string;
+  key?: BlockKey;
+  hint?: string;
+};
+const DISPLAY_BLOCKS: DisplayBlock[] = [
+  ...BLOCKS.map((b) => ({ n: b.n, label: b.label, key: b.key })),
+  ...NON_EDITABLE_BLOCKS.map((b) => ({ n: b.n, label: b.label, hint: b.hint })),
+].sort((a, b) => a.n - b.n);
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -121,34 +134,65 @@ export default function TemplatesWorkspace() {
   };
 
   return (
-    <div className="grid h-full grid-cols-[260px_1fr]">
+    <div className="grid h-full grid-cols-[288px_1fr]">
       {/* Menu de blocos */}
-      <aside className="form-scroll overflow-y-auto border-r border-line p-2">
-        <div className="px-2 pb-2 pt-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-mute">
-          Blocos
+      <aside className="form-scroll overflow-y-auto border-r border-line p-3">
+        <div className="px-2 pb-3 pt-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-mute">
+          Blocos da proposta
         </div>
-        {BLOCKS.map((b) => {
+        {DISPLAY_BLOCKS.map((b) => {
+          // Bloco não-editável (Capa, Investimento) — só referência, em cinza.
+          if (!b.key) {
+            return (
+              <div
+                key={b.n}
+                title="Este bloco não tem variações de texto"
+                className="mb-1.5 flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-3 opacity-45"
+              >
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-line text-xs font-semibold text-ink-mute">
+                  {b.n}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-ink-soft">
+                    {b.label}
+                  </span>
+                  <span className="block truncate text-[10px] text-ink-mute">
+                    {b.hint}
+                  </span>
+                </span>
+              </div>
+            );
+          }
+
           const active = b.key === block;
           const count = items.filter((t) => t.block === b.key).length;
           return (
             <button
               key={b.key}
-              onClick={() => setBlock(b.key)}
-              className={`mb-1 flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition ${
+              onClick={() => setBlock(b.key!)}
+              className={`mb-1.5 flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition ${
                 active ? "bg-panel text-ink" : "text-ink-soft hover:bg-panel/60"
               }`}
             >
               <span
-                className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border text-[10px] font-semibold ${
-                  active ? "border-accent text-accent" : "border-line text-ink-mute"
+                className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-semibold ${
+                  active
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-line text-ink-mute"
                 }`}
               >
                 {b.n}
               </span>
-              <span className="min-w-0 flex-1 truncate font-medium">
+              <span className="min-w-0 flex-1 truncate text-sm font-medium">
                 {b.label}
               </span>
-              <span className="shrink-0 text-[11px] text-ink-mute">{count}</span>
+              <span
+                className={`grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1.5 text-[10px] font-semibold ${
+                  active ? "bg-accent/15 text-accent" : "bg-panel-2 text-ink-mute"
+                }`}
+              >
+                {count}
+              </span>
             </button>
           );
         })}
