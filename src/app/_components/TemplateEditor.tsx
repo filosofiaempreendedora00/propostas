@@ -54,11 +54,9 @@ function PairList({
 export default function TemplateEditor({
   template,
   update,
-  onRemove,
 }: {
   template: BlockTemplate;
   update: (id: string, patch: Partial<BlockTemplate>) => void;
-  onRemove: () => void;
 }) {
   const p = template.payload;
   const setField = (patch: Partial<ProposalData>) =>
@@ -66,20 +64,7 @@ export default function TemplateEditor({
   const txt = (v: string | undefined) => v ?? "";
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-8">
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <input
-          value={template.name}
-          onChange={(e) => update(template.id, { name: e.target.value })}
-          placeholder="Nome da variação"
-          className="w-full max-w-sm rounded-lg border border-line bg-panel-2 px-3 py-2 text-base font-semibold text-ink outline-none focus:border-accent/60"
-        />
-        <MiniBtn danger onClick={onRemove}>
-          excluir
-        </MiniBtn>
-      </div>
-
-      <div className="space-y-5">
+    <div className="space-y-5">
         {template.block === "understanding" && (
           <>
             <Field label="Título do bloco">
@@ -246,7 +231,6 @@ export default function TemplateEditor({
         <p className="pt-1 text-xs text-ink-mute">
           ✓ Alterações salvas automaticamente neste navegador.
         </p>
-      </div>
     </div>
   );
 }
