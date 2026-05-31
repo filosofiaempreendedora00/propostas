@@ -34,9 +34,11 @@ export default function CatalogManager() {
     <div className="grid h-full grid-cols-[300px_1fr]">
       {/* Lista */}
       <aside className="form-scroll overflow-y-auto border-r border-line">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/95 px-4 py-3 backdrop-blur">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/95 px-4 py-4 backdrop-blur">
           <div>
-            <div className="text-sm font-semibold">Soluções</div>
+            <div className="text-lg font-semibold tracking-tight text-ink">
+              Soluções
+            </div>
             <div className="text-[11px] text-ink-mute">
               {items.length} cadastrada(s)
             </div>
@@ -84,22 +86,22 @@ export default function CatalogManager() {
       {/* Editor */}
       <section className="form-scroll overflow-y-auto">
         {selected ? (
-          <div className="mx-auto max-w-3xl px-8 py-8">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
+          <div className="mx-auto max-w-4xl px-10 py-9">
+            <div className="mb-7 flex items-start justify-between gap-4 border-b border-line pb-5">
+              <div className="flex items-center gap-4">
                 <input
                   value={selected.icon}
                   onChange={(e) =>
                     update(selected.id, { icon: e.target.value.slice(0, 2) })
                   }
-                  className="h-11 w-11 rounded-lg border border-line bg-panel-2 text-center text-xl outline-none focus:border-accent/60"
+                  className="h-14 w-14 shrink-0 rounded-xl border border-line bg-panel-2 text-center text-2xl outline-none transition focus:border-accent/70"
                   aria-label="Ícone"
                 />
                 <div>
-                  <div className="text-[11px] uppercase tracking-[0.14em] text-ink-mute">
+                  <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-accent">
                     Editando solução
                   </div>
-                  <div className="text-base font-semibold">
+                  <div className="mt-0.5 text-2xl font-semibold tracking-tight text-ink">
                     {selected.name || "Sem nome"}
                   </div>
                 </div>
@@ -223,17 +225,11 @@ export default function CatalogManager() {
               </p>
             </div>
             ) : (
-              <div>
-                <p className="mb-4 text-xs text-ink-mute">
-                  Cada plano pode ser recorrente (mensal) ou pontual (projeto
-                  único). Clique num card para expandir e editar.
-                </p>
-                <PlansEditor
-                  key={selected.id}
-                  plans={selected.plans}
-                  onChange={(p) => update(selected.id, { plans: p })}
-                />
-              </div>
+              <PlansEditor
+                key={selected.id}
+                plans={selected.plans}
+                onChange={(p) => update(selected.id, { plans: p })}
+              />
             )}
           </div>
         ) : (
@@ -269,12 +265,13 @@ function EditorTabs({
   onChange: (t: EditorTab) => void;
   planCount: number;
 }) {
-  const tabs: { key: EditorTab; label: string; badge?: number }[] = [
-    { key: "detalhes", label: "Detalhes" },
-    { key: "planos", label: "Planos", badge: planCount },
-  ];
+  const tabs: { key: EditorTab; label: string; icon: string; badge?: number }[] =
+    [
+      { key: "detalhes", label: "Detalhes", icon: "📝" },
+      { key: "planos", label: "Planos", icon: "💳", badge: planCount },
+    ];
   return (
-    <div className="mb-6 flex gap-6 border-b border-line">
+    <div className="mb-7 inline-flex gap-1 rounded-xl border border-line bg-panel p-1">
       {tabs.map((t) => {
         const active = t.key === tab;
         return (
@@ -282,17 +279,18 @@ function EditorTabs({
             key={t.key}
             type="button"
             onClick={() => onChange(t.key)}
-            className={`-mb-px flex items-center gap-2 border-b-2 pb-2.5 text-sm font-medium transition ${
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
               active
-                ? "border-accent text-ink"
-                : "border-transparent text-ink-mute hover:text-ink-soft"
+                ? "bg-accent/15 text-accent shadow-sm"
+                : "text-ink-mute hover:text-ink-soft"
             }`}
           >
+            <span className="text-base leading-none">{t.icon}</span>
             {t.label}
             {t.badge != null && (
               <span
-                className={`grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-semibold ${
-                  active ? "bg-accent text-bg" : "bg-panel text-ink-mute"
+                className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[10px] font-semibold ${
+                  active ? "bg-accent text-bg" : "bg-panel-2 text-ink-mute"
                 }`}
               >
                 {t.badge}
@@ -343,143 +341,121 @@ function PlansEditor({
   plans: SolutionPlan[];
   onChange: (p: SolutionPlan[]) => void;
 }) {
-  // Começa tudo recolhido — cada card abre/fecha de forma independente.
-  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set());
-  const toggleOpen = (id: string) =>
-    setOpenIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
   const setPlan = (i: number, patch: Partial<SolutionPlan>) =>
     onChange(plans.map((p, j) => (j === i ? { ...p, ...patch } : p)));
   const setFeatured = (i: number) =>
     onChange(plans.map((p, j) => ({ ...p, featured: j === i })));
-
-  const addPlan = () => {
-    const plan = blankSolutionPlan(`Plano ${plans.length + 1}`);
-    onChange([...plans, plan]);
-    setOpenIds((prev) => new Set(prev).add(plan.id)); // novo já abre
-  };
+  const addPlan = () =>
+    onChange([...plans, blankSolutionPlan(`Plano ${plans.length + 1}`)]);
+  const removePlan = (i: number) =>
+    onChange(plans.filter((_, j) => j !== i));
 
   return (
-    <div className="space-y-3">
-      {plans.map((p, i) => {
-        const open = openIds.has(p.id);
-        return (
+    <div>
+      {/* Cabeçalho da seção — mesmo padrão de Consultores */}
+      <div className="mb-6 flex items-start justify-between gap-4 border-b border-line pb-5">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight text-ink">
+            Planos desta solução
+          </h2>
+          <p className="mt-1.5 text-sm text-ink-mute">
+            Cada plano pode ser recorrente (mensal) ou pontual (projeto único).
+          </p>
+        </div>
+        <button
+          onClick={addPlan}
+          className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-bg transition hover:opacity-90"
+        >
+          + Novo plano
+        </button>
+      </div>
+
+      {/* Grade de cards (2 por linha) */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {plans.map((p, i) => (
           <div
             key={p.id}
-            className={`overflow-hidden rounded-xl border bg-panel transition ${
-              open ? "border-accent/40" : "border-line hover:border-line/80"
+            className={`rounded-xl border bg-panel p-4 transition ${
+              p.featured ? "border-accent/50" : "border-line"
             }`}
           >
-            {/* Cabeçalho recolhível: nome + cobrança + preço */}
-            <button
-              type="button"
-              onClick={() => toggleOpen(p.id)}
-              className="flex w-full items-center gap-3 px-3.5 py-3 text-left"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className={`h-4 w-4 shrink-0 text-ink-mute transition-transform ${
-                  open ? "rotate-90" : ""
+            <div className="mb-3 flex items-center justify-between">
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                  p.featured
+                    ? "bg-accent/15 text-accent"
+                    : "bg-panel-2 text-ink-mute"
                 }`}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
               >
-                <path d="m9 18 6-6-6-6" />
-              </svg>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2">
-                  <span className="truncate text-sm font-medium text-ink">
-                    {p.name || "Sem nome"}
-                  </span>
-                  {p.featured && (
-                    <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
-                      ★ Recomendado
-                    </span>
-                  )}
-                </span>
-                <span className="mt-0.5 block text-[11px] text-ink-mute">
-                  {p.billing === "recorrente" ? "Recorrente (mensal)" : "Pontual (projeto único)"}
-                </span>
+                {p.featured ? "★ Recomendado" : `Plano ${i + 1}`}
               </span>
-              <span className="shrink-0 text-sm font-semibold text-ink">
-                {p.price || "—"}
-              </span>
-            </button>
+              <MiniBtn danger onClick={() => removePlan(i)}>
+                excluir
+              </MiniBtn>
+            </div>
 
-            {/* Corpo expandido: edição completa */}
-            {open && (
-              <div className="space-y-3 border-t border-line px-3.5 py-3.5">
-                <div className="grid grid-cols-[1fr_120px] gap-2">
-                  <label className="block">
-                    <Label>Nome do plano</Label>
-                    <TextInput
-                      value={p.name}
-                      onChange={(v) => setPlan(i, { name: v })}
-                      placeholder="Nome do plano"
-                    />
-                  </label>
-                  <label className="block">
-                    <Label>Preço</Label>
-                    <TextInput
-                      value={p.price}
-                      onChange={(v) => setPlan(i, { price: v })}
-                      placeholder="R$ 0"
-                    />
-                  </label>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <BillingToggle
-                    value={p.billing}
-                    onChange={(b) => setPlan(i, { billing: b })}
-                  />
-                  <label className="flex items-center gap-1.5 text-xs text-ink-mute">
-                    <input
-                      type="checkbox"
-                      checked={p.featured}
-                      onChange={() => setFeatured(i)}
-                      className="accent-[var(--color-accent)]"
-                    />
-                    Recomendado
-                  </label>
-                </div>
-                <label className="block">
-                  <Label>Descrição curta</Label>
-                  <TextInput
-                    value={p.description}
-                    onChange={(v) => setPlan(i, { description: v })}
-                    placeholder="Descrição curta do plano"
-                  />
-                </label>
-                <label className="block">
-                  <Label>Itens (um por linha)</Label>
-                  <LineList
-                    value={p.features}
-                    onChange={(v) => setPlan(i, { features: v })}
-                    rows={3}
-                  />
-                </label>
-                <div className="flex justify-end pt-1">
-                  <MiniBtn
-                    danger
-                    onClick={() => onChange(plans.filter((_, j) => j !== i))}
-                  >
-                    remover plano
-                  </MiniBtn>
-                </div>
-              </div>
-            )}
+            <div className="grid grid-cols-[1fr_110px] gap-2">
+              <label className="block">
+                <Label>Nome do plano</Label>
+                <TextInput
+                  value={p.name}
+                  onChange={(v) => setPlan(i, { name: v })}
+                  placeholder="Nome do plano"
+                />
+              </label>
+              <label className="block">
+                <Label>Preço</Label>
+                <TextInput
+                  value={p.price}
+                  onChange={(v) => setPlan(i, { price: v })}
+                  placeholder="R$ 0"
+                />
+              </label>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <BillingToggle
+                value={p.billing}
+                onChange={(b) => setPlan(i, { billing: b })}
+              />
+              <label className="flex items-center gap-1.5 text-xs text-ink-mute">
+                <input
+                  type="checkbox"
+                  checked={p.featured}
+                  onChange={() => setFeatured(i)}
+                  className="accent-[var(--color-accent)]"
+                />
+                Recomendado
+              </label>
+            </div>
+
+            <label className="mt-3 block">
+              <Label>Descrição curta</Label>
+              <TextInput
+                value={p.description}
+                onChange={(v) => setPlan(i, { description: v })}
+                placeholder="Descrição curta do plano"
+              />
+            </label>
+
+            <div className="mt-3">
+              <Label>Itens do plano</Label>
+              <ItemList
+                value={p.features}
+                onChange={(v) => setPlan(i, { features: v })}
+                placeholder="Descreva um item incluso"
+                addLabel="+ adicionar item"
+              />
+            </div>
           </div>
-        );
-      })}
-      <MiniBtn onClick={addPlan}>+ adicionar plano</MiniBtn>
+        ))}
+      </div>
+
+      {plans.length === 0 && (
+        <div className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-ink-mute">
+          Nenhum plano. Clique em <strong>+ Novo plano</strong>.
+        </div>
+      )}
     </div>
   );
 }
