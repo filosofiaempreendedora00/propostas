@@ -2,14 +2,20 @@
 
 @theme inline {
   --font-sans: var(--font-inter);
-  --color-bg: #0b0c0e;
-  --color-panel: #141519;
-  --color-panel-2: #1a1c21;
-  --color-line: #25272d;
-  --color-ink: #e7e8ea;
-  --color-ink-soft: #a3a7ad;
-  --color-ink-mute: #6c7078;
-  --color-accent: #c9a876;
+  /* ===== Paleta Kronos ===== */
+  --color-bg: #150c06; /* Ônix Quente — fundo principal */
+  --color-panel: #2e2017; /* Sépia Profunda — cards/superfícies secundárias */
+  --color-panel-2: #3a2a1e; /* Sépia mais clara — elementos aninhados/badges */
+  /* Campos de formulário: Creme (aplicação inversa) + texto escuro */
+  --color-field: #f5efe6; /* Creme */
+  --color-field-ink: #2a1c11; /* texto escuro sobre o creme */
+  --color-field-mute: #9c886a; /* placeholder */
+  --color-field-line: #dacfbe; /* borda dos campos claros */
+  --color-line: #3d2c1f; /* divisores (areia bem escurecida) */
+  --color-ink: #ffffff; /* Branco Puro — texto sobre escuro */
+  --color-ink-soft: #cdb99a; /* secundário (areia clara) */
+  --color-ink-mute: #a89070; /* Areia Média — terciário/labels/detalhes */
+  --color-accent: #a89070; /* Areia Média — destaque/botões/ativos */
 }
 
 html,
@@ -18,7 +24,18 @@ body {
 }
 
 body {
-  background: var(--color-bg);
+  /* Fundo Ônix com a textura de Areia/Sépia por baixo de um véu escuro —
+     dá grão orgânico e sofisticação sem clarear o fundo. */
+  background-color: var(--color-bg);
+  background-image: linear-gradient(
+      rgba(21, 12, 6, 0.58),
+      rgba(21, 12, 6, 0.58)
+    ),
+    url("/kronos-texture-areia.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -27,12 +44,12 @@ body {
 /* Scrollbar discreta no painel do formulário */
 .form-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #2a2c33 transparent;
+  scrollbar-color: #4a3422 transparent;
 }
 .form-scroll::-webkit-scrollbar {
   width: 8px;
 }
 .form-scroll::-webkit-scrollbar-thumb {
-  background: #2a2c33;
+  background: #4a3422;
   border-radius: 8px;
 }

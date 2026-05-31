@@ -665,7 +665,7 @@ export default function ClientBuilder() {
         </div>
 
         {/* Preview (editável) */}
-        <div className="min-h-0 bg-[#0A0B0D]">
+        <div className="min-h-0 bg-bg">
           <iframe
             title="Preview da proposta"
             srcDoc={previewHtml}

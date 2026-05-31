@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -111,19 +112,26 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`flex h-full shrink-0 flex-col border-r border-line bg-bg transition-[width] duration-200 ${
+      className={`flex h-full shrink-0 flex-col border-r border-line transition-[width] duration-200 ${
         isCollapsed ? "w-[64px]" : "w-56"
       }`}
     >
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-4 py-3.5">
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent font-semibold text-bg">
-          P
-        </div>
-        {!isCollapsed && (
-          <span className="truncate text-sm font-semibold tracking-tight">
-            Propostas
-          </span>
+      <div className="flex items-center px-4 py-4">
+        {isCollapsed ? (
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent font-semibold text-bg">
+            K
+          </div>
+        ) : (
+          <Image
+            src="/kronos-logo.png"
+            alt="Kronos"
+            width={94}
+            height={28}
+            priority
+            unoptimized
+            className="h-7 w-auto select-none"
+          />
         )}
       </div>
 
