@@ -11,7 +11,7 @@ export default function ConsultantsManager() {
       <div className="max-w-5xl px-10 py-9">
         <div className="mb-7 flex items-start justify-between gap-4 border-b border-line pb-5">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-ink">
+            <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
               Consultores
             </h1>
             <p className="mt-1.5 text-sm text-ink-mute">

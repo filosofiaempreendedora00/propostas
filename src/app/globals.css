@@ -1,14 +1,15 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-instrument); /* Instrument Sans — corpo/interface */
+  --font-display: var(--font-cormorant); /* Cormorant — títulos e destaques */
   /* ===== Paleta Kronos ===== */
   --color-bg: #150c06; /* Ônix Quente — fundo principal */
   --color-panel: #2e2017; /* Sépia Profunda — cards/superfícies secundárias */
   --color-panel-2: #3a2a1e; /* Sépia mais clara — elementos aninhados/badges */
   /* Campos de formulário: Creme (aplicação inversa) + texto escuro */
   --color-field: #f5efe6; /* Creme */
-  --color-field-ink: #2a1c11; /* texto escuro sobre o creme */
+  --color-field-ink: #2e2017; /* Sépia Profunda — texto quente sobre o creme */
   --color-field-mute: #9c886a; /* placeholder */
   --color-field-line: #dacfbe; /* borda dos campos claros */
   --color-line: #3d2c1f; /* divisores (areia bem escurecida) */
@@ -37,8 +38,35 @@ body {
   background-repeat: no-repeat;
   background-attachment: fixed;
   color: var(--color-ink);
-  font-family: var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-instrument), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Areia "caindo" dentro do item Gerador — grãos sutis em queda contínua. */
+.kronos-sand {
+  background-image:
+    radial-gradient(1.3px 1.3px at 15% 12%, rgba(168, 144, 112, 0.9), transparent 60%),
+    radial-gradient(1px 1px at 45% 38%, rgba(205, 185, 154, 0.7), transparent 60%),
+    radial-gradient(1.4px 1.4px at 70% 64%, rgba(168, 144, 112, 0.85), transparent 60%),
+    radial-gradient(1px 1px at 88% 22%, rgba(205, 185, 154, 0.6), transparent 60%),
+    radial-gradient(1.1px 1.1px at 32% 82%, rgba(168, 144, 112, 0.7), transparent 60%),
+    radial-gradient(1px 1px at 60% 92%, rgba(205, 185, 154, 0.55), transparent 60%);
+  background-size: 100% 52px;
+  background-repeat: repeat;
+  animation: kronos-sand-fall 6s linear infinite;
+}
+@keyframes kronos-sand-fall {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 52px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kronos-sand {
+    animation: none;
+  }
 }
 
 /* Scrollbar discreta no painel do formulário */

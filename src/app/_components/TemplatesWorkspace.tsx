@@ -206,7 +206,9 @@ export default function TemplatesWorkspace() {
               <div className="text-[11px] uppercase tracking-[0.14em] text-ink-mute">
                 Bloco {activeMeta.n}
               </div>
-              <h2 className="text-xl font-semibold">{activeMeta.label}</h2>
+              <h2 className="font-display text-2xl font-semibold">
+                {activeMeta.label}
+              </h2>
               <p className="mt-1 text-xs text-ink-mute">
                 Clique numa variação para abrir e editar.
               </p>

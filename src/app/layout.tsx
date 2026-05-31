@@ -1,11 +1,20 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Instrument_Sans, Cormorant } from "next/font/google";
 import "./globals.css";
 import Sidebar from "./_components/Sidebar";
 
-const inter = Inter({
+// Corpo / interface
+const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-instrument",
+});
+
+// Display / títulos e destaques
+const cormorant = Cormorant({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-cormorant",
 });
 
 export const metadata: Metadata = {
@@ -19,7 +28,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
+    <html
+      lang="pt-BR"
+      className={`${instrumentSans.variable} ${cormorant.variable} h-full antialiased`}
+    >
       <body className="min-h-full">
         <div className="flex h-screen">
           <Sidebar />
