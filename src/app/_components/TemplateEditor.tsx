@@ -2,7 +2,7 @@
 
 import type { BlockTemplate } from "@/lib/templates/types";
 import type { Pillar, Step, ProposalData } from "@/lib/proposal/types";
-import { Label, TextInput, TextArea, LineList, MiniBtn } from "./fields";
+import { Label, TextInput, TextArea, ItemList, MiniBtn } from "./fields";
 
 type Pair = { title: string; description: string };
 
@@ -200,13 +200,15 @@ export default function TemplateEditor({
                 rows={3}
               />
             </Field>
-            <Field label="Motivos (um por linha)">
-              <LineList
+            <div className="block">
+              <Label>Motivos</Label>
+              <ItemList
                 value={(p.consultantRecReasons as string[] | undefined) ?? []}
                 onChange={(v) => setField({ consultantRecReasons: v })}
-                rows={4}
+                placeholder="Um motivo que reforça a recomendação"
+                addLabel="+ adicionar motivo"
               />
-            </Field>
+            </div>
           </>
         )}
 

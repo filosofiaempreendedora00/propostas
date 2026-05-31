@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef } from "react";
 
 // Componentes de formulário compartilhados entre os ambientes.
@@ -124,10 +125,15 @@ export function ItemList({
   return (
     <div className="space-y-1.5">
       {value.map((item, i) => (
-        <div key={i} className="group flex items-center gap-2">
-          <span
+        <div key={i} className="group flex items-center gap-1.5">
+          <Image
+            src="/kronos-ponteiro-areia.png"
+            alt=""
             aria-hidden
-            className="grid h-1.5 w-1.5 shrink-0 place-items-center rounded-full bg-accent/60"
+            width={28}
+            height={28}
+            unoptimized
+            className="h-7 w-7 shrink-0 rotate-90 select-none opacity-90"
           />
           <input
             ref={(el) => {

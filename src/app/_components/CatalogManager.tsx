@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useCatalog, blankSolutionPlan } from "@/lib/catalog/store";
 import type { SolutionPlan, Billing } from "@/lib/catalog/types";
-import { Label, TextInput, TextArea, LineList, ItemList, MiniBtn } from "./fields";
+import { Label, TextInput, TextArea, ItemList, MiniBtn } from "./fields";
 
 type EditorTab = "detalhes" | "planos";
 
@@ -36,7 +36,7 @@ export default function CatalogManager() {
       <aside className="form-scroll overflow-y-auto border-r border-line">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/95 px-4 py-4 backdrop-blur">
           <div>
-            <div className="text-lg font-semibold tracking-tight text-ink">
+            <div className="font-display text-xl font-semibold tracking-tight text-ink">
               Soluções
             </div>
             <div className="text-[11px] text-ink-mute">
@@ -101,7 +101,7 @@ export default function CatalogManager() {
                   <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-accent">
                     Editando solução
                   </div>
-                  <div className="mt-0.5 text-2xl font-semibold tracking-tight text-ink">
+                  <div className="mt-0.5 font-display text-2xl font-semibold tracking-tight text-ink">
                     {selected.name || "Sem nome"}
                   </div>
                 </div>
@@ -190,35 +190,52 @@ export default function CatalogManager() {
               </label>
 
               <div className="grid grid-cols-2 gap-5">
-                <label className="block">
-                  <Label>Destaques (um por linha)</Label>
-                  <LineList
+                <div className="block">
+                  <Label>Destaques</Label>
+                  <ItemList
                     value={selected.highlights}
                     onChange={(v) => update(selected.id, { highlights: v })}
-                    rows={4}
-                    placeholder={"Diferenciais\nItem por linha"}
+                    placeholder="Um diferencial que vale destacar"
+                    addLabel="+ adicionar destaque"
                   />
-                </label>
-                <label className="block">
-                  <Label>Precisamos do cliente (um por linha)</Label>
-                  <LineList
+                </div>
+                <div className="block">
+                  <Label>Precisamos do cliente</Label>
+                  <ItemList
                     value={selected.requirements}
                     onChange={(v) => update(selected.id, { requirements: v })}
-                    rows={4}
-                    placeholder={"Acessos, materiais\nItem por linha"}
+                    placeholder="Acesso ou material necessário"
+                    addLabel="+ adicionar item"
                   />
-                </label>
+                </div>
               </div>
 
-              <label className="block">
-                <Label>Observações internas (não vão pra proposta)</Label>
+              <div className="rounded-xl border border-dashed border-line bg-panel/40 p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4 text-ink-mute"
+                    aria-hidden
+                  >
+                    <path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a18 18 0 0 1-2.16 3.19M6.6 6.6A18 18 0 0 0 2 12s3 8 10 8a9 9 0 0 0 5.4-1.6" />
+                    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M2 2l20 20M14 12a2 2 0 0 1-2 2" />
+                  </svg>
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+                    Uso interno · não vai pra proposta
+                  </span>
+                </div>
                 <TextArea
                   value={selected.notes}
                   onChange={(v) => update(selected.id, { notes: v })}
                   rows={2}
-                  placeholder="Anotações para o seu time."
+                  placeholder="Anotações para o seu time — visível só aqui."
                 />
-              </label>
+              </div>
 
               <p className="pt-2 text-xs text-ink-mute">
                 ✓ Alterações salvas automaticamente neste navegador.
@@ -355,7 +372,7 @@ function PlansEditor({
       {/* Cabeçalho da seção — mesmo padrão de Consultores */}
       <div className="mb-6 flex items-start justify-between gap-4 border-b border-line pb-5">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-ink">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-ink">
             Planos desta solução
           </h2>
           <p className="mt-1.5 text-sm text-ink-mute">
