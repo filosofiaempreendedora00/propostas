@@ -1,7 +1,7 @@
 # Projeto: Gerador de Propostas Universal (white-label)
 
 > Documento vivo de contexto. Se a conversa do chat se perder, este arquivo recupera o essencial.
-> Última atualização: 2026-05-30
+> Última atualização: 2026-05-31
 
 ## Origem
 Recriação (inspirada, **não copiada**) do gerador de propostas do app **Octopus** (Turbo Partners).
@@ -9,7 +9,7 @@ Briefing técnico completo do original está em:
 `/Users/roberto/Projetos do Claude/IAs do comercial/Jornada Online/BRIEFING_GERADOR_PROPOSTAS.md`
 
 Repositório deste projeto: https://github.com/filosofiaempreendedora00/propostas.git
-Pasta local: `/Users/roberto/Projetos do Claude/Propostas`
+Pasta local: `/Users/roberto/Projetos do Claude/KRONOS/Propostas`
 
 ## Visão
 Um **motor universal / white-label** de geração de propostas comerciais. Não é específico
@@ -20,8 +20,30 @@ Turbo (comprovado), mas tudo é genérico e preenchível pelo usuário.
 - **Coringa / universal**: "Solução 1, 2, 3..." que o usuário descreve e precifica.
 - **Preços-padrão configuráveis** pelo usuário final.
 - Seção **"O Desafio"**: mapeia as dores do cliente final → sensação de *"ele me entende!"*.
-- Visual **sofisticado e neutro** (sem cores de cliente ainda — fase futura).
+- Visual **sofisticado**: o **app** veste a identidade **Kronos** (ver seção abaixo); o
+  **documento da proposta** segue neutro/white-label (cores do cliente são fase futura).
 - Saída: **HTML standalone** portátil (conceito do Octopus).
+
+## Identidade visual (Kronos)
+O **app** (chrome) veste a marca **Kronos**. O **documento da proposta** permanece neutro/white-label.
+
+**Paleta** (tokens em `src/app/globals.css`):
+| Cor | HEX | Uso |
+|---|---|---|
+| Ônix Quente | `#150C06` | fundo principal |
+| Sépia Profunda | `#2E2017` | cards/superfícies + texto sobre o creme |
+| Areia Média | `#A89070` | textos secundários, divisores, destaque/botões (`--color-accent`) |
+| Creme | `#F5EFE6` | campos de formulário (aplicação inversa) |
+| Branco Puro | `#FFFFFF` | texto principal sobre escuro |
+
+**Tipografia**: **Cormorant** (títulos/display, itálico como ênfase) + **Instrument Sans**
+(corpo/interface). Carregadas em `layout.tsx` via `next/font`; `font-display` marca os títulos.
+
+**Assets** (`public/`): `kronos-logo.png` (sidebar; "K" quando recolhida), `kronos-texture-areia.png`
+(grão sutil no fundo, sob véu de ônix), `kronos-ponteiro-areia.png` (bullet das listas item-a-item),
+`kronos-icone-areia.png` (ícone de precisão). Fontes originais dos ativos em `Ativos Kronos/`
+(gitignored — o app usa as cópias em `public/`). O item **Gerador** tem efeito de **areia caindo**
+(`.kronos-sand`) sinalizando que é "onde tudo acontece".
 
 ## Decisões travadas (2026-05-30)
 | Dimensão | Decisão |
@@ -47,35 +69,50 @@ Turbo (comprovado), mas tudo é genérico e preenchível pelo usuário.
   - [x] Scaffold + modelo de dados (`src/lib/proposal/`) + renderizador (`render.ts`)
   - [x] Builder: formulário completo + preview ao vivo (iframe) + export HTML standalone
   - [x] Cor de acento trocável (presets) — fundação pro "modelo personalizado"
+  - [x] **Identidade visual Kronos**: paleta, logo, tipografia (Cormorant + Instrument Sans),
+    textura de areia. Ver seção "Identidade visual".
+  - [x] **Página Início** (onboarding "como funciona") + aba **Gerador** (ex-"Seu Cliente")
+    em destaque
+  - [x] **Refino de UI**: planos como cards, consultores em grade, Templates com os 8 blocos,
+    listas item-a-item (bullet ponteiro), campos creme/sépia, observações internas destacadas
   - [ ] Persistência (Postgres/Drizzle): salvar/listar/editar propostas — passo dedicado
 - [ ] **Passo 3 — IA**: porta a inteligência (DIFF, audit, agentic) pra personalizar a partir de briefing.
 - [ ] **Futuro**: modelo personalizado com cores/branding do cliente; export PDF; telemetria.
 
 ## Como rodar o app
 ```bash
-cd "/Users/roberto/Projetos do Claude/Propostas"
+cd "/Users/roberto/Projetos do Claude/KRONOS/Propostas"
 npm install   # primeira vez
 npm run dev   # http://localhost:3000
 ```
 
+> Nota dev: o Turbopack às vezes cacheia o CSS — ao editar `globals.css` e não ver a mudança,
+> pare o server, `rm -rf .next` e suba de novo.
+
 ## Arquitetura (passo 2)
-**Menu lateral colapsável** (Sidebar, ícones) com dois ambientes:
-- **`/empresa` (Sua Empresa)** — workspace com sub-abas **Soluções & Planos** e **Consultores**:
-  - *Soluções & Planos*: cada solução é cadastrada UMA vez (problema/como funciona/benefício/
-    entregáveis) e **tem seus próprios planos aninhados** (padrão 3). Cada plano é **recorrente**
-    (mensal) ou **pontual** (projeto único), com preço, descrição e itens.
-  - *Consultores*: nome, e-mail, telefone — puxados na proposta.
-  - Master-detail com auto-save.
-- **`/templates` (Templates)** — biblioteca de **variações por bloco** (2,3,4,5,7,8). Abas por
-  bloco; cada um começa com 3 variações e a pessoa cria quantas quiser. Editor mostra os campos
-  específicos do bloco (ex.: pilares na Estratégia, passos em Próximos passos). Store em
-  `src/lib/templates/` (localStorage). **Integrado ao builder**: cada bloco no Seu Cliente tem
-  "Carregar variação" (aplica) e "+ salvar atual" (cria nova variação reutilizável).
-- **`/cliente` (Seu Cliente)** — monta a proposta. O painel esquerdo tem só **controles**
-  (seleção de soluções/planos, consultor via drag-and-drop, estrutura das dores, aparência).
-  Os **textos editam-se direto no preview** (edição inline: hover tracejado → clique → edita
+**Menu lateral colapsável** (Sidebar) com **quatro áreas**: **Início**, **Sua Empresa**,
+**Templates** e **Gerador** (esta em destaque visual — "onde tudo acontece").
+- **`/inicio` (Início)** — onboarding "como funciona": o caminho em **3 passos** até a promessa
+  *"criar propostas sob medida em 60s"*. Configure uma vez (Sua Empresa + Templates) → gere em
+  segundos (Gerador). É a **rota raiz** (`/` redireciona pra cá). Componente `HomeWorkspace`.
+- **`/empresa` (Sua Empresa)** — sub-abas **Soluções & Planos** e **Consultores**:
+  - *Soluções & Planos*: cada solução cadastrada UMA vez; editor em **sub-abas `Detalhes | Planos`**
+    (segmented control). Planos como **cards** (recorrente/pontual, preço, descrição, itens,
+    "recomendado" destacado). Entregáveis/itens em **lista item-a-item** (bullet = ícone ponteiro
+    Kronos). **Observações internas** em caixa destacada ("não vai pra proposta").
+  - *Consultores*: **cards 2 por linha** (nome, e-mail, telefone) — puxados na proposta.
+  - Master-detail com auto-save (localStorage).
+- **`/templates` (Templates)** — biblioteca de **variações por bloco**. A barra lista **todos os 8
+  blocos** da proposta; os **não-editáveis** (Capa nº1, Investimento nº6) aparecem **em cinza**.
+  Editáveis: 2,3,4,5,7,8 — cada um começa com 3 variações e a pessoa cria quantas quiser. Editor
+  mostra os campos do bloco (pilares na Estratégia, passos em Próximos passos). Store em
+  `src/lib/templates/` (localStorage). **Integrado ao Gerador**: cada bloco tem "Selecionar
+  variação" (aplica) e "+ salvar atual" (cria nova variação reutilizável).
+- **`/cliente` (Gerador, ex-"Seu Cliente")** — monta a proposta. O painel esquerdo tem só
+  **controles** (seleção de soluções/planos, consultor via drag-and-drop, estrutura das dores,
+  aparência). Os **textos editam-se direto no preview** (inline: hover tracejado → clique → edita
   no lugar; sai → salva). Não-editáveis inline: soluções, planos e consultor (vêm dos catálogos).
-  Preview ao vivo + export.
+  Preview ao vivo + export. (A rota segue `/cliente`; só o rótulo virou "Gerador".)
 
 ### Campos obrigatórios e controlados (painel)
 - **Nome da empresa (capa)** e **Nome do cliente**: obrigatórios no painel (começam vazios,
@@ -94,8 +131,11 @@ Arquivos:
   (camada isolada; trocar por API/Postgres depois).
 - `src/lib/proposal/{types,defaults,render}.ts` — `renderProposalHTML(data)`: HTML standalone
   (fonte única pro preview e export). Estratégia herdada do Octopus: 1 função monta tudo.
-- `src/app/_components/` — `Sidebar`, `EmpresaWorkspace` (sub-abas), `CatalogManager` (soluções),
-  `ClientBuilder` (cliente), `fields` (inputs compartilhados).
+- `src/lib/templates/{types,store}.ts` — variações por bloco (`BLOCKS` editáveis +
+  `NON_EDITABLE_BLOCKS`), localStorage.
+- `src/app/_components/` — `Sidebar`, `HomeWorkspace` (Início), `EmpresaWorkspace` (sub-abas),
+  `CatalogManager` (soluções+planos), `ConsultantsManager`, `TemplatesWorkspace` + `TemplateEditor`,
+  `ClientBuilder` (Gerador), `fields` (inputs compartilhados, incl. `ItemList` com bullet ponteiro).
 
 > Persistência atual = localStorage (cadastro do catálogo sobrevive a reload). Migração pra
 > Postgres/Drizzle fica no passo dedicado de banco.
