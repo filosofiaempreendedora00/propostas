@@ -196,14 +196,20 @@ export default function ClientBuilder() {
   // ----- variações (templates) -----
   const applyVariation = (payload: Partial<ProposalData>) =>
     setForm((f) => ({ ...f, ...payload }) as ClientForm);
+  const [saveBlock, setSaveBlock] = useState<BlockKey | null>(null);
+  const [saveName, setSaveName] = useState("");
   const saveVariation = (block: BlockKey) => {
-    const name = window.prompt("Nome da nova variação:", "Minha variação");
-    if (!name || !name.trim()) return;
-    const id = addTemplate(block);
+    setSaveName("Minha variação");
+    setSaveBlock(block);
+  };
+  const confirmSave = () => {
+    if (!saveBlock || !saveName.trim()) return;
+    const id = addTemplate(saveBlock);
     updateTemplate(id, {
-      name: name.trim(),
-      payload: extractPayload(block, form),
+      name: saveName.trim(),
+      payload: extractPayload(saveBlock, form),
     });
+    setSaveBlock(null);
   };
 
   // ----- estrutura (listas) -----
@@ -667,6 +673,51 @@ export default function ClientBuilder() {
           />
         </div>
       </div>
+
+      {saveBlock && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => setSaveBlock(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-line bg-panel p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-sm font-semibold">Salvar como variação</div>
+            <p className="mt-1 text-xs text-ink-mute">
+              Dê um nome para reutilizar este bloco em outras propostas.
+            </p>
+            <input
+              autoFocus
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") confirmSave();
+                if (e.key === "Escape") setSaveBlock(null);
+              }}
+              placeholder="Nome da variação"
+              className="mt-3 w-full rounded-lg border border-line bg-panel-2 px-3 py-2 text-sm text-ink outline-none focus:border-accent/60"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setSaveBlock(null)}
+                className="rounded-lg px-3 py-1.5 text-sm text-ink-soft transition hover:text-ink"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmSave}
+                disabled={!saveName.trim()}
+                className="rounded-lg bg-accent px-4 py-1.5 text-sm font-semibold text-bg transition enabled:hover:opacity-90 disabled:opacity-40"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -682,28 +733,41 @@ function VariationBar({
 }) {
   return (
     <div className="mb-3 flex items-center gap-2">
-      <select
-        value=""
-        onChange={(e) => {
-          const t = list.find((x) => x.id === e.target.value);
-          if (t) onLoad(t.payload);
-        }}
-        className="min-w-0 flex-1 rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 text-xs text-ink-soft outline-none focus:border-accent/60"
-      >
-        <option value="">↧ Carregar variação…</option>
-        {list.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.name}
-          </option>
-        ))}
-      </select>
+      <div className="relative min-w-0 flex-1">
+        <select
+          value=""
+          onChange={(e) => {
+            const t = list.find((x) => x.id === e.target.value);
+            if (t) onLoad(t.payload);
+          }}
+          className="w-full appearance-none rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 pr-8 text-xs text-ink-soft outline-none transition hover:border-accent/40 focus:border-accent/60"
+        >
+          <option value="">Selecionar variação</option>
+          {list.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-mute"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </div>
       <button
         type="button"
         onClick={onSave}
         title="Salvar o conteúdo atual deste bloco como nova variação"
-        className="shrink-0 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-ink-soft transition hover:border-accent/60 hover:text-accent"
+        className="shrink-0 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:border-accent/60 hover:text-accent"
       >
-        + salvar atual
+        Salvar atual
       </button>
     </div>
   );
