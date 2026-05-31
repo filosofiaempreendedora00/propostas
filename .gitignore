@@ -32,3 +32,9 @@ yarn-error.log*
 
 # TS build info
 *.tsbuildinfo
+
+# Claude local config
+.claude/
+
+# Fontes dos ativos de marca (as cópias usadas pelo app ficam em /public)
+/Ativos Kronos/
