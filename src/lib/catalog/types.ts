@@ -1,5 +1,17 @@
-// Catálogo de soluções da empresa (ambiente "Sua Empresa").
-// Cadastrado uma vez e reaproveitado modularmente nas propostas.
+// Catálogo da empresa (ambiente "Sua Empresa").
+
+export type Billing = "recorrente" | "pontual";
+
+// Plano DENTRO de uma solução. Pode ser recorrente (mensal) ou pontual (projeto único).
+export interface SolutionPlan {
+  id: string;
+  name: string; // ex: "Plano 1"
+  billing: Billing;
+  price: string; // ex: "R$ 4.997"
+  description: string;
+  features: string[];
+  featured: boolean; // destaque "Recomendado"
+}
 
 export interface CatalogSolution {
   id: string;
@@ -10,28 +22,15 @@ export interface CatalogSolution {
   howItWorks: string; // como funciona
   expectedBenefit: string; // benefício esperado
   deliverables: string[]; // entregáveis concretos
-  scope: string[]; // o que está incluído (uso interno / seleção)
-  timeline: string; // prazo de execução (ex: "30 dias úteis")
-  highlights: string[]; // diferenciais / destaques
+  plans: SolutionPlan[]; // planos desta solução (recorrente/pontual)
+  scope: string[]; // uso interno
+  timeline: string; // prazo de execução
+  highlights: string[]; // diferenciais
   requirements: string[]; // o que precisamos do cliente
-  notes: string; // observações internas (não vão pra proposta)
+  notes: string; // observações internas
 }
 
-// Planos / níveis de investimento (ambiente "Sua Empresa").
-// Vinculados às soluções: as features do plano derivam das soluções incluídas.
-export interface CatalogPlan {
-  id: string;
-  name: string; // ex: "Starter", "Scale"
-  price: string; // ex: "R$ 4.997"
-  priceSuffix: string; // ex: "/mês"
-  description: string; // subtítulo curto do plano
-  featured: boolean; // destaque "Recomendado"
-  solutionIds: string[]; // soluções incluídas (link inteligente)
-  extraFeatures: string[]; // itens adicionais além das soluções
-}
-
-// Consultores / responsáveis comerciais (ambiente "Sua Empresa").
-// Puxados na proposta (drag-and-drop) para o fechamento.
+// Consultores / responsáveis comerciais.
 export interface CatalogConsultant {
   id: string;
   name: string;

@@ -1,4 +1,11 @@
-import type { ProposalData, Solution, Tier, Pillar, Step } from "./types";
+import type {
+  ProposalData,
+  Solution,
+  Tier,
+  Pillar,
+  Step,
+  InvestmentGroup,
+} from "./types";
 
 // ---------- helpers ----------
 const esc = (s: string): string =>
@@ -63,10 +70,26 @@ function tiersHtml(tiers: Tier[]): string {
     .map(
       (t) => `
       <div class="tier${t.featured ? " featured" : ""}">
-        <div class="tname">${esc(t.name)}</div>
+        <div class="tier-head">
+          <div class="tname">${esc(t.name)}</div>
+          <span class="bill-tag">${t.billing === "recorrente" ? "Recorrente" : "Pagamento único"}</span>
+        </div>
         <div class="price">${esc(t.price)}<small>${esc(t.priceSuffix)}</small></div>
         <div class="billing">${esc(t.description)}</div>
         <ul>${t.features.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>
+      </div>`,
+    )
+    .join("");
+}
+
+function investmentGroupsHtml(groups: InvestmentGroup[]): string {
+  return groups
+    .filter((g) => g.plans.length > 0)
+    .map(
+      (g) => `
+      <div class="invest-group">
+        <div class="invest-group-name">${esc(g.solution)}</div>
+        <div class="tiers">${tiersHtml(g.plans)}</div>
       </div>`,
     )
     .join("");
@@ -187,6 +210,14 @@ export function renderProposalHTML(d: ProposalData): string {
   .tier ul{list-style:none;display:flex;flex-direction:column;gap:12px;margin-top:6px;padding-top:22px;border-top:1px solid var(--line)}
   .tier li{position:relative;padding-left:22px;font-size:14px;color:var(--ink-soft)}
   .tier li::before{content:"✓";position:absolute;left:0;color:var(--accent);font-size:13px}
+  .invest-group{margin-top:46px}
+  .invest-group:first-of-type{margin-top:40px}
+  .invest-group-name{font-family:'Fraunces',serif;font-size:22px;color:var(--ink);margin-bottom:18px;display:flex;align-items:center;gap:12px}
+  .invest-group-name::before{content:"";width:20px;height:1px;background:var(--accent)}
+  .invest-group .tiers{margin-top:0}
+  .tier-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+  .tier-head .tname{margin-bottom:0}
+  .bill-tag{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mute);border:1px solid var(--line-2);border-radius:999px;padding:3px 8px;white-space:nowrap}
   .rec-reason{margin-top:32px;display:flex;gap:14px;align-items:flex-start;background:var(--panel);border:1px solid var(--line-2);border-radius:14px;padding:20px 24px;max-width:760px}
   .rec-reason .badge{font-size:20px}
   .rec-reason p{font-size:15px;color:var(--ink-soft);font-weight:300}
@@ -320,7 +351,7 @@ ${
   <div class="wrap">
     <span class="eyebrow">Investimento</span>
     <h2 class="display h2" data-edit="investHeading">${esc(d.investHeading)}</h2>
-    <div class="tiers">${tiersHtml(d.tiers)}</div>
+    ${investmentGroupsHtml(d.investmentGroups)}
     ${
       d.recommendationReason
         ? `<div class="rec-reason"><span class="badge">★</span><div><div class="rk">Por que o plano em destaque</div><p data-edit="recommendationReason">${esc(d.recommendationReason)}</p></div></div>`

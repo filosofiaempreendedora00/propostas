@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useCatalog } from "@/lib/catalog/store";
+import { useCatalog, blankSolutionPlan } from "@/lib/catalog/store";
+import type { SolutionPlan, Billing } from "@/lib/catalog/types";
 import { Label, TextInput, TextArea, LineList, MiniBtn } from "./fields";
 
 export default function CatalogManager() {
@@ -176,6 +177,25 @@ export default function CatalogManager() {
                 />
               </label>
 
+              <div className="rounded-xl border border-line bg-bg-soft/40 p-4">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-accent">
+                    Planos desta solução
+                  </span>
+                  <span className="text-[11px] text-ink-mute">
+                    {selected.plans.length} plano(s)
+                  </span>
+                </div>
+                <p className="mb-3 text-xs text-ink-mute">
+                  Cada plano pode ser recorrente (mensal) ou pontual (projeto
+                  único).
+                </p>
+                <PlansEditor
+                  plans={selected.plans}
+                  onChange={(p) => update(selected.id, { plans: p })}
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-5">
                 <label className="block">
                   <Label>Destaques (um por linha)</Label>
@@ -232,6 +252,109 @@ export default function CatalogManager() {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function BillingToggle({
+  value,
+  onChange,
+}: {
+  value: Billing;
+  onChange: (b: Billing) => void;
+}) {
+  const opts: { key: Billing; label: string }[] = [
+    { key: "recorrente", label: "Recorrente" },
+    { key: "pontual", label: "Pontual" },
+  ];
+  return (
+    <div className="inline-flex rounded-lg border border-line p-0.5 text-xs">
+      {opts.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          onClick={() => onChange(o.key)}
+          className={`rounded-md px-2.5 py-1 transition ${
+            value === o.key
+              ? "bg-accent font-medium text-bg"
+              : "text-ink-mute hover:text-ink-soft"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PlansEditor({
+  plans,
+  onChange,
+}: {
+  plans: SolutionPlan[];
+  onChange: (p: SolutionPlan[]) => void;
+}) {
+  const setPlan = (i: number, patch: Partial<SolutionPlan>) =>
+    onChange(plans.map((p, j) => (j === i ? { ...p, ...patch } : p)));
+  const setFeatured = (i: number) =>
+    onChange(plans.map((p, j) => ({ ...p, featured: j === i })));
+
+  return (
+    <div className="space-y-3">
+      {plans.map((p, i) => (
+        <div key={p.id} className="rounded-lg border border-line bg-panel p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <label className="flex items-center gap-1.5 text-xs text-ink-mute">
+              <input
+                type="checkbox"
+                checked={p.featured}
+                onChange={() => setFeatured(i)}
+                className="accent-[var(--color-accent)]"
+              />
+              Recomendado
+            </label>
+            <MiniBtn danger onClick={() => onChange(plans.filter((_, j) => j !== i))}>
+              remover
+            </MiniBtn>
+          </div>
+          <div className="grid grid-cols-[1fr_120px] gap-2">
+            <TextInput
+              value={p.name}
+              onChange={(v) => setPlan(i, { name: v })}
+              placeholder="Nome do plano"
+            />
+            <TextInput
+              value={p.price}
+              onChange={(v) => setPlan(i, { price: v })}
+              placeholder="R$ 0"
+            />
+          </div>
+          <div className="mt-2">
+            <BillingToggle
+              value={p.billing}
+              onChange={(b) => setPlan(i, { billing: b })}
+            />
+          </div>
+          <div className="mt-2">
+            <TextInput
+              value={p.description}
+              onChange={(v) => setPlan(i, { description: v })}
+              placeholder="Descrição curta do plano"
+            />
+          </div>
+          <div className="mt-2">
+            <Label>Itens (um por linha)</Label>
+            <LineList
+              value={p.features}
+              onChange={(v) => setPlan(i, { features: v })}
+              rows={3}
+            />
+          </div>
+        </div>
+      ))}
+      <MiniBtn onClick={() => onChange([...plans, blankSolutionPlan(`Plano ${plans.length + 1}`)])}>
+        + adicionar plano
+      </MiniBtn>
     </div>
   );
 }

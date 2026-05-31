@@ -3,21 +3,93 @@
 import { useCallback, useEffect, useState } from "react";
 import type {
   CatalogSolution,
-  CatalogPlan,
+  SolutionPlan,
   CatalogConsultant,
 } from "./types";
 
 const KEY = "propostas.catalog.v1";
-const PLANS_KEY = "propostas.plans.v1";
 const CONSULTANTS_KEY = "propostas.consultants.v1";
 
-// Camada de persistência isolada — hoje localStorage, amanhã trocamos por API/Postgres
-// mexendo só aqui.
+function uid(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return "id-" + Math.abs(Date.now()).toString(36);
+}
+
+// ----- planos (dentro da solução) -----
+export function blankSolutionPlan(name: string): SolutionPlan {
+  return {
+    id: uid(),
+    name,
+    billing: "recorrente",
+    price: "R$ 0",
+    description: "",
+    features: ["Item incluso"],
+    featured: false,
+  };
+}
+
+function defaultPlans(): SolutionPlan[] {
+  return [
+    {
+      id: uid(),
+      name: "Plano 1",
+      billing: "recorrente",
+      price: "R$ 2.997",
+      description: "Essencial para começar.",
+      features: ["Entrega principal", "Suporte por e-mail"],
+      featured: false,
+    },
+    {
+      id: uid(),
+      name: "Plano 2",
+      billing: "recorrente",
+      price: "R$ 4.997",
+      description: "O equilíbrio entre escopo e resultado.",
+      features: ["Tudo do Plano 1", "Suporte prioritário", "Reunião quinzenal"],
+      featured: true,
+    },
+    {
+      id: uid(),
+      name: "Plano 3",
+      billing: "pontual",
+      price: "R$ 14.997",
+      description: "Projeto completo, pagamento único.",
+      features: ["Escopo fechado", "Entrega completa"],
+      featured: false,
+    },
+  ];
+}
+
+// ----- persistência -----
+// Normaliza dados antigos (ex.: soluções salvas antes de 'plans' existir).
+function normalizeSolution(s: Partial<CatalogSolution>): CatalogSolution {
+  return {
+    id: s.id ?? uid(),
+    icon: s.icon ?? "✦",
+    name: s.name ?? "Solução",
+    tagline: s.tagline ?? "",
+    problemSolved: s.problemSolved ?? "",
+    howItWorks: s.howItWorks ?? "",
+    expectedBenefit: s.expectedBenefit ?? "",
+    deliverables: s.deliverables ?? [],
+    plans: s.plans && s.plans.length > 0 ? s.plans : defaultPlans(),
+    scope: s.scope ?? [],
+    timeline: s.timeline ?? "",
+    highlights: s.highlights ?? [],
+    requirements: s.requirements ?? [],
+    notes: s.notes ?? "",
+  };
+}
+
 function load(): CatalogSolution[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as CatalogSolution[]) : [];
+    if (!raw) return [];
+    const arr = JSON.parse(raw) as Partial<CatalogSolution>[];
+    return arr.map(normalizeSolution);
   } catch {
     return [];
   }
@@ -28,15 +100,8 @@ function save(items: CatalogSolution[]) {
   try {
     window.localStorage.setItem(KEY, JSON.stringify(items));
   } catch {
-    /* quota / privado — ignora */
+    /* ignora */
   }
-}
-
-function uid(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return "sol-" + Math.abs(Date.now()).toString(36);
 }
 
 export function blankSolution(index: number): CatalogSolution {
@@ -49,6 +114,7 @@ export function blankSolution(index: number): CatalogSolution {
     howItWorks: "",
     expectedBenefit: "",
     deliverables: [],
+    plans: defaultPlans(),
     scope: [],
     timeline: "",
     highlights: [],
@@ -57,7 +123,6 @@ export function blankSolution(index: number): CatalogSolution {
   };
 }
 
-// Soluções de exemplo no primeiro acesso (UX: o usuário já vê o fluxo funcionando).
 const SEED: CatalogSolution[] = [
   {
     id: "seed-1",
@@ -66,8 +131,7 @@ const SEED: CatalogSolution[] = [
     tagline: "Resumo de uma linha do que esta solução entrega.",
     problemSolved:
       "Descreva qual dor concreta do cliente esta solução elimina.",
-    howItWorks:
-      "Explique em poucas linhas como a solução funciona na prática.",
+    howItWorks: "Explique em poucas linhas como a solução funciona na prática.",
     expectedBenefit:
       "Descreva o resultado esperado — de preferência tangível e mensurável.",
     deliverables: [
@@ -75,6 +139,7 @@ const SEED: CatalogSolution[] = [
       "Segundo entregável relevante",
       "Terceiro ponto de valor",
     ],
+    plans: defaultPlans(),
     scope: ["Item de escopo 1", "Item de escopo 2"],
     timeline: "30 dias úteis",
     highlights: ["Diferencial que vale destacar"],
@@ -90,6 +155,7 @@ const SEED: CatalogSolution[] = [
     howItWorks: "Como ela funciona, em linguagem simples.",
     expectedBenefit: "O ganho que o cliente passa a ter.",
     deliverables: ["Entregável principal", "Segundo entregável relevante"],
+    plans: defaultPlans(),
     scope: ["Item de escopo 1", "Item de escopo 2"],
     timeline: "45 dias úteis",
     highlights: [],
@@ -113,7 +179,7 @@ export function useCatalog() {
   }, []);
 
   const add = useCallback((): string => {
-    const s = blankSolution(1); // id já gerado aqui; nome ajustado no updater
+    const s = blankSolution(1);
     setItems((prev) => {
       const next = [...prev, { ...s, name: `Solução ${prev.length + 1}` }];
       save(next);
@@ -134,116 +200,6 @@ export function useCatalog() {
     setItems((prev) => {
       const next = prev.filter((s) => s.id !== id);
       save(next);
-      return next;
-    });
-  }, []);
-
-  return { items, ready, add, update, remove };
-}
-
-// ===================== PLANOS =====================
-
-function loadPlans(): CatalogPlan[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(PLANS_KEY);
-    return raw ? (JSON.parse(raw) as CatalogPlan[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function savePlans(items: CatalogPlan[]) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(PLANS_KEY, JSON.stringify(items));
-  } catch {
-    /* ignora */
-  }
-}
-
-export function blankPlan(): CatalogPlan {
-  return {
-    id: uid(),
-    name: "Novo plano",
-    price: "R$ 0",
-    priceSuffix: "/mês",
-    description: "",
-    featured: false,
-    solutionIds: [],
-    extraFeatures: [],
-  };
-}
-
-const SEED_PLANS: CatalogPlan[] = [
-  {
-    id: "plan-1",
-    name: "Starter",
-    price: "R$ 2.997",
-    priceSuffix: "/mês",
-    description: "Ideal para começar com o essencial.",
-    featured: false,
-    solutionIds: ["seed-1"],
-    extraFeatures: ["Suporte por e-mail", "Relatório mensal"],
-  },
-  {
-    id: "plan-2",
-    name: "Scale",
-    price: "R$ 4.997",
-    priceSuffix: "/mês",
-    description: "O equilíbrio entre escopo e resultado.",
-    featured: true,
-    solutionIds: ["seed-1", "seed-2"],
-    extraFeatures: ["Suporte prioritário", "Reunião quinzenal"],
-  },
-  {
-    id: "plan-3",
-    name: "Enterprise",
-    price: "R$ 7.497",
-    priceSuffix: "/mês",
-    description: "Operação completa, sob medida.",
-    featured: false,
-    solutionIds: ["seed-1", "seed-2"],
-    extraFeatures: ["Gerente dedicado", "SLA personalizado"],
-  },
-];
-
-export function usePlans() {
-  const [items, setItems] = useState<CatalogPlan[]>([]);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    let initial = loadPlans();
-    if (initial.length === 0) {
-      initial = SEED_PLANS;
-      savePlans(initial);
-    }
-    setItems(initial);
-    setReady(true);
-  }, []);
-
-  const add = useCallback((): string => {
-    const p = blankPlan();
-    setItems((prev) => {
-      const next = [...prev, p];
-      savePlans(next);
-      return next;
-    });
-    return p.id;
-  }, []);
-
-  const update = useCallback((id: string, patch: Partial<CatalogPlan>) => {
-    setItems((prev) => {
-      const next = prev.map((p) => (p.id === id ? { ...p, ...patch } : p));
-      savePlans(next);
-      return next;
-    });
-  }, []);
-
-  const remove = useCallback((id: string) => {
-    setItems((prev) => {
-      const next = prev.filter((p) => p.id !== id);
-      savePlans(next);
       return next;
     });
   }, []);

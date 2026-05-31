@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import CatalogManager from "./CatalogManager";
-import PlansManager from "./PlansManager";
 import ConsultantsManager from "./ConsultantsManager";
 
 const TAB_KEY = "propostas.empresa.tab";
-type Tab = "solucoes" | "planos" | "consultores";
+type Tab = "solucoes" | "consultores";
 
 export default function EmpresaWorkspace() {
   const [tab, setTab] = useState<Tab>("solucoes");
@@ -14,8 +13,7 @@ export default function EmpresaWorkspace() {
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(TAB_KEY);
-      if (saved === "planos" || saved === "solucoes" || saved === "consultores")
-        setTab(saved);
+      if (saved === "solucoes" || saved === "consultores") setTab(saved);
     } catch {
       /* ignora */
     }
@@ -36,8 +34,7 @@ export default function EmpresaWorkspace() {
       <div className="flex items-center gap-1 border-b border-line px-4 py-2.5">
         {(
           [
-            { id: "solucoes", label: "Soluções" },
-            { id: "planos", label: "Planos" },
+            { id: "solucoes", label: "Soluções & Planos" },
             { id: "consultores", label: "Consultores" },
           ] as const
         ).map((t) => (
@@ -57,7 +54,6 @@ export default function EmpresaWorkspace() {
 
       <div className="min-h-0 flex-1">
         {tab === "solucoes" && <CatalogManager />}
-        {tab === "planos" && <PlansManager />}
         {tab === "consultores" && <ConsultantsManager />}
       </div>
     </div>

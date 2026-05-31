@@ -13,9 +13,16 @@ export interface Tier {
   name: string;
   price: string;
   priceSuffix: string;
+  billing: "recorrente" | "pontual";
   description: string;
   features: string[];
   featured?: boolean;
+}
+
+// Investimento agrupado por solução (cada solução tem seus planos).
+export interface InvestmentGroup {
+  solution: string;
+  plans: Tier[];
 }
 
 export interface Pillar {
@@ -77,7 +84,7 @@ export interface ProposalData {
 
   // ---- 6. Investimento ----
   investHeading: string;
-  tiers: Tier[];
+  investmentGroups: InvestmentGroup[]; // planos por solução
   recommendationReason: string; // justificativa do plano recomendado
 
   // ---- 7. Recomendação do consultor (decisão) ----

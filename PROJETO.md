@@ -60,10 +60,10 @@ npm run dev   # http://localhost:3000
 
 ## Arquitetura (passo 2)
 **Menu lateral colapsável** (Sidebar, ícones) com dois ambientes:
-- **`/empresa` (Sua Empresa)** — workspace com sub-abas **Soluções**, **Planos** e **Consultores**:
-  - *Soluções*: catálogo cadastrado UMA vez (escopo, entregáveis, prazo, destaques, requisitos).
-  - *Planos*: níveis de investimento (preço + **soluções vinculadas** + itens extras).
-    Vínculo inteligente → as features do plano derivam das soluções incluídas.
+- **`/empresa` (Sua Empresa)** — workspace com sub-abas **Soluções & Planos** e **Consultores**:
+  - *Soluções & Planos*: cada solução é cadastrada UMA vez (problema/como funciona/benefício/
+    entregáveis) e **tem seus próprios planos aninhados** (padrão 3). Cada plano é **recorrente**
+    (mensal) ou **pontual** (projeto único), com preço, descrição e itens.
   - *Consultores*: nome, e-mail, telefone — puxados na proposta.
   - Master-detail com auto-save.
 - **`/templates` (Templates)** — biblioteca de **variações por bloco** (2,3,4,5,7,8). Abas por
@@ -89,13 +89,13 @@ hover/contenteditable e `postMessage` pro app. `ClientBuilder` ouve as mensagens
 estado sem recarregar o iframe (`skipRender`). Campos de catálogo ficam sem `data-edit`.
 
 Arquivos:
-- `src/lib/catalog/types.ts` — `CatalogSolution`, `CatalogPlan`.
-- `src/lib/catalog/store.ts` — `useCatalog()` (soluções) e `usePlans()` (planos), localStorage
+- `src/lib/catalog/types.ts` — `CatalogSolution` (com `plans: SolutionPlan[]` aninhados).
+- `src/lib/catalog/store.ts` — `useCatalog()` (soluções+planos), localStorage
   (camada isolada; trocar por API/Postgres depois).
 - `src/lib/proposal/{types,defaults,render}.ts` — `renderProposalHTML(data)`: HTML standalone
   (fonte única pro preview e export). Estratégia herdada do Octopus: 1 função monta tudo.
 - `src/app/_components/` — `Sidebar`, `EmpresaWorkspace` (sub-abas), `CatalogManager` (soluções),
-  `PlansManager` (planos), `ClientBuilder` (cliente), `fields` (inputs compartilhados).
+  `ClientBuilder` (cliente), `fields` (inputs compartilhados).
 
 > Persistência atual = localStorage (cadastro do catálogo sobrevive a reload). Migração pra
 > Postgres/Drizzle fica no passo dedicado de banco.

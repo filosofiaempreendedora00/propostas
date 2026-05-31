@@ -73,7 +73,7 @@ export const DEFAULT_PROPOSAL: ProposalData = {
 
   // 6. Investimento
   investHeading: "Escolha o nível ideal.",
-  tiers: [],
+  investmentGroups: [],
   recommendationReason:
     "Recomendamos o plano em destaque por oferecer o melhor equilíbrio entre velocidade de implementação e retorno esperado para o momento atual da operação.",
 

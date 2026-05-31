@@ -4,9 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { DEFAULT_PROPOSAL } from "@/lib/proposal/defaults";
 import { renderProposalHTML, slugify } from "@/lib/proposal/render";
-import type { ProposalData, Tier } from "@/lib/proposal/types";
-import { useCatalog, usePlans, useConsultants } from "@/lib/catalog/store";
-import type { CatalogSolution, CatalogPlan } from "@/lib/catalog/types";
+import type { ProposalData, Tier, InvestmentGroup } from "@/lib/proposal/types";
+import { useCatalog, useConsultants } from "@/lib/catalog/store";
+import type { CatalogSolution, SolutionPlan } from "@/lib/catalog/types";
 import { useTemplates } from "@/lib/templates/store";
 import { BLOCK_FIELDS, type BlockKey } from "@/lib/templates/types";
 import type { BlockTemplate } from "@/lib/templates/types";
@@ -25,7 +25,7 @@ function extractPayload(
 
 type ClientForm = Omit<
   ProposalData,
-  "solutions" | "tiers" | "responsible" | "phone" | "email"
+  "solutions" | "investmentGroups" | "responsible" | "phone" | "email"
 >;
 
 const ACCENT_PRESETS = [
@@ -59,23 +59,20 @@ function toRenderSolution(s: CatalogSolution) {
   };
 }
 
-function planToTier(p: CatalogPlan, solutions: CatalogSolution[]): Tier {
-  const solNames = p.solutionIds
-    .map((id) => solutions.find((s) => s.id === id)?.name)
-    .filter((n): n is string => Boolean(n));
+function planToTier(p: SolutionPlan): Tier {
   return {
     name: p.name,
     price: p.price,
-    priceSuffix: p.priceSuffix,
+    priceSuffix: p.billing === "recorrente" ? "/mês" : "",
+    billing: p.billing,
     description: p.description,
-    features: [...solNames, ...p.extraFeatures],
+    features: p.features,
     featured: p.featured,
   };
 }
 
 export default function ClientBuilder() {
   const { items: solutions, ready: solReady } = useCatalog();
-  const { items: plans, ready: planReady } = usePlans();
   const { items: consultants, ready: consReady } = useConsultants();
   const {
     items: templates,
@@ -85,17 +82,20 @@ export default function ClientBuilder() {
 
   const [form, setForm] = useState<ClientForm>(() => {
     const {
-      solutions: _s, tiers: _t, responsible: _r, phone: _p, email: _e, ...rest
+      solutions: _s,
+      investmentGroups: _ig,
+      responsible: _r,
+      phone: _p,
+      email: _e,
+      ...rest
     } = DEFAULT_PROPOSAL;
-    void _s; void _t; void _r; void _p; void _e;
+    void _s; void _ig; void _r; void _p; void _e;
     return rest;
   });
 
   const [selSolutions, setSelSolutions] = useState<Set<string>>(new Set());
-  const [selPlans, setSelPlans] = useState<Set<string>>(new Set());
   const [consultantId, setConsultantId] = useState<string | null>(null);
   const seededSol = useRef(false);
-  const seededPlan = useRef(false);
   const seededCons = useRef(false);
   const [dragOver, setDragOver] = useState(false);
   const [validISO, setValidISO] = useState("2026-06-29");
@@ -113,12 +113,6 @@ export default function ClientBuilder() {
       setSelSolutions(new Set(solutions.map((s) => s.id)));
     }
   }, [solReady, solutions]);
-  useEffect(() => {
-    if (planReady && !seededPlan.current) {
-      seededPlan.current = true;
-      setSelPlans(new Set(plans.map((p) => p.id)));
-    }
-  }, [planReady, plans]);
   useEffect(() => {
     if (consReady && !seededCons.current) {
       seededCons.current = true;
@@ -140,19 +134,22 @@ export default function ClientBuilder() {
   const consultant = consultants.find((c) => c.id === consultantId) ?? null;
 
   const data: ProposalData = useMemo(() => {
+    const chosen = solutions.filter((s) => selSolutions.has(s.id));
+    const investmentGroups: InvestmentGroup[] = chosen
+      .filter((s) => s.plans.length > 0)
+      .map((s) => ({
+        solution: s.name,
+        plans: s.plans.map(planToTier),
+      }));
     return {
       ...form,
-      solutions: solutions
-        .filter((s) => selSolutions.has(s.id))
-        .map(toRenderSolution),
-      tiers: plans
-        .filter((p) => selPlans.has(p.id))
-        .map((p) => planToTier(p, solutions)),
+      solutions: chosen.map(toRenderSolution),
+      investmentGroups,
       responsible: consultant?.name ?? "",
       phone: consultant?.phone ?? "",
       email: consultant?.email ?? "",
     };
-  }, [form, solutions, plans, selSolutions, selPlans, consultant]);
+  }, [form, solutions, selSolutions, consultant]);
 
   // ----- edição inline vinda do preview -----
   useEffect(() => {
@@ -282,7 +279,8 @@ export default function ClientBuilder() {
             </span>
           ) : (
             <>
-              {data.solutions.length} solução(ões) · {data.tiers.length}{" "}
+              {data.solutions.length} solução(ões) ·{" "}
+              {data.investmentGroups.reduce((a, g) => a + g.plans.length, 0)}{" "}
               plano(s)
             </>
           )}
@@ -491,27 +489,18 @@ export default function ClientBuilder() {
               />
             }
           >
-            Planos (Investimento)
+            Investimento
           </SectionTitle>
-          <div className={form.showInvestment ? "" : "opacity-40"}>
-            {planReady && plans.length === 0 ? (
-              <EmptyCatalog label="plano" />
-            ) : (
-              <div className="space-y-2">
-                <p className="mb-1 text-xs text-ink-mute">
-                  Selecione os planos que aparecem na proposta.
-                </p>
-                {plans.map((p) => (
-                  <SelectCard
-                    key={p.id}
-                    on={selPlans.has(p.id)}
-                    onClick={() => toggle(setSelPlans, p.id)}
-                    title={`${p.name}${p.featured ? " ★" : ""}`}
-                    subtitle={`${p.price}${p.priceSuffix} · ${p.solutionIds.length} solução(ões)`}
-                  />
-                ))}
-              </div>
-            )}
+          <div
+            className={`rounded-lg border border-line bg-panel p-3 text-xs leading-relaxed text-ink-soft ${form.showInvestment ? "" : "opacity-40"}`}
+          >
+            Os planos vêm das <strong className="text-ink">soluções</strong>{" "}
+            selecionadas — cada solução traz seus planos (recorrente ou pontual).
+            Edite-os em{" "}
+            <Link href="/empresa" className="text-accent hover:underline">
+              Sua Empresa
+            </Link>
+            . Título e justificativa editam-se no preview.
           </div>
 
           <SectionTitle
