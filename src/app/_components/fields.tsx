@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 // Componentes de formulário compartilhados entre os ambientes.
 
 export function Label({ children }: { children: React.ReactNode }) {
@@ -70,6 +72,109 @@ export function LineList({
       rows={rows}
       placeholder={placeholder}
     />
+  );
+}
+
+/**
+ * Editor de lista item-a-item (mais amigável que o "um por linha").
+ * Cada item é uma linha com bullet e botão de remover; Enter cria a próxima,
+ * Backspace numa linha vazia remove. Substitui o textarea cru.
+ */
+export function ItemList({
+  value,
+  onChange,
+  placeholder,
+  addLabel = "+ adicionar",
+}: {
+  value: string[];
+  onChange: (v: string[]) => void;
+  placeholder?: string;
+  addLabel?: string;
+}) {
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const focusAt = useRef<number | null>(null);
+
+  // Depois de adicionar/remover, devolve o foco pra linha certa.
+  useEffect(() => {
+    if (focusAt.current == null) return;
+    const el = inputs.current[focusAt.current];
+    if (el) {
+      el.focus();
+      const end = el.value.length;
+      el.setSelectionRange(end, end);
+    }
+    focusAt.current = null;
+  });
+
+  const setAt = (i: number, text: string) =>
+    onChange(value.map((v, j) => (j === i ? text : v)));
+
+  const addAfter = (i: number) => {
+    const next = [...value];
+    next.splice(i + 1, 0, "");
+    onChange(next);
+    focusAt.current = i + 1;
+  };
+
+  const removeAt = (i: number) => {
+    onChange(value.filter((_, j) => j !== i));
+    focusAt.current = Math.max(0, i - 1);
+  };
+
+  return (
+    <div className="space-y-1.5">
+      {value.map((item, i) => (
+        <div key={i} className="group flex items-center gap-2">
+          <span
+            aria-hidden
+            className="grid h-1.5 w-1.5 shrink-0 place-items-center rounded-full bg-accent/60"
+          />
+          <input
+            ref={(el) => {
+              inputs.current[i] = el;
+            }}
+            value={item}
+            placeholder={placeholder}
+            onChange={(e) => setAt(i, e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addAfter(i);
+              } else if (e.key === "Backspace" && item === "") {
+                e.preventDefault();
+                removeAt(i);
+              }
+            }}
+            className="flex-1 rounded-lg border border-line bg-panel-2 px-3 py-2 text-sm text-ink outline-none transition placeholder:text-ink-mute focus:border-accent/60"
+          />
+          <button
+            type="button"
+            onClick={() => removeAt(i)}
+            aria-label="Remover item"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-ink-mute opacity-0 transition hover:bg-panel hover:text-red-400 focus:opacity-100 group-hover:opacity-100"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => addAfter(value.length - 1)}
+        className="mt-0.5 flex items-center gap-1.5 rounded-lg border border-dashed border-line px-3 py-1.5 text-xs font-medium text-ink-mute transition hover:border-accent/50 hover:text-accent"
+      >
+        {addLabel}
+      </button>
+    </div>
   );
 }
 

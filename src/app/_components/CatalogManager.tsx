@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react";
 import { useCatalog, blankSolutionPlan } from "@/lib/catalog/store";
 import type { SolutionPlan, Billing } from "@/lib/catalog/types";
-import { Label, TextInput, TextArea, LineList, MiniBtn } from "./fields";
+import { Label, TextInput, TextArea, LineList, ItemList, MiniBtn } from "./fields";
+
+type EditorTab = "detalhes" | "planos";
 
 export default function CatalogManager() {
   const { items, ready, add, update, remove } = useCatalog();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [tab, setTab] = useState<EditorTab>("detalhes");
 
   // Seleciona o primeiro item assim que o catálogo carrega.
   useEffect(() => {
@@ -106,6 +109,13 @@ export default function CatalogManager() {
               </MiniBtn>
             </div>
 
+            <EditorTabs
+              tab={tab}
+              onChange={setTab}
+              planCount={selected.plans.length}
+            />
+
+            {tab === "detalhes" ? (
             <div className="space-y-5">
               <label className="block">
                 <Label>Nome da solução</Label>
@@ -158,15 +168,15 @@ export default function CatalogManager() {
                 </label>
               </div>
 
-              <label className="block">
-                <Label>Entregáveis (um por linha)</Label>
-                <LineList
+              <div className="block">
+                <Label>Entregáveis</Label>
+                <ItemList
                   value={selected.deliverables}
                   onChange={(v) => update(selected.id, { deliverables: v })}
-                  rows={4}
-                  placeholder={"Entregáveis concretos\nItem por linha"}
+                  placeholder="Descreva um entregável"
+                  addLabel="+ adicionar entregável"
                 />
-              </label>
+              </div>
 
               <label className="block">
                 <Label>Prazo de execução</Label>
@@ -176,25 +186,6 @@ export default function CatalogManager() {
                   placeholder="Ex: 30 dias úteis"
                 />
               </label>
-
-              <div className="rounded-xl border border-line bg-bg-soft/40 p-4">
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-accent">
-                    Planos desta solução
-                  </span>
-                  <span className="text-[11px] text-ink-mute">
-                    {selected.plans.length} plano(s)
-                  </span>
-                </div>
-                <p className="mb-3 text-xs text-ink-mute">
-                  Cada plano pode ser recorrente (mensal) ou pontual (projeto
-                  único).
-                </p>
-                <PlansEditor
-                  plans={selected.plans}
-                  onChange={(p) => update(selected.id, { plans: p })}
-                />
-              </div>
 
               <div className="grid grid-cols-2 gap-5">
                 <label className="block">
@@ -231,6 +222,19 @@ export default function CatalogManager() {
                 ✓ Alterações salvas automaticamente neste navegador.
               </p>
             </div>
+            ) : (
+              <div>
+                <p className="mb-4 text-xs text-ink-mute">
+                  Cada plano pode ser recorrente (mensal) ou pontual (projeto
+                  único). Clique num card para expandir e editar.
+                </p>
+                <PlansEditor
+                  key={selected.id}
+                  plans={selected.plans}
+                  onChange={(p) => update(selected.id, { plans: p })}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid h-full place-items-center text-center">
@@ -252,6 +256,51 @@ export default function CatalogManager() {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function EditorTabs({
+  tab,
+  onChange,
+  planCount,
+}: {
+  tab: EditorTab;
+  onChange: (t: EditorTab) => void;
+  planCount: number;
+}) {
+  const tabs: { key: EditorTab; label: string; badge?: number }[] = [
+    { key: "detalhes", label: "Detalhes" },
+    { key: "planos", label: "Planos", badge: planCount },
+  ];
+  return (
+    <div className="mb-6 flex gap-6 border-b border-line">
+      {tabs.map((t) => {
+        const active = t.key === tab;
+        return (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => onChange(t.key)}
+            className={`-mb-px flex items-center gap-2 border-b-2 pb-2.5 text-sm font-medium transition ${
+              active
+                ? "border-accent text-ink"
+                : "border-transparent text-ink-mute hover:text-ink-soft"
+            }`}
+          >
+            {t.label}
+            {t.badge != null && (
+              <span
+                className={`grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-semibold ${
+                  active ? "bg-accent text-bg" : "bg-panel text-ink-mute"
+                }`}
+              >
+                {t.badge}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -294,67 +343,143 @@ function PlansEditor({
   plans: SolutionPlan[];
   onChange: (p: SolutionPlan[]) => void;
 }) {
+  // Começa tudo recolhido — cada card abre/fecha de forma independente.
+  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set());
+  const toggleOpen = (id: string) =>
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
   const setPlan = (i: number, patch: Partial<SolutionPlan>) =>
     onChange(plans.map((p, j) => (j === i ? { ...p, ...patch } : p)));
   const setFeatured = (i: number) =>
     onChange(plans.map((p, j) => ({ ...p, featured: j === i })));
 
+  const addPlan = () => {
+    const plan = blankSolutionPlan(`Plano ${plans.length + 1}`);
+    onChange([...plans, plan]);
+    setOpenIds((prev) => new Set(prev).add(plan.id)); // novo já abre
+  };
+
   return (
     <div className="space-y-3">
-      {plans.map((p, i) => (
-        <div key={p.id} className="rounded-lg border border-line bg-panel p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <label className="flex items-center gap-1.5 text-xs text-ink-mute">
-              <input
-                type="checkbox"
-                checked={p.featured}
-                onChange={() => setFeatured(i)}
-                className="accent-[var(--color-accent)]"
-              />
-              Recomendado
-            </label>
-            <MiniBtn danger onClick={() => onChange(plans.filter((_, j) => j !== i))}>
-              remover
-            </MiniBtn>
+      {plans.map((p, i) => {
+        const open = openIds.has(p.id);
+        return (
+          <div
+            key={p.id}
+            className={`overflow-hidden rounded-xl border bg-panel transition ${
+              open ? "border-accent/40" : "border-line hover:border-line/80"
+            }`}
+          >
+            {/* Cabeçalho recolhível: nome + cobrança + preço */}
+            <button
+              type="button"
+              onClick={() => toggleOpen(p.id)}
+              className="flex w-full items-center gap-3 px-3.5 py-3 text-left"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className={`h-4 w-4 shrink-0 text-ink-mute transition-transform ${
+                  open ? "rotate-90" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2">
+                  <span className="truncate text-sm font-medium text-ink">
+                    {p.name || "Sem nome"}
+                  </span>
+                  {p.featured && (
+                    <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                      ★ Recomendado
+                    </span>
+                  )}
+                </span>
+                <span className="mt-0.5 block text-[11px] text-ink-mute">
+                  {p.billing === "recorrente" ? "Recorrente (mensal)" : "Pontual (projeto único)"}
+                </span>
+              </span>
+              <span className="shrink-0 text-sm font-semibold text-ink">
+                {p.price || "—"}
+              </span>
+            </button>
+
+            {/* Corpo expandido: edição completa */}
+            {open && (
+              <div className="space-y-3 border-t border-line px-3.5 py-3.5">
+                <div className="grid grid-cols-[1fr_120px] gap-2">
+                  <label className="block">
+                    <Label>Nome do plano</Label>
+                    <TextInput
+                      value={p.name}
+                      onChange={(v) => setPlan(i, { name: v })}
+                      placeholder="Nome do plano"
+                    />
+                  </label>
+                  <label className="block">
+                    <Label>Preço</Label>
+                    <TextInput
+                      value={p.price}
+                      onChange={(v) => setPlan(i, { price: v })}
+                      placeholder="R$ 0"
+                    />
+                  </label>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <BillingToggle
+                    value={p.billing}
+                    onChange={(b) => setPlan(i, { billing: b })}
+                  />
+                  <label className="flex items-center gap-1.5 text-xs text-ink-mute">
+                    <input
+                      type="checkbox"
+                      checked={p.featured}
+                      onChange={() => setFeatured(i)}
+                      className="accent-[var(--color-accent)]"
+                    />
+                    Recomendado
+                  </label>
+                </div>
+                <label className="block">
+                  <Label>Descrição curta</Label>
+                  <TextInput
+                    value={p.description}
+                    onChange={(v) => setPlan(i, { description: v })}
+                    placeholder="Descrição curta do plano"
+                  />
+                </label>
+                <label className="block">
+                  <Label>Itens (um por linha)</Label>
+                  <LineList
+                    value={p.features}
+                    onChange={(v) => setPlan(i, { features: v })}
+                    rows={3}
+                  />
+                </label>
+                <div className="flex justify-end pt-1">
+                  <MiniBtn
+                    danger
+                    onClick={() => onChange(plans.filter((_, j) => j !== i))}
+                  >
+                    remover plano
+                  </MiniBtn>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="grid grid-cols-[1fr_120px] gap-2">
-            <TextInput
-              value={p.name}
-              onChange={(v) => setPlan(i, { name: v })}
-              placeholder="Nome do plano"
-            />
-            <TextInput
-              value={p.price}
-              onChange={(v) => setPlan(i, { price: v })}
-              placeholder="R$ 0"
-            />
-          </div>
-          <div className="mt-2">
-            <BillingToggle
-              value={p.billing}
-              onChange={(b) => setPlan(i, { billing: b })}
-            />
-          </div>
-          <div className="mt-2">
-            <TextInput
-              value={p.description}
-              onChange={(v) => setPlan(i, { description: v })}
-              placeholder="Descrição curta do plano"
-            />
-          </div>
-          <div className="mt-2">
-            <Label>Itens (um por linha)</Label>
-            <LineList
-              value={p.features}
-              onChange={(v) => setPlan(i, { features: v })}
-              rows={3}
-            />
-          </div>
-        </div>
-      ))}
-      <MiniBtn onClick={() => onChange([...plans, blankSolutionPlan(`Plano ${plans.length + 1}`)])}>
-        + adicionar plano
-      </MiniBtn>
+        );
+      })}
+      <MiniBtn onClick={addPlan}>+ adicionar plano</MiniBtn>
     </div>
   );
 }
