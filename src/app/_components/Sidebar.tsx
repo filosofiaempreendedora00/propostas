@@ -7,6 +7,24 @@ import { useEffect, useState } from "react";
 
 const COLLAPSE_KEY = "propostas.sidebar.collapsed";
 
+function IconHome({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M3 11l9-7 9 7" />
+      <path d="M5 10v10h14V10" />
+      <path d="M10 20v-6h4v6" />
+    </svg>
+  );
+}
+
 function IconEmpresa({ className = "" }: { className?: string }) {
   return (
     <svg
@@ -25,7 +43,7 @@ function IconEmpresa({ className = "" }: { className?: string }) {
   );
 }
 
-function IconCliente({ className = "" }: { className?: string }) {
+function IconGerador({ className = "" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -36,8 +54,10 @@ function IconCliente({ className = "" }: { className?: string }) {
       strokeLinejoin="round"
       className={className}
     >
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+      <rect x="2.5" y="7" width="19" height="13" rx="2" />
+      <path d="M8 7V5.5A2.5 2.5 0 0 1 10.5 3h3A2.5 2.5 0 0 1 16 5.5V7" />
+      <path d="M2.5 12.5h19" />
+      <path d="M11 12.5h2v2h-2z" />
     </svg>
   );
 }
@@ -76,9 +96,10 @@ function Chevron({ collapsed }: { collapsed: boolean }) {
 }
 
 const ITEMS = [
-  { href: "/empresa", label: "Sua Empresa", Icon: IconEmpresa },
-  { href: "/templates", label: "Templates", Icon: IconTemplates },
-  { href: "/cliente", label: "Seu Cliente", Icon: IconCliente },
+  { href: "/inicio", label: "Início", Icon: IconHome, highlight: false },
+  { href: "/empresa", label: "Sua Empresa", Icon: IconEmpresa, highlight: false },
+  { href: "/templates", label: "Templates", Icon: IconTemplates, highlight: false },
+  { href: "/cliente", label: "Gerador", Icon: IconGerador, highlight: true },
 ];
 
 export default function Sidebar() {
@@ -137,8 +158,32 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex flex-1 flex-col gap-1 px-2.5 py-2">
-        {ITEMS.map(({ href, label, Icon }) => {
+        {ITEMS.map(({ href, label, Icon, highlight }) => {
           const active = pathname.startsWith(href);
+
+          // "Gerador" — onde tudo acontece: destaque com areia caindo dentro.
+          if (highlight) {
+            return (
+              <Link
+                key={href}
+                href={href}
+                title={isCollapsed ? label : undefined}
+                className={`group relative my-1 flex items-center gap-3 overflow-hidden rounded-lg border border-accent/45 bg-accent/10 px-2.5 py-2.5 text-sm font-semibold text-ink transition hover:bg-accent/[0.16] ${
+                  isCollapsed ? "justify-center" : ""
+                }`}
+              >
+                <span
+                  aria-hidden
+                  className="kronos-sand pointer-events-none absolute inset-0 opacity-60"
+                />
+                <Icon className="relative h-5 w-5 shrink-0 text-accent" />
+                {!isCollapsed && (
+                  <span className="relative truncate">{label}</span>
+                )}
+              </Link>
+            );
+          }
+
           return (
             <Link
               key={href}
