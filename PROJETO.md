@@ -1,7 +1,7 @@
 # Projeto: Gerador de Propostas Universal (white-label)
 
 > Documento vivo de contexto. Se a conversa do chat se perder, este arquivo recupera o essencial.
-> Última atualização: 2026-05-31
+> Última atualização: 2026-06-02
 
 ## Origem
 Recriação (inspirada, **não copiada**) do gerador de propostas do app **Octopus** (Turbo Partners).
@@ -75,7 +75,9 @@ O **app** (chrome) veste a marca **Kronos**. O **documento da proposta** permane
     em destaque
   - [x] **Refino de UI**: planos como cards, consultores em grade, Templates com os 8 blocos,
     listas item-a-item (bullet ponteiro), campos creme/sépia, observações internas destacadas
-  - [ ] Persistência (Postgres/Drizzle): salvar/listar/editar propostas — passo dedicado
+  - [x] **Persistência (Supabase/Drizzle)**: catálogo, consultores e templates no
+    Postgres via Server Actions (seed na 1ª carga; estado otimista + escrita debounced).
+    Falta persistir a **proposta montada** em si (hoje ainda efêmera no Gerador).
 - [ ] **Passo 3 — IA**: porta a inteligência (DIFF, audit, agentic) pra personalizar a partir de briefing.
 - [ ] **Futuro**: modelo personalizado com cores/branding do cliente; export PDF; telemetria.
 
@@ -101,12 +103,12 @@ npm run dev   # http://localhost:3000
     "recomendado" destacado). Entregáveis/itens em **lista item-a-item** (bullet = ícone ponteiro
     Kronos). **Observações internas** em caixa destacada ("não vai pra proposta").
   - *Consultores*: **cards 2 por linha** (nome, e-mail, telefone) — puxados na proposta.
-  - Master-detail com auto-save (localStorage).
+  - Master-detail com auto-save no Supabase (debounced).
 - **`/templates` (Templates)** — biblioteca de **variações por bloco**. A barra lista **todos os 8
   blocos** da proposta; os **não-editáveis** (Capa nº1, Investimento nº6) aparecem **em cinza**.
   Editáveis: 2,3,4,5,7,8 — cada um começa com 3 variações e a pessoa cria quantas quiser. Editor
   mostra os campos do bloco (pilares na Estratégia, passos em Próximos passos). Store em
-  `src/lib/templates/` (localStorage). **Integrado ao Gerador**: cada bloco tem "Selecionar
+  `src/lib/templates/` (Supabase). **Integrado ao Gerador**: cada bloco tem "Selecionar
   variação" (aplica) e "+ salvar atual" (cria nova variação reutilizável).
 - **`/cliente` (Gerador, ex-"Seu Cliente")** — monta a proposta. O painel esquerdo tem só
   **controles** (seleção de soluções/planos, consultor via drag-and-drop, estrutura das dores,
@@ -127,18 +129,21 @@ estado sem recarregar o iframe (`skipRender`). Campos de catálogo ficam sem `da
 
 Arquivos:
 - `src/lib/catalog/types.ts` — `CatalogSolution` (com `plans: SolutionPlan[]` aninhados).
-- `src/lib/catalog/store.ts` — `useCatalog()` (soluções+planos), localStorage
-  (camada isolada; trocar por API/Postgres depois).
+- `src/lib/db/{schema,client}.ts` — schema Drizzle + client (server-only, pooler).
+- `src/lib/catalog/{seed,actions,store}.ts` e `src/lib/templates/{seed,actions,store}.ts`
+  — seed compartilhado, **Server Actions** (list/upsert/delete) e os hooks `useCatalog()`/
+  `useConsultants()`/`useTemplates()` (mesma interface; persistem no Supabase).
 - `src/lib/proposal/{types,defaults,render}.ts` — `renderProposalHTML(data)`: HTML standalone
   (fonte única pro preview e export). Estratégia herdada do Octopus: 1 função monta tudo.
 - `src/lib/templates/{types,store}.ts` — variações por bloco (`BLOCKS` editáveis +
-  `NON_EDITABLE_BLOCKS`), localStorage.
+  `NON_EDITABLE_BLOCKS`).
 - `src/app/_components/` — `Sidebar`, `HomeWorkspace` (Início), `EmpresaWorkspace` (sub-abas),
   `CatalogManager` (soluções+planos), `ConsultantsManager`, `TemplatesWorkspace` + `TemplateEditor`,
   `ClientBuilder` (Gerador), `fields` (inputs compartilhados, incl. `ItemList` com bullet ponteiro).
 
-> Persistência atual = localStorage (cadastro do catálogo sobrevive a reload). Migração pra
-> Postgres/Drizzle fica no passo dedicado de banco.
+> Persistência atual = **Supabase (Postgres) via Drizzle + Server Actions**. Catálogo,
+> consultores e templates vivem no banco (`.env.local` tem `DATABASE_URL`/`DIRECT_URL`,
+> gitignored). Migrations em `drizzle/`. A proposta montada no Gerador ainda é efêmera.
 
 ## Filosofia (foco em CONVERSÃO)
 O produto NÃO é "mais um gerador de propostas bonitas". É uma ferramenta que ajuda
