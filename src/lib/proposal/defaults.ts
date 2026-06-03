@@ -5,6 +5,7 @@ export const DEFAULT_PROPOSAL: ProposalData = {
   companyInitial: "S",
   proposalNumber: "0001",
   showProposalNumber: true,
+  theme: "dark",
   accent: "#C9A876",
 
   // Vazios de propósito: obrigatórios (evita vazar exemplo).

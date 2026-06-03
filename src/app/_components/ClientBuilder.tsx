@@ -641,6 +641,30 @@ export default function ClientBuilder() {
           )}
 
           <SectionTitle>Aparência</SectionTitle>
+          <div className="mb-4">
+            <Label>Tema do documento</Label>
+            <div className="inline-flex rounded-lg border border-line p-0.5 text-xs">
+              {(
+                [
+                  { key: "dark", label: "🌙 Escuro" },
+                  { key: "light", label: "☀️ Claro" },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => set("theme", t.key)}
+                  className={`rounded-md px-3 py-1.5 font-medium transition ${
+                    form.theme === t.key
+                      ? "bg-accent text-bg"
+                      : "text-ink-mute hover:text-ink-soft"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="grid grid-cols-[1fr_80px] items-start gap-3">
             <div>
               <Label>Cor de acento</Label>

@@ -35,12 +35,15 @@ export interface Step {
   description: string;
 }
 
+export type ProposalTheme = "dark" | "light";
+
 export interface ProposalData {
   // ---- Marca / identidade ----
   companyName: string;
   companyInitial: string;
   proposalNumber: string;
   showProposalNumber: boolean;
+  theme: ProposalTheme; // tema do documento (escuro/claro)
   accent: string;
 
   // ---- 1. Capa ----

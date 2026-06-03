@@ -135,9 +135,15 @@ export function renderProposalHTML(
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0A0B0D; --bg-soft:#101216; --panel:#14171C; --panel-2:#181C22;
+    ${
+      d.theme === "light"
+        ? `--bg:#FBF9F5; --bg-soft:#F1ECE3; --panel:#FFFFFF; --panel-2:#F7F2EA;
+    --line:rgba(0,0,0,.10); --line-2:rgba(0,0,0,.16);
+    --ink:#1C1A17; --ink-soft:#55514A; --ink-mute:#8B857B;`
+        : `--bg:#0A0B0D; --bg-soft:#101216; --panel:#14171C; --panel-2:#181C22;
     --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14);
-    --ink:#ECECE7; --ink-soft:#A7ABB2; --ink-mute:#6E737B;
+    --ink:#ECECE7; --ink-soft:#A7ABB2; --ink-mute:#6E737B;`
+    }
     --accent:${esc(d.accent)};
     --accent-dim:color-mix(in srgb, ${esc(d.accent)} 14%, transparent);
     --radius:18px; --maxw:1080px;
