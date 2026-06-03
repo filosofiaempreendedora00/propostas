@@ -161,25 +161,27 @@ export default function Sidebar() {
         {ITEMS.map(({ href, label, Icon, highlight }) => {
           const active = pathname.startsWith(href);
 
-          // "Gerador" — onde tudo acontece: destaque com areia caindo dentro.
+          // "Gerador" — onde tudo acontece. Destaque pelo SELO do ícone (maleta
+          // com areia caindo + brilho) e texto claro, sem preencher a linha —
+          // assim chama atenção sem parecer uma aba selecionada.
           if (highlight) {
             return (
               <Link
                 key={href}
                 href={href}
                 title={isCollapsed ? label : undefined}
-                className={`group relative my-1 flex items-center gap-3 overflow-hidden rounded-lg border border-accent/45 bg-accent/10 px-2.5 py-2.5 text-sm font-semibold text-ink transition hover:bg-accent/[0.16] ${
-                  isCollapsed ? "justify-center" : ""
-                }`}
+                className={`mt-1 flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-semibold transition ${
+                  active ? "bg-panel text-ink" : "text-ink hover:bg-panel/40"
+                } ${isCollapsed ? "justify-center" : ""}`}
               >
-                <span
-                  aria-hidden
-                  className="kronos-sand pointer-events-none absolute inset-0 opacity-60"
-                />
-                <Icon className="relative h-5 w-5 shrink-0 text-accent" />
-                {!isCollapsed && (
-                  <span className="relative truncate">{label}</span>
-                )}
+                <span className="relative grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-md border border-accent/45 bg-accent/15 shadow-[0_0_12px_-3px_rgba(168,144,112,0.75)]">
+                  <span
+                    aria-hidden
+                    className="kronos-sand pointer-events-none absolute inset-0 opacity-70"
+                  />
+                  <Icon className="relative h-4 w-4 text-accent" />
+                </span>
+                {!isCollapsed && <span className="truncate">{label}</span>}
               </Link>
             );
           }

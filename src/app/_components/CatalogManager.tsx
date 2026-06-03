@@ -36,7 +36,7 @@ export default function CatalogManager() {
       <aside className="form-scroll overflow-y-auto border-r border-line">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/95 px-4 py-4 backdrop-blur">
           <div>
-            <div className="font-display text-xl font-semibold tracking-tight text-ink">
+            <div className="font-display text-3xl font-semibold tracking-tight text-ink">
               Soluções
             </div>
             <div className="text-[11px] text-ink-mute">
