@@ -337,6 +337,17 @@ export default function ClientBuilder() {
               placeholder="Ex: João Silva / razão social"
             />
           </label>
+          <label className="mt-3 block">
+            <Label>Frase da capa (antes do nome da empresa)</Label>
+            <TextInput
+              value={form.coverHeadline}
+              onChange={(v) => set("coverHeadline", v)}
+              placeholder="Ex: Uma proposta para impulsionar a"
+            />
+            <span className="mt-1 block text-[11px] text-ink-mute">
+              Na capa: “{form.coverHeadline || "…"} {form.clientName || "[nome da empresa]"}.”
+            </span>
+          </label>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <label className="block">
               <span className="mb-1.5 flex min-h-[28px] items-center text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute">

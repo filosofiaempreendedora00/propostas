@@ -48,6 +48,8 @@ export interface ProposalData {
   clientLegalName: string;
   dateLabel: string;
   validUntilLabel: string;
+  coverEyebrow: string; // rótulo pequeno acima do título da capa
+  coverHeadline: string; // 1ª parte do título da capa (antes do nome)
   headlineLead: string;
 
   // ---- 2. O que entendemos (diagnóstico) ----

@@ -269,8 +269,8 @@ export function renderProposalHTML(d: ProposalData): string {
     <div class="cover-meta">PROPOSTA COMERCIAL${d.showProposalNumber ? ` · Nº ${esc(d.proposalNumber)}` : ""}</div>
   </div>
   <div class="wrap cover-mid">
-    <span class="eyebrow">Preparado exclusivamente para</span>
-    <h1 class="display">Uma proposta para<br>impulsionar a <em data-edit="clientName" data-placeholder="[ nome da empresa ]">${esc(d.clientName)}</em>.</h1>
+    <span class="eyebrow" data-edit="coverEyebrow" data-placeholder="[ rótulo da capa ]">${esc(d.coverEyebrow)}</span>
+    <h1 class="display"><span data-edit="coverHeadline" data-placeholder="[ frase da capa ]">${esc(d.coverHeadline)}</span> <em data-edit="clientName" data-placeholder="[ nome da empresa ]">${esc(d.clientName)}</em>.</h1>
     <p class="lead" data-edit="headlineLead">${esc(d.headlineLead)}</p>
   </div>
   <div class="wrap cover-foot">
