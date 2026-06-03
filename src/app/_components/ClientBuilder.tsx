@@ -255,7 +255,8 @@ export default function ClientBuilder() {
   const exportRef = useRef<HTMLAnchorElement | null>(null);
   const handleExport = () => {
     if (clientMissing) return;
-    const html = renderProposalHTML(data);
+    // Arquivo baixado: sem edição inline (nem hover, nem contenteditable).
+    const html = renderProposalHTML(data, { editable: false });
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = exportRef.current ?? document.createElement("a");

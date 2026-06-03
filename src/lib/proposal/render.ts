@@ -117,8 +117,14 @@ function reasonsHtml(reasons: string[]): string {
 }
 
 // ---------- documento completo (standalone) ----------
-export function renderProposalHTML(d: ProposalData): string {
-  return `<!DOCTYPE html>
+export function renderProposalHTML(
+  d: ProposalData,
+  opts: { editable?: boolean } = {},
+): string {
+  // Edição inline (hover + contenteditable) só no preview do app.
+  // No HTML baixado (editable:false) nada disso vai junto.
+  const editable = opts.editable ?? true;
+  const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -247,11 +253,15 @@ export function renderProposalHTML(d: ProposalData): string {
 
   footer{border-top:1px solid var(--line);padding:34px 0;text-align:center;color:var(--ink-mute);font-size:12.5px;letter-spacing:.04em}
 
-  /* edição inline */
+  ${
+    editable
+      ? `/* edição inline (só no preview) */
   [data-edit]{outline:1px dashed transparent;outline-offset:4px;border-radius:3px;transition:outline-color .12s ease}
   [data-edit]:hover{outline-color:color-mix(in srgb, var(--accent) 55%, transparent);cursor:text}
   [data-edit]:focus{outline:1px dashed var(--accent);outline-offset:4px}
-  [data-edit]:empty::before{content:attr(data-placeholder);color:var(--ink-mute);opacity:.65}
+  [data-edit]:empty::before{content:attr(data-placeholder);color:var(--ink-mute);opacity:.65}`
+      : ""
+  }
 
   @media(max-width:860px){
     .wrap{padding:0 24px}
@@ -402,7 +412,9 @@ ${
 
 <footer>© ${esc(d.dateLabel.replace(/.*\b(\d{4})\b.*/, "$1") || "")} ${esc(d.companyName)} · Proposta confidencial preparada para ${esc(d.clientLegalName)}.</footer>
 
-<script>
+${
+  editable
+    ? `<script>
 (function(){
   function commit(el){
     var f=el.getAttribute('data-edit');
@@ -424,8 +436,16 @@ ${
     else if(e.key==='Escape'){ e.preventDefault(); el.blur(); }
   });
 })();
-</script>
+</script>`
+    : ""
+}
 
 </body>
 </html>`;
+
+  if (editable) return html;
+  // Export: remove qualquer vestígio de edição (atributos inertes).
+  return html
+    .replace(/ data-edit="[^"]*"/g, "")
+    .replace(/ data-placeholder="[^"]*"/g, "");
 }
