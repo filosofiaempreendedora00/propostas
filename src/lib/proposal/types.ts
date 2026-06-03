@@ -41,6 +41,7 @@ export interface ProposalData {
   // ---- Marca / identidade ----
   companyName: string;
   companyInitial: string;
+  logo?: string; // logo da empresa (data URL base64) — puxada de "Sua Empresa"
   proposalNumber: string;
   showProposalNumber: boolean;
   theme: ProposalTheme; // tema do documento (escuro/claro)

@@ -6,6 +6,7 @@ import { DEFAULT_PROPOSAL } from "@/lib/proposal/defaults";
 import { renderProposalHTML, slugify } from "@/lib/proposal/render";
 import type { ProposalData, Tier, InvestmentGroup } from "@/lib/proposal/types";
 import { useCatalog, useConsultants } from "@/lib/catalog/store";
+import { useCompany } from "@/lib/company/store";
 import type { CatalogSolution, SolutionPlan } from "@/lib/catalog/types";
 import { useTemplates } from "@/lib/templates/store";
 import { BLOCK_FIELDS, type BlockKey } from "@/lib/templates/types";
@@ -25,7 +26,7 @@ function extractPayload(
 
 type ClientForm = Omit<
   ProposalData,
-  "solutions" | "investmentGroups" | "responsible" | "phone" | "email"
+  "solutions" | "investmentGroups" | "responsible" | "phone" | "email" | "logo"
 >;
 
 const ACCENT_PRESETS = [
@@ -79,6 +80,7 @@ export default function ClientBuilder() {
     add: addTemplate,
     update: updateTemplate,
   } = useTemplates();
+  const { logo: companyLogo } = useCompany();
 
   const [form, setForm] = useState<ClientForm>(() => {
     const {
@@ -143,13 +145,14 @@ export default function ClientBuilder() {
       }));
     return {
       ...form,
+      logo: companyLogo ?? undefined,
       solutions: chosen.map(toRenderSolution),
       investmentGroups,
       responsible: consultant?.name ?? "",
       phone: consultant?.phone ?? "",
       email: consultant?.email ?? "",
     };
-  }, [form, solutions, selSolutions, consultant]);
+  }, [form, solutions, selSolutions, consultant, companyLogo]);
 
   // ----- edição inline vinda do preview -----
   useEffect(() => {

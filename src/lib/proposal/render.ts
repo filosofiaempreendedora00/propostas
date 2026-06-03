@@ -167,6 +167,7 @@ export function renderProposalHTML(
   .cover-top{display:flex;justify-content:space-between;align-items:center}
   .brandmark{display:flex;align-items:center;gap:12px;font-weight:600;letter-spacing:.02em}
   .brandmark .dot{width:30px;height:30px;border-radius:9px;background:linear-gradient(140deg,var(--accent),#8c7044);display:grid;place-items:center;color:#0A0B0D;font-family:'Fraunces',serif;font-weight:600;font-size:16px}
+  .brandmark .brand-logo{height:38px;width:auto;max-width:240px;object-fit:contain;display:block}
   .cover-meta{font-size:13px;color:var(--ink-mute);letter-spacing:.04em}
   .cover-mid{padding:40px 0}
   .cover h1{font-size:clamp(46px,7vw,88px);margin:26px 0 30px}
@@ -281,7 +282,11 @@ export function renderProposalHTML(
 <!-- 1. CAPA -->
 <section class="cover">
   <div class="wrap cover-top">
-    <div class="brandmark"><span class="dot">${esc(d.companyInitial)}</span><span data-edit="companyName">${esc(d.companyName)}</span></div>
+    <div class="brandmark">${
+      d.logo
+        ? `<img class="brand-logo" src="${esc(d.logo)}" alt="${esc(d.companyName)}">`
+        : `<span class="dot">${esc(d.companyInitial)}</span><span data-edit="companyName">${esc(d.companyName)}</span>`
+    }</div>
     <div class="cover-meta">PROPOSTA COMERCIAL${d.showProposalNumber ? ` · Nº ${esc(d.proposalNumber)}` : ""}</div>
   </div>
   <div class="wrap cover-mid">

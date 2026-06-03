@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import CatalogManager from "./CatalogManager";
 import ConsultantsManager from "./ConsultantsManager";
+import BrandManager from "./BrandManager";
 
 const TAB_KEY = "propostas.empresa.tab";
-type Tab = "solucoes" | "consultores";
+type Tab = "solucoes" | "consultores" | "marca";
 
 export default function EmpresaWorkspace() {
   const [tab, setTab] = useState<Tab>("solucoes");
@@ -13,7 +14,8 @@ export default function EmpresaWorkspace() {
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(TAB_KEY);
-      if (saved === "solucoes" || saved === "consultores") setTab(saved);
+      if (saved === "solucoes" || saved === "consultores" || saved === "marca")
+        setTab(saved);
     } catch {
       /* ignora */
     }
@@ -36,6 +38,7 @@ export default function EmpresaWorkspace() {
           [
             { id: "solucoes", label: "Soluções & Planos" },
             { id: "consultores", label: "Consultores" },
+            { id: "marca", label: "Marca" },
           ] as const
         ).map((t) => (
           <button
@@ -55,6 +58,7 @@ export default function EmpresaWorkspace() {
       <div className="min-h-0 flex-1">
         {tab === "solucoes" && <CatalogManager />}
         {tab === "consultores" && <ConsultantsManager />}
+        {tab === "marca" && <BrandManager />}
       </div>
     </div>
   );
