@@ -1,99 +1,74 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import type { ProposalData } from "@/lib/proposal/types";
-import { DEFAULT_PROPOSAL } from "@/lib/proposal/defaults";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { BlockTemplate, BlockKey } from "./types";
-import { BLOCKS, BLOCK_FIELDS } from "./types";
+import { blankTemplate } from "./seed";
+import { listTemplates, upsertTemplate, deleteTemplate } from "./actions";
 
-const KEY = "propostas.templates.v1";
+// Reexport pra manter a API pública.
+export { pickDefault, blankTemplate } from "./seed";
 
-function uid(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return "tpl-" + Math.abs(Date.now()).toString(36);
-}
-
-// Extrai do default só os campos do bloco.
-export function pickDefault(block: BlockKey): Partial<ProposalData> {
-  return BLOCK_FIELDS[block].reduce<Partial<ProposalData>>(
-    (acc, f) => ({ ...acc, [f]: DEFAULT_PROPOSAL[f] }),
-    {},
-  );
-}
-
-export function blankTemplate(block: BlockKey, name: string): BlockTemplate {
-  return { id: uid(), block, name, payload: pickDefault(block) };
-}
-
-function load(): BlockTemplate[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as BlockTemplate[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function save(items: BlockTemplate[]) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(items));
-  } catch {
-    /* ignora */
-  }
-}
-
-// 3 variações por bloco no primeiro acesso.
-const SEED: BlockTemplate[] = BLOCKS.flatMap((b) => [
-  { id: `seed-${b.key}-1`, block: b.key, name: "Padrão", payload: pickDefault(b.key) },
-  { id: `seed-${b.key}-2`, block: b.key, name: "Alternativa A", payload: pickDefault(b.key) },
-  { id: `seed-${b.key}-3`, block: b.key, name: "Alternativa B", payload: pickDefault(b.key) },
-]);
+const DEBOUNCE_MS = 600;
 
 export function useTemplates() {
   const [items, setItems] = useState<BlockTemplate[]>([]);
   const [ready, setReady] = useState(false);
+  const itemsRef = useRef<BlockTemplate[]>([]);
+  itemsRef.current = items;
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
   useEffect(() => {
-    let initial = load();
-    if (initial.length === 0) {
-      initial = SEED;
-      save(initial);
-    }
-    setItems(initial);
-    setReady(true);
+    let alive = true;
+    listTemplates()
+      .then((rows) => alive && (setItems(rows), setReady(true)))
+      .catch(() => alive && setReady(true));
+    const t = timers.current;
+    return () => {
+      alive = false;
+      for (const id of t.values()) clearTimeout(id);
+    };
+  }, []);
+
+  const scheduleFlush = useCallback((id: string) => {
+    const m = timers.current;
+    const prev = m.get(id);
+    if (prev) clearTimeout(prev);
+    m.set(
+      id,
+      setTimeout(() => {
+        m.delete(id);
+        const idx = itemsRef.current.findIndex((t) => t.id === id);
+        if (idx !== -1) void upsertTemplate(itemsRef.current[idx], idx);
+      }, DEBOUNCE_MS),
+    );
   }, []);
 
   const add = useCallback((block: BlockKey): string => {
     const t = blankTemplate(block, "Nova variação");
-    setItems((prev) => {
-      const next = [...prev, t];
-      save(next);
-      return next;
-    });
+    const order = itemsRef.current.length;
+    setItems((prev) => [...prev, t]);
+    void upsertTemplate(t, order);
     return t.id;
   }, []);
 
   const update = useCallback(
     (id: string, patch: Partial<BlockTemplate>) => {
-      setItems((prev) => {
-        const next = prev.map((t) => (t.id === id ? { ...t, ...patch } : t));
-        save(next);
-        return next;
-      });
+      setItems((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+      );
+      scheduleFlush(id);
     },
-    [],
+    [scheduleFlush],
   );
 
   const remove = useCallback((id: string) => {
-    setItems((prev) => {
-      const next = prev.filter((t) => t.id !== id);
-      save(next);
-      return next;
-    });
+    const t = timers.current.get(id);
+    if (t) {
+      clearTimeout(t);
+      timers.current.delete(id);
+    }
+    setItems((prev) => prev.filter((x) => x.id !== id));
+    void deleteTemplate(id);
   }, []);
 
   return { items, ready, add, update, remove };
