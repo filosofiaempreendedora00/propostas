@@ -10,6 +10,9 @@ export function toRenderSolution(s: CatalogSolution): Solution {
     howItWorks: s.howItWorks,
     expectedBenefit: s.expectedBenefit,
     deliverables: s.deliverables,
+    timeline: s.timeline,
+    highlights: s.highlights,
+    requirements: s.requirements,
   };
 }
 

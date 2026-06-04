@@ -43,24 +43,36 @@ function pillarsHtml(pillars: Pillar[]): string {
     .join("");
 }
 
+function solList(
+  kicker: string,
+  items: string[] | undefined,
+  variant: string,
+): string {
+  return items && items.length
+    ? `<div class="sol2-deliver ${variant}"><div class="sol2-k">${kicker}</div><ul>${items
+        .map((d) => `<li>${esc(d)}</li>`)
+        .join("")}</ul></div>`
+    : "";
+}
+
 function solutionsHtml(solutions: Solution[]): string {
   return solutions
     .map(
       (s, i) => `
       <div class="sol2">
-        <div class="sol2-head"><span class="sol2-num">${n2(i)}</span><h3>${esc(s.name)}</h3></div>
+        <div class="sol2-head"><span class="sol2-num">${n2(i)}</span><h3>${esc(s.name)}</h3>${
+          s.timeline && s.timeline.trim()
+            ? `<span class="sol2-time">Prazo · ${esc(s.timeline)}</span>`
+            : ""
+        }</div>
         <div class="sol2-grid">
           <div class="sol2-cell"><div class="sol2-k">O problema que resolve</div><p>${esc(s.problemSolved)}</p></div>
           <div class="sol2-cell"><div class="sol2-k">Como funciona</div><p>${esc(s.howItWorks)}</p></div>
           <div class="sol2-cell"><div class="sol2-k">Benefício esperado</div><p>${esc(s.expectedBenefit)}</p></div>
         </div>
-        ${
-          s.deliverables.length
-            ? `<div class="sol2-deliver"><div class="sol2-k">Entregáveis</div><ul>${s.deliverables
-                .map((d) => `<li>${esc(d)}</li>`)
-                .join("")}</ul></div>`
-            : ""
-        }
+        ${solList("Entregáveis", s.deliverables, "deliver")}
+        ${solList("Destaques", s.highlights, "high")}
+        ${solList("Precisamos de você", s.requirements, "req")}
       </div>`,
     )
     .join("");
@@ -237,9 +249,10 @@ export function renderProposalHTML(
   /* Soluções (ricas) */
   .sol2{padding:40px 0;border-top:1px solid var(--line)}
   .sol2:first-of-type{border-top:none}
-  .sol2-head{display:flex;align-items:baseline;gap:18px;margin-bottom:22px}
+  .sol2-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px 18px;margin-bottom:22px}
   .sol2-num{font-family:'Fraunces',serif;font-size:34px;color:var(--accent);line-height:1}
   .sol2-head h3{font-size:26px;font-weight:600;letter-spacing:-.01em}
+  .sol2-time{margin-left:auto;align-self:center;font-size:11.5px;letter-spacing:.04em;color:var(--ink-mute);border:1px solid var(--line-2);border-radius:999px;padding:5px 12px;white-space:nowrap}
   .sol2-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
   .sol2-k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;font-weight:500}
   .sol2-cell p{font-size:14.5px;color:var(--ink-soft);font-weight:300}
@@ -247,6 +260,8 @@ export function renderProposalHTML(
   .sol2-deliver ul{list-style:none;display:flex;flex-wrap:wrap;gap:10px 24px}
   .sol2-deliver li{position:relative;padding-left:20px;font-size:14px;color:var(--ink-soft)}
   .sol2-deliver li::before{content:"✓";position:absolute;left:0;color:var(--accent)}
+  .sol2-deliver.high li::before{content:"★";font-size:12px}
+  .sol2-deliver.req li::before{content:"→";color:var(--ink-mute)}
 
   /* Investimento */
   .invest{background:var(--bg-soft)}

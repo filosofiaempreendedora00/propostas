@@ -7,6 +7,9 @@ export interface Solution {
   howItWorks: string; // como funciona
   expectedBenefit: string; // benefício esperado
   deliverables: string[]; // entregáveis
+  timeline?: string; // prazo de execução
+  highlights?: string[]; // diferenciais / destaques
+  requirements?: string[]; // o que precisamos do cliente
 }
 
 export interface Tier {
