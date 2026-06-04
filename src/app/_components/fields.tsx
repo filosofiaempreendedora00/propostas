@@ -130,10 +130,10 @@ export function ItemList({
             src="/kronos-ponteiro-areia.png"
             alt=""
             aria-hidden
-            width={28}
-            height={28}
+            width={36}
+            height={36}
             unoptimized
-            className="h-7 w-7 shrink-0 rotate-90 select-none opacity-90"
+            className="-mx-1 h-9 w-9 shrink-0 rotate-90 select-none"
           />
           <input
             ref={(el) => {
@@ -176,7 +176,7 @@ export function ItemList({
       <button
         type="button"
         onClick={() => addAfter(value.length - 1)}
-        className="mt-0.5 flex items-center gap-1.5 rounded-lg border border-dashed border-line px-3 py-1.5 text-xs font-medium text-ink-mute transition hover:border-accent/50 hover:text-accent"
+        className="mt-1.5 flex items-center gap-1.5 rounded-lg border border-dashed border-accent/45 bg-accent/[0.07] px-3.5 py-2 text-sm font-semibold text-accent transition hover:border-accent hover:bg-accent/15"
       >
         {addLabel}
       </button>
