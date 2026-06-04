@@ -252,8 +252,8 @@ export function renderProposalHTML(
   .invest{background:var(--bg-soft)}
   .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:52px}
   .tier{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:34px 30px;display:flex;flex-direction:column}
-  .tier.featured{border-color:var(--line-2);background:linear-gradient(180deg,var(--accent-dim),transparent 42%),var(--panel-2);position:relative}
-  .tier.featured::after{content:"Recomendado";position:absolute;top:-11px;right:22px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);background:var(--bg-soft);border:1px solid var(--accent);border-radius:999px;padding:5px 11px}
+  .tier.featured{border-color:var(--accent);background:linear-gradient(180deg,var(--accent-dim),transparent 42%),var(--panel-2);position:relative;overflow:hidden;padding-top:56px}
+  .tier.featured::before{content:"Recomendado";position:absolute;top:0;left:0;right:0;height:34px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#0A0B0D;font-size:10.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase}
   .tier .tname{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:18px}
   .tier .price{font-family:'Fraunces',serif;font-size:38px;line-height:1;margin-bottom:6px}
   .tier .price small{font-size:15px;color:var(--ink-mute);font-family:'Inter';font-weight:400}

@@ -120,9 +120,9 @@ export default function HomeWorkspace() {
             em <span className="italic text-accent">60 segundos</span>.
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-ink-soft">
-            O segredo é simples: você configura sua operação{" "}
-            <strong className="font-semibold text-ink">uma única vez</strong> e,
-            a partir daí, monta propostas matadoras em segundos — quantas quiser.
+            Configure sua operação{" "}
+            <strong className="font-semibold text-ink">uma única vez</strong> e, a
+            partir daí, monte infinitas propostas impecáveis em segundos.
           </p>
         </div>
 
