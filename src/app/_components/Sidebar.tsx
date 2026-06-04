@@ -140,9 +140,15 @@ export default function Sidebar() {
       {/* Brand */}
       <div className="flex items-center px-4 py-4">
         {isCollapsed ? (
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent font-semibold text-bg">
-            K
-          </div>
+          <Image
+            src="/kronos-symbol.png"
+            alt="Kronos"
+            width={32}
+            height={32}
+            priority
+            unoptimized
+            className="h-8 w-8 shrink-0 select-none"
+          />
         ) : (
           <Image
             src="/kronos-logo.png"
@@ -197,7 +203,9 @@ export default function Sidebar() {
                   : "text-ink-mute hover:bg-panel/50 hover:text-ink-soft"
               } ${isCollapsed ? "justify-center" : ""}`}
             >
-              <Icon className="h-5 w-5 shrink-0" />
+              <span className="grid h-7 w-7 shrink-0 place-items-center">
+                <Icon className="h-5 w-5" />
+              </span>
               {!isCollapsed && <span className="truncate">{label}</span>}
             </Link>
           );
