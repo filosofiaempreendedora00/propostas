@@ -255,6 +255,39 @@ export default function ClientBuilder() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  // PDF: usa a impressão nativa do navegador (100% local, sem custo de API).
+  // Renderiza num iframe oculto, espera as fontes e chama print() → "Salvar como PDF".
+  const handleExportPDF = () => {
+    if (clientMissing) return;
+    const html = renderProposalHTML(data, { editable: false });
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.cssText =
+      "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
+    document.body.appendChild(iframe);
+    const remove = () => setTimeout(() => iframe.remove(), 1500);
+    iframe.onload = () => {
+      const win = iframe.contentWindow;
+      if (!win) {
+        remove();
+        return;
+      }
+      const doPrint = () => {
+        try {
+          win.focus();
+          win.print();
+        } catch {
+          /* ignora */
+        }
+        remove();
+      };
+      const fonts = win.document?.fonts;
+      if (fonts?.ready) fonts.ready.then(() => setTimeout(doPrint, 120));
+      else setTimeout(doPrint, 500);
+    };
+    iframe.srcdoc = html;
+  };
+
   // ----- consultor: drag & drop -----
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -281,14 +314,13 @@ export default function ClientBuilder() {
             </>
           )}
         </div>
-        <button
-          onClick={handleExport}
+        <DownloadActions
+          layout="header"
+          accent={form.accent}
           disabled={clientMissing}
-          className="rounded-full px-5 py-2 text-sm font-semibold text-bg transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-          style={{ background: form.accent }}
-        >
-          ⬇ Baixar HTML
-        </button>
+          onPdf={handleExportPDF}
+          onHtml={handleExport}
+        />
         <a ref={exportRef} className="hidden" />
       </div>
 
@@ -338,42 +370,27 @@ export default function ClientBuilder() {
               Na capa: “{form.coverHeadline || "…"} {form.clientName || "[nome da empresa]"}.”
             </span>
           </label>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className="mb-1.5 flex min-h-[28px] items-center text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute">
-                Validade
+          <div className="mt-3">
+            <div className="mb-1.5 flex min-h-[28px] items-center justify-between gap-2">
+              <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute">
+                Nº proposta
               </span>
-              <input
-                type="date"
-                value={validISO}
-                onChange={(e) => setValidity(e.target.value)}
-                className="w-full rounded-lg border border-line bg-panel-2 px-3 py-2 text-sm text-ink outline-none [color-scheme:dark] focus:border-accent/60"
-              />
-            </label>
-            <div>
-              <div className="mb-1.5 flex min-h-[28px] items-center justify-between gap-2">
-                <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute">
-                  Nº proposta
-                </span>
-                <label className="flex shrink-0 items-center gap-1 text-[10px] text-ink-soft">
-                  <input
-                    type="checkbox"
-                    checked={form.showProposalNumber}
-                    onChange={(e) =>
-                      set("showProposalNumber", e.target.checked)
-                    }
-                    className="accent-[var(--color-accent)]"
-                  />
-                  Mostrar
-                </label>
-              </div>
-              <div className={form.showProposalNumber ? "" : "opacity-40"}>
-                <TextInput
-                  value={form.proposalNumber}
-                  onChange={(v) => set("proposalNumber", v)}
-                  placeholder="0001"
+              <label className="flex shrink-0 items-center gap-1 text-[10px] text-ink-soft">
+                <input
+                  type="checkbox"
+                  checked={form.showProposalNumber}
+                  onChange={(e) => set("showProposalNumber", e.target.checked)}
+                  className="accent-[var(--color-accent)]"
                 />
-              </div>
+                Mostrar
+              </label>
+            </div>
+            <div className={form.showProposalNumber ? "" : "opacity-40"}>
+              <TextInput
+                value={form.proposalNumber}
+                onChange={(v) => set("proposalNumber", v)}
+                placeholder="0001"
+              />
             </div>
           </div>
 
@@ -563,7 +580,7 @@ export default function ClientBuilder() {
             />
           </div>
 
-          <SectionTitle>Responsável pela proposta</SectionTitle>
+          <SectionTitle>Responsável e validade</SectionTitle>
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -638,6 +655,19 @@ export default function ClientBuilder() {
             </div>
           )}
 
+          <label className="mt-4 block">
+            <Label>Proposta válida até</Label>
+            <input
+              type="date"
+              value={validISO}
+              onChange={(e) => setValidity(e.target.value)}
+              className="w-full rounded-lg border border-line bg-panel-2 px-3 py-2 text-sm text-ink outline-none [color-scheme:dark] focus:border-accent/60"
+            />
+            <span className="mt-1 block text-[11px] text-ink-mute">
+              Aparece na capa e no fechamento da proposta.
+            </span>
+          </label>
+
           <SectionTitle>Aparência</SectionTitle>
           <div className="mb-4">
             <Label>Tema do documento</Label>
@@ -694,6 +724,20 @@ export default function ClientBuilder() {
               />
             </label>
           </div>
+
+          <SectionTitle>Baixar proposta</SectionTitle>
+          {clientMissing && (
+            <p className="mb-2.5 text-[11px] text-amber-400/90">
+              ⚠ Preencha nome da empresa e do cliente para baixar.
+            </p>
+          )}
+          <DownloadActions
+            layout="panel"
+            accent={form.accent}
+            disabled={clientMissing}
+            onPdf={handleExportPDF}
+            onHtml={handleExport}
+          />
 
           <div className="h-10" />
         </div>
@@ -753,6 +797,47 @@ export default function ClientBuilder() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function DownloadActions({
+  onPdf,
+  onHtml,
+  disabled,
+  accent,
+  layout,
+}: {
+  onPdf: () => void;
+  onHtml: () => void;
+  disabled: boolean;
+  accent: string;
+  layout: "header" | "panel";
+}) {
+  const header = layout === "header";
+  return (
+    <div className={header ? "flex items-center gap-2" : "grid grid-cols-2 gap-2"}>
+      <button
+        type="button"
+        onClick={onPdf}
+        disabled={disabled}
+        style={{ background: accent }}
+        className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full font-semibold text-bg transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 ${
+          header ? "px-5 py-2 text-sm" : "px-4 py-2.5 text-sm"
+        }`}
+      >
+        ⬇ Baixar PDF
+      </button>
+      <button
+        type="button"
+        onClick={onHtml}
+        disabled={disabled}
+        className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-line font-medium text-ink-soft transition enabled:hover:border-accent/60 enabled:hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 ${
+          header ? "px-4 py-2 text-sm" : "px-4 py-2.5 text-sm"
+        }`}
+      >
+        ⬇ {header ? "HTML" : "Baixar HTML"}
+      </button>
     </div>
   );
 }

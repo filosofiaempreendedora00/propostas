@@ -162,6 +162,18 @@ export default function Sidebar() {
         )}
       </div>
 
+      {/* Recolher — no topo, logo abaixo da marca */}
+      <button
+        onClick={toggle}
+        title={isCollapsed ? "Expandir" : "Recolher"}
+        className={`flex items-center gap-3 border-b border-line px-4 py-3 text-xs font-medium text-ink-mute transition hover:text-ink-soft ${
+          isCollapsed ? "justify-center" : ""
+        }`}
+      >
+        <Chevron collapsed={isCollapsed} />
+        {!isCollapsed && <span>Recolher</span>}
+      </button>
+
       {/* Nav */}
       <nav className="flex flex-1 flex-col gap-1 px-2.5 py-2">
         {ITEMS.map(({ href, label, Icon, highlight }) => {
@@ -211,18 +223,6 @@ export default function Sidebar() {
           );
         })}
       </nav>
-
-      {/* Toggle */}
-      <button
-        onClick={toggle}
-        title={isCollapsed ? "Expandir" : "Recolher"}
-        className={`flex items-center gap-3 border-t border-line px-4 py-3 text-xs font-medium text-ink-mute transition hover:text-ink-soft ${
-          isCollapsed ? "justify-center" : ""
-        }`}
-      >
-        <Chevron collapsed={isCollapsed} />
-        {!isCollapsed && <span>Recolher</span>}
-      </button>
     </aside>
   );
 }

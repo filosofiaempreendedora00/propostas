@@ -334,6 +334,16 @@ export function renderProposalHTML(
     .cover-top,.cover-foot{flex-direction:column;align-items:flex-start;gap:16px}
     .cover-meta{text-align:left}
   }
+
+  /* Impressão / Salvar como PDF — força as cores do tema (senão o Chrome
+     descarta os fundos e tudo vira branco) e evita cortes feios. */
+  @media print{
+    @page{margin:0}
+    html,body{background:var(--bg)!important}
+    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    .cover{min-height:100vh;break-after:page}
+    .block,.tier,.pillar,.step,.sol2,.rec-card,.rec-reason,.invest-group{break-inside:avoid}
+  }
 </style>
 ${only ? `<style>.cover,footer{display:none!important}section{border-top:none!important}.pad{padding:40px 0}</style>` : ""}
 </head>
