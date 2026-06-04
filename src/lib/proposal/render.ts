@@ -6,6 +6,7 @@ import type {
   Step,
   InvestmentGroup,
 } from "./types";
+import { DEFAULT_PROPOSAL } from "./defaults";
 
 // ---------- helpers ----------
 const esc = (s: string): string =>
@@ -117,13 +118,48 @@ function reasonsHtml(reasons: string[]): string {
 }
 
 // ---------- documento completo (standalone) ----------
+// Blocos que admitem variações (preview por seção no Templates).
+export type PreviewBlock =
+  | "understanding"
+  | "cost"
+  | "strategy"
+  | "solutions"
+  | "consultantRec"
+  | "nextSteps";
+
+const SHOW_FLAG: Record<PreviewBlock, keyof ProposalData> = {
+  understanding: "showUnderstanding",
+  cost: "showCost",
+  strategy: "showStrategy",
+  solutions: "showSolutions",
+  consultantRec: "showConsultantRec",
+  nextSteps: "showNextSteps",
+};
+
 export function renderProposalHTML(
   d: ProposalData,
-  opts: { editable?: boolean } = {},
+  opts: { editable?: boolean; onlyBlock?: PreviewBlock } = {},
 ): string {
   // Edição inline (hover + contenteditable) só no preview do app.
   // No HTML baixado (editable:false) nada disso vai junto.
-  const editable = opts.editable ?? true;
+  const only = opts.onlyBlock;
+  const editable = only ? false : opts.editable ?? true;
+
+  // Preview de seção: liga só o bloco pedido, desliga o resto (capa/rodapé via CSS).
+  if (only) {
+    d = {
+      ...d,
+      showUnderstanding: false,
+      showCost: false,
+      showStrategy: false,
+      showSolutions: false,
+      showInvestment: false,
+      showConsultantRec: false,
+      showNextSteps: false,
+    };
+    (d as unknown as Record<string, boolean>)[SHOW_FLAG[only]] = true;
+  }
+
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -282,6 +318,7 @@ export function renderProposalHTML(
     .cover-meta{text-align:left}
   }
 </style>
+${only ? `<style>.cover,footer{display:none!important}section{border-top:none!important}.pad{padding:40px 0}</style>` : ""}
 </head>
 <body>
 
@@ -461,8 +498,20 @@ ${
 </html>`;
 
   if (editable) return html;
-  // Export: remove qualquer vestígio de edição (atributos inertes).
+  // Export/preview: remove qualquer vestígio de edição (atributos inertes).
   return html
     .replace(/ data-edit="[^"]*"/g, "")
     .replace(/ data-placeholder="[^"]*"/g, "");
+}
+
+// Preview de UMA seção (Templates): aplica o payload da variação sobre os
+// defaults e renderiza só aquele bloco (sem capa, sem edição).
+export function renderBlockPreviewHTML(
+  block: PreviewBlock,
+  payload: Partial<ProposalData>,
+): string {
+  return renderProposalHTML(
+    { ...DEFAULT_PROPOSAL, ...payload },
+    { onlyBlock: block },
+  );
 }
