@@ -150,15 +150,15 @@ export function renderProposalHTML(
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
-  body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-weight:400;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 40px}
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-weight:400;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-wrap:break-word}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 64px}
   .display{font-family:'Fraunces',serif;font-weight:400;letter-spacing:-.01em;line-height:1.06}
   .eyebrow{font-size:12px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);display:inline-flex;align-items:center;gap:10px}
   .eyebrow::before{content:"";width:26px;height:1px;background:var(--accent);opacity:.7}
   .lead{font-size:19px;color:var(--ink-soft);font-weight:300;max-width:64ch}
   section{position:relative;border-top:1px solid var(--line)}
   .pad{padding:112px 0}
-  .h2{font-size:clamp(30px,4vw,46px);margin:24px 0 0}
+  .h2{font-size:clamp(22px,3.4vw,38px);margin:24px 0 0}
   .k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;font-weight:500}
 
   /* Capa */
@@ -170,7 +170,7 @@ export function renderProposalHTML(
   .brandmark .brand-logo{height:38px;width:auto;max-width:240px;object-fit:contain;display:block}
   .cover-meta{font-size:13px;color:var(--ink-mute);letter-spacing:.04em}
   .cover-mid{padding:40px 0}
-  .cover h1{font-size:clamp(46px,7vw,88px);margin:26px 0 30px}
+  .cover h1{font-size:clamp(26px,4vw,46px);max-width:15em;margin:24px 0 28px}
   .cover h1 em{font-style:italic;color:var(--accent)}
   .cover-foot{display:flex;flex-wrap:wrap;gap:48px;border-top:1px solid var(--line);padding-top:32px}
   .fact .fk{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:7px}
@@ -271,9 +271,15 @@ export function renderProposalHTML(
   }
 
   @media(max-width:860px){
-    .wrap{padding:0 24px}
+    .wrap{padding:0 44px}
     .g2,.g3,.pillars,.tiers,.steps,.sol2-grid{grid-template-columns:1fr}
     .pad{padding:72px 0}.rec-card{padding:28px}
+    .cover-foot,.cover-top,.contact{gap:24px}
+  }
+  @media(max-width:520px){
+    .wrap{padding:0 28px}
+    .cover-top,.cover-foot{flex-direction:column;align-items:flex-start;gap:16px}
+    .cover-meta{text-align:left}
   }
 </style>
 </head>

@@ -245,6 +245,7 @@ export default function ClientBuilder() {
   const [previewHtml, setPreviewHtml] = useState<string>(() =>
     renderProposalHTML(DEFAULT_PROPOSAL),
   );
+
   useEffect(() => {
     if (skipRender.current) {
       skipRender.current = false;
@@ -703,11 +704,12 @@ export default function ClientBuilder() {
           <div className="h-10" />
         </div>
 
-        {/* Preview (editável) */}
-        <div className="min-h-0 bg-bg">
+        {/* Preview (editável) — documento contido e centralizado, com margem */}
+        <div className="flex min-h-0 min-w-0 justify-center overflow-hidden bg-bg px-4">
           <iframe
             title="Preview da proposta"
             srcDoc={previewHtml}
+            style={{ maxWidth: 860 }}
             className="h-full w-full border-0"
           />
         </div>
