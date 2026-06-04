@@ -233,33 +233,6 @@ export default function CatalogManager() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-dashed border-line bg-panel/40 p-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4 text-ink-mute"
-                    aria-hidden
-                  >
-                    <path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a18 18 0 0 1-2.16 3.19M6.6 6.6A18 18 0 0 0 2 12s3 8 10 8a9 9 0 0 0 5.4-1.6" />
-                    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M2 2l20 20M14 12a2 2 0 0 1-2 2" />
-                  </svg>
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
-                    Uso interno · não vai pra proposta
-                  </span>
-                </div>
-                <TextArea
-                  value={selected.notes}
-                  onChange={(v) => update(selected.id, { notes: v })}
-                  rows={2}
-                  placeholder="Anotações para o seu time — visível só aqui."
-                />
-              </div>
-
               <p className="pt-2 text-xs text-ink-mute">
                 ✓ Alterações salvas automaticamente neste navegador.
               </p>
