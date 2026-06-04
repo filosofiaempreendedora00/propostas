@@ -34,6 +34,7 @@ export interface CatalogSolution {
 export interface CatalogConsultant {
   id: string;
   name: string;
+  role: string; // cargo/papel (Consultor, Especialista, Diretor comercial, ...)
   email: string;
   phone: string;
 }

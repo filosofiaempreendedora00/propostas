@@ -50,7 +50,6 @@ export const solutionPlans = pgTable("solution_plans", {
 export const companySettings = pgTable("company_settings", {
   id: text("id").primaryKey(), // sempre "default" (linha única)
   logo: text("logo"), // PNG em data URL base64 (transparente), nullable
-  consultantTerm: text("consultant_term").notNull().default("Consultor"), // termo do papel comercial
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -59,6 +58,7 @@ export const companySettings = pgTable("company_settings", {
 export const consultants = pgTable("consultants", {
   id: text("id").primaryKey(),
   name: text("name").notNull().default(""),
+  role: text("role").notNull().default("Consultor"), // cargo/papel comercial
   email: text("email").notNull().default(""),
   phone: text("phone").notNull().default(""),
   sortOrder: integer("sort_order").notNull().default(0),

@@ -78,7 +78,7 @@ export function blankSolution(index: number): CatalogSolution {
 }
 
 export function blankConsultant(): CatalogConsultant {
-  return { id: uid(), name: "Novo consultor", email: "", phone: "" };
+  return { id: uid(), name: "Novo consultor", role: "Consultor", email: "", phone: "" };
 }
 
 export const SEED_SOLUTIONS: CatalogSolution[] = [
@@ -125,6 +125,7 @@ export const SEED_CONSULTANTS: CatalogConsultant[] = [
   {
     id: "cons-1",
     name: "Nome do Consultor",
+    role: "Consultor",
     email: "consultor@suaempresa.com",
     phone: "(00) 00000-0000",
   },

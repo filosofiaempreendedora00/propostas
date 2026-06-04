@@ -86,8 +86,7 @@ export default function ClientBuilder() {
     add: addTemplate,
     update: updateTemplate,
   } = useTemplates();
-  const { logo: companyLogo, consultantTerm } = useCompany();
-  const termLow = consultantTerm.toLowerCase();
+  const { logo: companyLogo } = useCompany();
 
   const [form, setForm] = useState<ClientForm>(() => {
     const {
@@ -153,14 +152,14 @@ export default function ClientBuilder() {
     return {
       ...form,
       logo: companyLogo ?? undefined,
-      consultantTerm,
+      consultantTerm: consultant?.role || "Consultor",
       solutions: chosen.map(toRenderSolution),
       investmentGroups,
       responsible: consultant?.name ?? "",
       phone: consultant?.phone ?? "",
       email: consultant?.email ?? "",
     };
-  }, [form, solutions, selSolutions, consultant, companyLogo, consultantTerm]);
+  }, [form, solutions, selSolutions, consultant, companyLogo]);
 
   // ----- edição inline vinda do preview -----
   useEffect(() => {
@@ -321,8 +320,8 @@ export default function ClientBuilder() {
           <div className="rounded-lg border border-accent/40 bg-accent/10 p-3 text-xs leading-relaxed text-ink-soft">
             ✏️ <strong className="text-ink">Edite os textos no preview.</strong>{" "}
             Diagnóstico, custo, estratégia, recomendação e próximos passos —
-            passe o mouse e clique para editar no lugar. Soluções, planos e{" "}
-            {termLow} vêm de{" "}
+            passe o mouse e clique para editar no lugar. Soluções, planos e
+            consultor vêm de{" "}
             <Link href="/empresa" className="text-accent hover:underline">
               Sua Empresa
             </Link>
@@ -586,7 +585,7 @@ export default function ClientBuilder() {
             />
           </div>
 
-          <SectionTitle>{consultantTerm} responsável</SectionTitle>
+          <SectionTitle>Responsável pela proposta</SectionTitle>
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -603,6 +602,11 @@ export default function ClientBuilder() {
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium">
                     {consultant.name}
+                    {consultant.role ? (
+                      <span className="ml-2 text-xs font-normal text-accent">
+                        {consultant.role}
+                      </span>
+                    ) : null}
                   </div>
                   <div className="truncate text-xs text-ink-mute">
                     {consultant.email || "sem e-mail"}
@@ -619,13 +623,13 @@ export default function ClientBuilder() {
               </div>
             ) : (
               <div className="text-center text-xs text-ink-mute">
-                Arraste um {termLow} para cá (ou clique abaixo)
+                Arraste um consultor para cá (ou clique abaixo)
               </div>
             )}
           </div>
           {consReady && consultants.length === 0 ? (
             <div className="mt-2">
-              <EmptyCatalog label={termLow} />
+              <EmptyCatalog label="consultor" />
             </div>
           ) : (
             <div className="mt-2 flex flex-wrap gap-2">

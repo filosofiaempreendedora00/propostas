@@ -146,6 +146,7 @@ export async function listConsultants(): Promise<CatalogConsultant[]> {
   return rows.map((c) => ({
     id: c.id,
     name: c.name,
+    role: c.role,
     email: c.email,
     phone: c.phone,
   }));
@@ -155,7 +156,13 @@ export async function upsertConsultant(
   c: CatalogConsultant,
   sortOrder: number,
 ): Promise<void> {
-  const base = { name: c.name, email: c.email, phone: c.phone, sortOrder };
+  const base = {
+    name: c.name,
+    role: c.role,
+    email: c.email,
+    phone: c.phone,
+    sortOrder,
+  };
   await db
     .insert(consultants)
     .values({ id: c.id, ...base })

@@ -1,29 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  getCompanySettings,
-  setCompanyLogo,
-  setConsultantTerm,
-} from "./actions";
-import { DEFAULT_CONSULTANT_TERM } from "./terms";
+import { getCompanyLogo, setCompanyLogo } from "./actions";
 
 export function useCompany() {
   const [logo, setLogoState] = useState<string | null>(null);
-  const [consultantTerm, setTermState] = useState<string>(
-    DEFAULT_CONSULTANT_TERM,
-  );
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    getCompanySettings()
-      .then((s) => {
-        if (!alive) return;
-        setLogoState(s.logo);
-        setTermState(s.consultantTerm);
-        setReady(true);
-      })
+    getCompanyLogo()
+      .then((l) => alive && (setLogoState(l), setReady(true)))
       .catch(() => alive && setReady(true));
     return () => {
       alive = false;
@@ -35,10 +22,5 @@ export function useCompany() {
     void setCompanyLogo(l);
   }, []);
 
-  const setTerm = useCallback((t: string) => {
-    setTermState(t); // otimista
-    void setConsultantTerm(t);
-  }, []);
-
-  return { logo, consultantTerm, ready, setLogo, setTerm };
+  return { logo, ready, setLogo };
 }
