@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTemplates } from "@/lib/templates/store";
 import { BLOCKS, NON_EDITABLE_BLOCKS, type BlockKey } from "@/lib/templates/types";
 import type { BlockTemplate } from "@/lib/templates/types";
-import { renderBlockPreviewHTML } from "@/lib/proposal/render";
 import TemplateEditor from "./TemplateEditor";
+import SectionPreview from "./SectionPreview";
 
 // Lista completa dos 8 blocos da proposta (editáveis + não-editáveis em cinza).
 type DisplayBlock = { n: number; label: string; key?: BlockKey; hint?: string };
@@ -118,37 +118,28 @@ export default function TemplatesWorkspace() {
   );
   const activeMeta = BLOCKS.find((b) => b.key === block)!;
 
-  const selected =
-    blockItems.find((t) => t.id === selectedId) ?? blockItems[0] ?? null;
+  // null = todas minimizadas (preview mostra aviso). Sem fallback automático,
+  // pra dar pra fechar tudo.
+  const selected = blockItems.find((t) => t.id === selectedId) ?? null;
 
-  // Garante sempre uma variação selecionada (pra o preview).
+  // Ao ENTRAR num bloco, abre a primeira variação (uma vez por bloco). Depois
+  // o usuário pode fechar/abrir à vontade — inclusive deixar todas fechadas.
+  const initedBlock = useRef<BlockKey | null>(null);
   useEffect(() => {
-    if (blockItems.length && !blockItems.some((t) => t.id === selectedId)) {
+    if (blockItems.length && initedBlock.current !== block) {
+      initedBlock.current = block;
       setSelectedId(blockItems[0].id);
     }
-  }, [blockItems, selectedId]);
-
-  // Preview ao vivo (debounced) — só a seção do bloco, com a variação atual.
-  const [previewHtml, setPreviewHtml] = useState("");
-  useEffect(() => {
-    if (!selected) {
-      setPreviewHtml("");
-      return;
-    }
-    const id = setTimeout(
-      () => setPreviewHtml(renderBlockPreviewHTML(block, selected.payload)),
-      250,
-    );
-    return () => clearTimeout(id);
-  }, [block, selected]);
+  }, [block, blockItems]);
 
   const handleAdd = () => {
     const id = add(block);
+    initedBlock.current = block;
     setSelectedId(id);
   };
 
   return (
-    <div className="grid h-full grid-cols-[220px_minmax(440px,1.45fr)_minmax(300px,1fr)]">
+    <div className="grid h-full grid-cols-[264px_minmax(400px,1.3fr)_minmax(300px,1fr)]">
       {/* Menu de blocos */}
       <aside className="form-scroll overflow-y-auto border-r border-line p-3">
         <div className="px-2 pb-3 pt-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-mute">
@@ -160,16 +151,16 @@ export default function TemplatesWorkspace() {
               <div
                 key={b.n}
                 title="Este bloco não tem variações de texto"
-                className="mb-1.5 flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-3 opacity-45"
+                className="mb-1.5 flex w-full cursor-not-allowed items-start gap-3 rounded-lg px-3 py-3 opacity-45"
               >
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-line text-xs font-semibold text-ink-mute">
+                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-line text-xs font-semibold text-ink-mute">
                   {b.n}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-ink-soft">
+                  <span className="block text-sm font-medium leading-snug text-ink-soft">
                     {b.label}
                   </span>
-                  <span className="block truncate text-[10px] text-ink-mute">
+                  <span className="mt-0.5 block text-[10px] leading-snug text-ink-mute">
                     {b.hint}
                   </span>
                 </span>
@@ -183,12 +174,12 @@ export default function TemplatesWorkspace() {
             <button
               key={b.key}
               onClick={() => setBlock(b.key!)}
-              className={`mb-1.5 flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition ${
+              className={`mb-1.5 flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition ${
                 active ? "bg-panel text-ink" : "text-ink-soft hover:bg-panel/60"
               }`}
             >
               <span
-                className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-semibold ${
+                className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-semibold ${
                   active
                     ? "border-accent bg-accent/10 text-accent"
                     : "border-line text-ink-mute"
@@ -196,11 +187,11 @@ export default function TemplatesWorkspace() {
               >
                 {b.n}
               </span>
-              <span className="min-w-0 flex-1 truncate text-sm font-medium">
+              <span className="min-w-0 flex-1 text-sm font-medium leading-snug">
                 {b.label}
               </span>
               <span
-                className={`grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1.5 text-[10px] font-semibold ${
+                className={`mt-0.5 grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1.5 text-[10px] font-semibold ${
                   active ? "bg-accent/15 text-accent" : "bg-panel-2 text-ink-mute"
                 }`}
               >
@@ -241,7 +232,9 @@ export default function TemplatesWorkspace() {
                 template={t}
                 index={i}
                 open={selected?.id === t.id}
-                onSelect={() => setSelectedId(t.id)}
+                onSelect={() =>
+                  setSelectedId((prev) => (prev === t.id ? null : t.id))
+                }
                 update={update}
                 onRemove={() => remove(t.id)}
               />
@@ -256,33 +249,13 @@ export default function TemplatesWorkspace() {
       </section>
 
       {/* Preview ao vivo da seção */}
-      <section className="flex min-h-0 flex-col">
-        <div className="flex shrink-0 items-center gap-2 border-b border-line px-5 py-3">
-          <span className="grid h-5 w-5 place-items-center rounded-full bg-accent/15 text-[10px] text-accent">
-            ◉
-          </span>
-          <div>
-            <div className="text-sm font-semibold text-ink">Preview da seção</div>
-            <div className="text-[11px] text-ink-mute">
-              Como esta variação fica na proposta gerada (só esta seção).
-            </div>
-          </div>
-        </div>
-        <div className="flex min-h-0 flex-1 justify-center overflow-hidden bg-bg">
-          {selected && previewHtml ? (
-            <iframe
-              title="Preview da seção"
-              srcDoc={previewHtml}
-              style={{ maxWidth: 860 }}
-              className="h-full w-full border-0"
-            />
-          ) : (
-            <div className="grid place-items-center p-8 text-center text-sm text-ink-mute">
-              Selecione uma variação para ver o preview.
-            </div>
-          )}
-        </div>
-      </section>
+      <SectionPreview
+        block={block}
+        payload={selected ? selected.payload : null}
+        title="Preview da seção"
+        subtitle="Como esta variação fica na proposta gerada."
+        empty="Abra uma variação para ver o preview da seção."
+      />
     </div>
   );
 }

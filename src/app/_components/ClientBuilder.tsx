@@ -4,10 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { DEFAULT_PROPOSAL } from "@/lib/proposal/defaults";
 import { renderProposalHTML, slugify } from "@/lib/proposal/render";
-import type { ProposalData, Tier, InvestmentGroup } from "@/lib/proposal/types";
+import type { ProposalData, InvestmentGroup } from "@/lib/proposal/types";
+import { toRenderSolution, planToTier } from "@/lib/proposal/fromCatalog";
 import { useCatalog, useConsultants } from "@/lib/catalog/store";
 import { useCompany } from "@/lib/company/store";
-import type { CatalogSolution, SolutionPlan } from "@/lib/catalog/types";
 import { useTemplates } from "@/lib/templates/store";
 import { BLOCK_FIELDS, type BlockKey } from "@/lib/templates/types";
 import type { BlockTemplate } from "@/lib/templates/types";
@@ -54,28 +54,6 @@ function formatPtDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   if (!y || !m || !d) return "";
   return `${d} de ${MONTHS_PT[m - 1]} de ${y}`;
-}
-
-function toRenderSolution(s: CatalogSolution) {
-  return {
-    name: s.name,
-    problemSolved: s.problemSolved,
-    howItWorks: s.howItWorks,
-    expectedBenefit: s.expectedBenefit,
-    deliverables: s.deliverables,
-  };
-}
-
-function planToTier(p: SolutionPlan): Tier {
-  return {
-    name: p.name,
-    price: p.price,
-    priceSuffix: p.billing === "recorrente" ? "/mês" : "",
-    billing: p.billing,
-    description: p.description,
-    features: p.features,
-    featured: p.featured,
-  };
 }
 
 export default function ClientBuilder() {

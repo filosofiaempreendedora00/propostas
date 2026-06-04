@@ -124,6 +124,7 @@ export type PreviewBlock =
   | "cost"
   | "strategy"
   | "solutions"
+  | "investment"
   | "consultantRec"
   | "nextSteps";
 
@@ -132,6 +133,7 @@ const SHOW_FLAG: Record<PreviewBlock, keyof ProposalData> = {
   cost: "showCost",
   strategy: "showStrategy",
   solutions: "showSolutions",
+  investment: "showInvestment",
   consultantRec: "showConsultantRec",
   nextSteps: "showNextSteps",
 };
@@ -251,7 +253,7 @@ export function renderProposalHTML(
   .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:52px}
   .tier{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:34px 30px;display:flex;flex-direction:column}
   .tier.featured{border-color:var(--line-2);background:linear-gradient(180deg,var(--accent-dim),transparent 42%),var(--panel-2);position:relative}
-  .tier.featured::after{content:"Recomendado";position:absolute;top:20px;right:20px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:5px 11px}
+  .tier.featured::after{content:"Recomendado";position:absolute;top:-11px;right:22px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);background:var(--bg-soft);border:1px solid var(--accent);border-radius:999px;padding:5px 11px}
   .tier .tname{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:18px}
   .tier .price{font-family:'Fraunces',serif;font-size:38px;line-height:1;margin-bottom:6px}
   .tier .price small{font-size:15px;color:var(--ink-mute);font-family:'Inter';font-weight:400}

@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCatalog, blankSolutionPlan } from "@/lib/catalog/store";
 import type { SolutionPlan, Billing } from "@/lib/catalog/types";
+import type { ProposalData } from "@/lib/proposal/types";
+import type { PreviewBlock } from "@/lib/proposal/render";
+import { toRenderSolution, planToTier } from "@/lib/proposal/fromCatalog";
 import { Label, TextInput, TextArea, ItemList, MiniBtn } from "./fields";
+import SectionPreview from "./SectionPreview";
 
 type EditorTab = "detalhes" | "planos";
 
@@ -30,8 +34,27 @@ export default function CatalogManager() {
     setSelectedId(id);
   };
 
+  // Preview ao vivo da seção correspondente à aba aberta:
+  // Detalhes → bloco "Soluções"; Planos → bloco "Investimento".
+  const previewBlock: PreviewBlock = tab === "planos" ? "investment" : "solutions";
+  const previewPayload = useMemo<Partial<ProposalData> | null>(() => {
+    if (!selected) return null;
+    if (tab === "planos") {
+      if (selected.plans.length === 0) return null;
+      return {
+        investmentGroups: [
+          {
+            solution: selected.name || "Solução",
+            plans: selected.plans.map(planToTier),
+          },
+        ],
+      };
+    }
+    return { solutions: [toRenderSolution(selected)] };
+  }, [selected, tab]);
+
   return (
-    <div className="grid h-full grid-cols-[300px_1fr]">
+    <div className="grid h-full grid-cols-[260px_minmax(420px,1.2fr)_minmax(300px,1fr)]">
       {/* Lista */}
       <aside className="form-scroll overflow-y-auto border-r border-line">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/95 px-4 py-4 backdrop-blur">
@@ -269,6 +292,23 @@ export default function CatalogManager() {
           </div>
         )}
       </section>
+
+      {/* Preview ao vivo da seção (Soluções / Investimento) */}
+      <SectionPreview
+        block={previewBlock}
+        payload={previewPayload}
+        title={tab === "planos" ? "Preview · Investimento" : "Preview · Soluções"}
+        subtitle={
+          tab === "planos"
+            ? "Como os planos aparecem na proposta."
+            : "Como esta solução aparece na proposta."
+        }
+        empty={
+          tab === "planos"
+            ? "Adicione um plano para ver o preview."
+            : "Selecione uma solução para ver o preview."
+        }
+      />
     </div>
   );
 }
