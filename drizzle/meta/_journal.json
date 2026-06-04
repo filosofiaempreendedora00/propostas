@@ -15,6 +15,13 @@
       "when": 1780451826444,
       "tag": "0001_sturdy_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780573545322,
+      "tag": "0002_robust_rocket_raccoon",
+      "breakpoints": true
     }
   ]
 }

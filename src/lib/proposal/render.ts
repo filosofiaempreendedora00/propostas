@@ -394,7 +394,7 @@ ${
   d.showConsultantRec
     ? `<section class="pad consultant-rec">
   <div class="wrap">
-    <span class="eyebrow">Recomendação do consultor</span>
+    <span class="eyebrow">Recomendação do ${esc((d.consultantTerm ?? "Consultor").toLowerCase())}</span>
     <div class="rec-card">
       <h2 class="display" data-edit="consultantRecHeading">${esc(d.consultantRecHeading)}</h2>
       <p class="lead" data-edit="consultantRecText">${esc(d.consultantRecText)}</p>
@@ -418,7 +418,7 @@ ${
       <span class="validity">Proposta válida até ${esc(d.validUntilLabel)}</span>
     </div>
     <div class="contact">
-      <div><div class="ck">Responsável</div><div class="cv">${esc(d.responsible)}</div></div>
+      <div><div class="ck">${esc(d.consultantTerm ?? "Consultor")}</div><div class="cv">${esc(d.responsible)}</div></div>
       <div><div class="ck">Telefone</div><div class="cv">${esc(d.phone)}</div></div>
       <div><div class="ck">E-mail</div><div class="cv">${esc(d.email)}</div></div>
     </div>

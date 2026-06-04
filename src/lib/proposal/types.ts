@@ -104,6 +104,7 @@ export interface ProposalData {
   ctaLabel: string;
 
   // ---- Consultor (rodapé) ----
+  consultantTerm?: string; // termo do papel (Consultor/Especialista/...) — de "Sua Empresa"
   responsible: string;
   phone: string;
   email: string;

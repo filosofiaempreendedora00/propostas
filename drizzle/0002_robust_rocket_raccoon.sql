@@ -1,0 +1,1 @@
+ALTER TABLE "company_settings" ADD COLUMN "consultant_term" text DEFAULT 'Consultor' NOT NULL;
