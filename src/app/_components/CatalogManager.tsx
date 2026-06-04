@@ -430,12 +430,12 @@ function PlansEditor({
               </label>
             </div>
 
-            <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
               <BillingToggle
                 value={p.billing}
                 onChange={(b) => setPlan(i, { billing: b })}
               />
-              <label className="flex items-center gap-1.5 text-xs text-ink-mute">
+              <label className="flex shrink-0 items-center gap-1.5 text-xs text-ink-mute">
                 <input
                   type="checkbox"
                   checked={p.featured}
