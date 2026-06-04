@@ -336,13 +336,33 @@ export function renderProposalHTML(
   }
 
   /* Impressão / Salvar como PDF — força as cores do tema (senão o Chrome
-     descarta os fundos e tudo vira branco) e evita cortes feios. */
+     descarta os fundos e tudo vira branco) e cuida da paginação: preenche as
+     páginas, mantém títulos com o conteúdo e não corta cards no meio. */
   @media print{
     @page{margin:0}
     html,body{background:var(--bg)!important}
     *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-    .cover{min-height:100vh;break-after:page}
-    .block,.tier,.pillar,.step,.sol2,.rec-card,.rec-reason,.invest-group{break-inside:avoid}
+
+    /* Capa = página de rosto cheia, conteúdo distribuído (sem vazio embaixo). */
+    .cover{min-height:100vh;justify-content:space-between;padding:9vh 0;break-after:page}
+    .cover-mid{padding-block:0}
+
+    /* Seções mais compactas e em fluxo contínuo — preenche as páginas. */
+    .pad{padding:52px 0}
+    .gblocks{margin-top:30px}
+    .pillars,.tiers,.steps{margin-top:30px}
+    section:not(.cover){break-inside:auto}
+
+    /* Cabeçalho de seção fica junto: eyebrow → título → intro nunca órfãos. */
+    .eyebrow{break-after:avoid}
+    .h2,.display{break-after:avoid;break-before:avoid}
+    .lead{break-before:avoid}
+    .k,.sol2-k,.invest-group-name,.sol2-head{break-after:avoid}
+    p{orphans:3;widows:3}
+
+    /* Protege só as "caixas" reais; blocos altos (soluções/grupos) fluem
+       entre páginas em vez de deixar metade da página vazia. */
+    .block,.tier,.pillar,.step,.rec-card,.rec-reason,.sol2-cell{break-inside:avoid}
   }
 </style>
 ${only ? `<style>.cover,footer{display:none!important}section{border-top:none!important}.pad{padding:40px 0}</style>` : ""}
