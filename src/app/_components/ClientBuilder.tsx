@@ -601,7 +601,7 @@ export default function ClientBuilder() {
               </div>
             ) : (
               <div className="text-center text-xs text-ink-mute">
-                Arraste um consultor para cá (ou clique abaixo)
+                Selecione um consultor no menu abaixo
               </div>
             )}
           </div>
@@ -610,27 +610,31 @@ export default function ClientBuilder() {
               <EmptyCatalog label="consultor" />
             </div>
           ) : (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {consultants.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData(DND_TYPE, c.id);
-                    e.dataTransfer.setData("text/plain", c.id);
-                    e.dataTransfer.effectAllowed = "copy";
-                  }}
-                  onClick={() => setConsultantId(c.id)}
-                  className={`cursor-grab rounded-full border px-3 py-1.5 text-xs font-medium transition active:cursor-grabbing ${
-                    consultantId === c.id
-                      ? "border-accent bg-accent/15 text-accent"
-                      : "border-line text-ink-soft hover:border-ink-mute"
-                  }`}
-                >
-                  ⠿ {c.name || "Sem nome"}
-                </button>
-              ))}
+            <div className="relative mt-2">
+              <select
+                value={consultantId ?? ""}
+                onChange={(e) => setConsultantId(e.target.value || null)}
+                className="w-full appearance-none rounded-lg border border-line bg-panel-2 px-3 py-2 pr-9 text-sm text-ink-soft outline-none transition hover:border-accent/40 focus:border-accent/60"
+              >
+                <option value="">Selecione um consultor…</option>
+                {consultants.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name || "Sem nome"}
+                    {c.role ? ` — ${c.role}` : ""}
+                  </option>
+                ))}
+              </select>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-mute"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
             </div>
           )}
 
