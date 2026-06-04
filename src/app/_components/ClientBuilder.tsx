@@ -182,8 +182,20 @@ export default function ClientBuilder() {
   }, []);
 
   // ----- variações (templates) -----
+  // Lembra qual variação foi aplicada em cada bloco (pra mostrar no seletor).
+  const [selectedVar, setSelectedVar] = useState<
+    Partial<Record<BlockKey, string>>
+  >({});
   const applyVariation = (payload: Partial<ProposalData>) =>
     setForm((f) => ({ ...f, ...payload }) as ClientForm);
+  const loadVar = (
+    block: BlockKey,
+    id: string,
+    payload: Partial<ProposalData>,
+  ) => {
+    setSelectedVar((s) => ({ ...s, [block]: id }));
+    applyVariation(payload);
+  };
   const [saveBlock, setSaveBlock] = useState<BlockKey | null>(null);
   const [saveName, setSaveName] = useState("");
   const saveVariation = (block: BlockKey) => {
@@ -197,6 +209,7 @@ export default function ClientBuilder() {
       name: saveName.trim(),
       payload: extractPayload(saveBlock, form),
     });
+    setSelectedVar((s) => ({ ...s, [saveBlock]: id }));
     setSaveBlock(null);
   };
 
@@ -239,6 +252,25 @@ export default function ClientBuilder() {
     const id = setTimeout(() => setPreviewHtml(renderProposalHTML(data)), 300);
     return () => clearTimeout(id);
   }, [data]);
+
+  // ----- navegar o preview ao clicar no nome do bloco -----
+  const previewRef = useRef<HTMLIFrameElement | null>(null);
+  const scrollPreviewTo = (selector: string) => {
+    const win = previewRef.current?.contentWindow;
+    const doc = previewRef.current?.contentDocument;
+    const el = doc?.querySelector<HTMLElement>(selector);
+    if (!win || !el) return;
+    // offset absoluto do elemento no documento do preview
+    const top = el.getBoundingClientRect().top + win.scrollY;
+    win.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    // flash rápido pra confirmar onde caiu
+    el.style.transition = "outline-color .2s ease";
+    el.style.outline = "2px solid var(--accent)";
+    el.style.outlineOffset = "-2px";
+    window.setTimeout(() => {
+      el.style.outline = "";
+    }, 850);
+  };
 
   // ----- export -----
   const exportRef = useRef<HTMLAnchorElement | null>(null);
@@ -338,7 +370,9 @@ export default function ClientBuilder() {
             .
           </div>
 
-          <SectionTitle n={1}>Identificação</SectionTitle>
+          <SectionTitle n={1} onJump={() => scrollPreviewTo(".cover")}>
+            Identificação
+          </SectionTitle>
           <label className="block">
             <Label>
               Nome da empresa (capa) <span className="text-amber-400">*</span>
@@ -396,6 +430,7 @@ export default function ClientBuilder() {
 
           <SectionTitle
             n={2}
+            onJump={() => scrollPreviewTo(".understand")}
             right={
               <EyeToggle
                 on={form.showUnderstanding}
@@ -409,7 +444,8 @@ export default function ClientBuilder() {
           </SectionTitle>
           <VariationBar
             list={templates.filter((t) => t.block === "understanding")}
-            onLoad={applyVariation}
+            selectedId={selectedVar.understanding}
+            onLoad={(id, payload) => loadVar("understanding", id, payload)}
             onSave={() => saveVariation("understanding")}
           />
           <p
@@ -421,6 +457,7 @@ export default function ClientBuilder() {
 
           <SectionTitle
             n={3}
+            onJump={() => scrollPreviewTo(".cost")}
             right={
               <EyeToggle
                 on={form.showCost}
@@ -432,7 +469,8 @@ export default function ClientBuilder() {
           </SectionTitle>
           <VariationBar
             list={templates.filter((t) => t.block === "cost")}
-            onLoad={applyVariation}
+            selectedId={selectedVar.cost}
+            onLoad={(id, payload) => loadVar("cost", id, payload)}
             onSave={() => saveVariation("cost")}
           />
           <p
@@ -444,6 +482,7 @@ export default function ClientBuilder() {
 
           <SectionTitle
             n={4}
+            onJump={() => scrollPreviewTo(".strategy")}
             right={
               <EyeToggle
                 on={form.showStrategy}
@@ -455,7 +494,8 @@ export default function ClientBuilder() {
           </SectionTitle>
           <VariationBar
             list={templates.filter((t) => t.block === "strategy")}
-            onLoad={applyVariation}
+            selectedId={selectedVar.strategy}
+            onLoad={(id, payload) => loadVar("strategy", id, payload)}
             onSave={() => saveVariation("strategy")}
           />
           <div className={form.showStrategy ? "" : "opacity-40"}>
@@ -469,6 +509,7 @@ export default function ClientBuilder() {
 
           <SectionTitle
             n={5}
+            onJump={() => scrollPreviewTo(".solutions")}
             right={
               <EyeToggle
                 on={form.showSolutions}
@@ -480,7 +521,8 @@ export default function ClientBuilder() {
           </SectionTitle>
           <VariationBar
             list={templates.filter((t) => t.block === "solutions")}
-            onLoad={applyVariation}
+            selectedId={selectedVar.solutions}
+            onLoad={(id, payload) => loadVar("solutions", id, payload)}
             onSave={() => saveVariation("solutions")}
           />
           <div className={form.showSolutions ? "" : "opacity-40"}>
@@ -506,6 +548,7 @@ export default function ClientBuilder() {
 
           <SectionTitle
             n={6}
+            onJump={() => scrollPreviewTo(".invest")}
             right={
               <EyeToggle
                 on={form.showInvestment}
@@ -529,6 +572,7 @@ export default function ClientBuilder() {
 
           <SectionTitle
             n={7}
+            onJump={() => scrollPreviewTo(".consultant-rec")}
             right={
               <EyeToggle
                 on={form.showConsultantRec}
@@ -542,7 +586,8 @@ export default function ClientBuilder() {
           </SectionTitle>
           <VariationBar
             list={templates.filter((t) => t.block === "consultantRec")}
-            onLoad={applyVariation}
+            selectedId={selectedVar.consultantRec}
+            onLoad={(id, payload) => loadVar("consultantRec", id, payload)}
             onSave={() => saveVariation("consultantRec")}
           />
           <div className={form.showConsultantRec ? "" : "opacity-40"}>
@@ -557,6 +602,7 @@ export default function ClientBuilder() {
 
           <SectionTitle
             n={8}
+            onJump={() => scrollPreviewTo(".nextsteps")}
             right={
               <EyeToggle
                 on={form.showNextSteps}
@@ -568,7 +614,8 @@ export default function ClientBuilder() {
           </SectionTitle>
           <VariationBar
             list={templates.filter((t) => t.block === "nextSteps")}
-            onLoad={applyVariation}
+            selectedId={selectedVar.nextSteps}
+            onLoad={(id, payload) => loadVar("nextSteps", id, payload)}
             onSave={() => saveVariation("nextSteps")}
           />
           <div className={form.showNextSteps ? "" : "opacity-40"}>
@@ -745,6 +792,7 @@ export default function ClientBuilder() {
         {/* Preview (editável) — documento contido e centralizado, com margem */}
         <div className="flex min-h-0 min-w-0 justify-center overflow-hidden bg-bg px-4">
           <iframe
+            ref={previewRef}
             title="Preview da proposta"
             srcDoc={previewHtml}
             style={{ maxWidth: 860 }}
@@ -844,51 +892,67 @@ function DownloadActions({
 
 function VariationBar({
   list,
+  selectedId,
   onLoad,
   onSave,
 }: {
   list: BlockTemplate[];
-  onLoad: (payload: Partial<ProposalData>) => void;
+  selectedId?: string;
+  onLoad: (id: string, payload: Partial<ProposalData>) => void;
   onSave: () => void;
 }) {
+  const selected = list.find((t) => t.id === selectedId) ?? null;
   return (
-    <div className="mb-3 flex items-center gap-2">
-      <div className="relative min-w-0 flex-1">
-        <select
-          value=""
-          onChange={(e) => {
-            const t = list.find((x) => x.id === e.target.value);
-            if (t) onLoad(t.payload);
-          }}
-          className="w-full appearance-none rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 pr-8 text-xs text-ink-soft outline-none transition hover:border-accent/40 focus:border-accent/60"
+    <div className="mb-3">
+      <div className="flex items-center gap-2">
+        <div className="relative min-w-0 flex-1">
+          <select
+            value={selected ? selected.id : ""}
+            onChange={(e) => {
+              const t = list.find((x) => x.id === e.target.value);
+              if (t) onLoad(t.id, t.payload);
+            }}
+            className={`w-full appearance-none rounded-lg border bg-panel-2 px-2.5 py-1.5 pr-8 text-xs outline-none transition focus:border-accent/60 ${
+              selected
+                ? "border-accent/50 font-medium text-ink"
+                : "border-line text-ink-soft hover:border-accent/40"
+            }`}
+          >
+            <option value="">Selecionar variação</option>
+            {list.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-mute"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </div>
+        <button
+          type="button"
+          onClick={onSave}
+          title="Salvar o conteúdo atual deste bloco como uma nova variação"
+          className="shrink-0 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:border-accent/60 hover:text-accent"
         >
-          <option value="">Selecionar variação</option>
-          {list.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-mute"
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
+          Salvar novo
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={onSave}
-        title="Salvar o conteúdo atual deste bloco como nova variação"
-        className="shrink-0 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:border-accent/60 hover:text-accent"
-      >
-        Salvar atual
-      </button>
+      {selected && (
+        <p className="mt-1 px-0.5 text-[11px] text-ink-mute">
+          Aplicada:{" "}
+          <span className="font-medium text-accent">{selected.name}</span> · abra
+          o menu para trocar
+        </p>
+      )}
     </div>
   );
 }

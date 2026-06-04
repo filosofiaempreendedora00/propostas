@@ -188,21 +188,55 @@ export function SectionTitle({
   n,
   right,
   children,
+  onJump,
 }: {
   n?: number;
   right?: React.ReactNode;
   children: React.ReactNode;
+  /** Se passado, o título vira um botão que leva o preview até esta seção. */
+  onJump?: () => void;
 }) {
+  const inner = (
+    <>
+      {n != null && (
+        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-accent/50 text-[10px] font-semibold">
+          {n}
+        </span>
+      )}
+      <span>{children}</span>
+      {onJump && (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+          className="h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-100"
+        >
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+        </svg>
+      )}
+    </>
+  );
   return (
     <div className="mb-4 mt-9 flex items-center justify-between gap-2 border-b border-line pb-2 first:mt-0">
-      <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-accent">
-        {n != null && (
-          <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-accent/50 text-[10px] font-semibold">
-            {n}
-          </span>
-        )}
-        {children}
-      </h2>
+      {onJump ? (
+        <button
+          type="button"
+          onClick={onJump}
+          title="Ver esta seção no preview"
+          className="group flex items-center gap-2 text-left text-sm font-semibold uppercase tracking-[0.16em] text-accent transition hover:opacity-80"
+        >
+          {inner}
+        </button>
+      ) : (
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-accent">
+          {inner}
+        </h2>
+      )}
       {right}
     </div>
   );
