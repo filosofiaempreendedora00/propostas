@@ -2,10 +2,29 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createSupabaseBrowser } from "@/lib/supabase/client";
 
 const COLLAPSE_KEY = "propostas.sidebar.collapsed";
+
+function IconLogout({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="M16 17l5-5-5-5" />
+      <path d="M21 12H9" />
+    </svg>
+  );
+}
 
 function IconHome({ className = "" }: { className?: string }) {
   return (
@@ -104,8 +123,15 @@ const ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const logout = async () => {
+    await createSupabaseBrowser().auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -223,6 +249,20 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Sair */}
+      <button
+        onClick={logout}
+        title={isCollapsed ? "Sair" : undefined}
+        className={`m-2.5 flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-medium text-ink-mute transition hover:bg-panel/50 hover:text-ink-soft ${
+          isCollapsed ? "justify-center" : ""
+        }`}
+      >
+        <span className="grid h-7 w-7 shrink-0 place-items-center">
+          <IconLogout className="h-5 w-5" />
+        </span>
+        {!isCollapsed && <span className="truncate">Sair</span>}
+      </button>
     </aside>
   );
 }
