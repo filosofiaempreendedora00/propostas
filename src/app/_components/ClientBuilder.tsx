@@ -109,6 +109,18 @@ export default function ClientBuilder() {
   const set = <K extends keyof ClientForm>(key: K, value: ClientForm[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
+  // Campo de cor por código (hex). Rascunho local; aplica só quando vira
+  // um código válido (#RGB ou #RRGGBB), pra não quebrar o acento ao digitar.
+  const [hexDraft, setHexDraft] = useState(form.accent);
+  useEffect(() => setHexDraft(form.accent), [form.accent]);
+  const isHex = (v: string) =>
+    /^#[0-9a-fA-F]{6}$/.test(v) || /^#[0-9a-fA-F]{3}$/.test(v);
+  const onHexChange = (raw: string) => {
+    const v = ("#" + raw.replace(/[^0-9a-fA-F]/g, "")).slice(0, 7);
+    setHexDraft(v);
+    if (isHex(v)) set("accent", v);
+  };
+
   const toggle = (setter: typeof setSelSolutions, id: string) =>
     setter((prev) => {
       const next = new Set(prev);
@@ -740,36 +752,69 @@ export default function ClientBuilder() {
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-[1fr_80px] items-start gap-3">
-            <div>
-              <Label>Cor de acento</Label>
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
-                {ACCENT_PRESETS.map((c) => (
+          <div>
+            <Label>Cor de acento</Label>
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+              {ACCENT_PRESETS.map((c) => {
+                const active =
+                  form.accent.toLowerCase() === c.value.toLowerCase();
+                return (
                   <button
                     key={c.value}
                     type="button"
                     title={c.name}
                     onClick={() => set("accent", c.value)}
-                    className={`h-6 w-6 rounded-full border transition ${
-                      form.accent === c.value
+                    className={`h-6 w-6 rounded-full border-2 transition ${
+                      active
                         ? "border-white"
-                        : "border-transparent"
+                        : "border-transparent hover:border-line"
                     }`}
                     style={{ background: c.value }}
                   />
-                ))}
-              </div>
+                );
+              })}
+              {/* Cor personalizada — abre o seletor de cores do sistema */}
+              <label
+                title="Escolher cor personalizada"
+                className="relative grid h-6 w-6 cursor-pointer place-items-center overflow-hidden rounded-full border border-line"
+              >
+                <span
+                  aria-hidden
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "conic-gradient(from 0deg, #ef4444, #eab308, #22c55e, #3b82f6, #a855f7, #ef4444)",
+                  }}
+                />
+                <span className="relative text-xs font-bold leading-none text-white mix-blend-difference">
+                  +
+                </span>
+                <input
+                  type="color"
+                  value={isHex(form.accent) ? form.accent : "#C9A876"}
+                  onChange={(e) => set("accent", e.target.value)}
+                  className="absolute inset-0 cursor-pointer opacity-0"
+                  aria-label="Cor personalizada"
+                />
+              </label>
             </div>
-            <label>
-              <Label>Inicial</Label>
-              <input
-                value={form.companyInitial}
-                onChange={(e) =>
-                  set("companyInitial", e.target.value.slice(0, 2))
-                }
-                className="w-full rounded-lg border border-line bg-panel-2 px-3 py-2 text-center text-sm text-ink outline-none focus:border-accent/60"
+
+            {/* Código da cor (hex) */}
+            <div className="mt-2.5 flex items-center gap-2">
+              <span
+                className="h-8 w-8 shrink-0 rounded-md border border-line"
+                style={{ background: isHex(form.accent) ? form.accent : "#000" }}
               />
-            </label>
+              <input
+                value={hexDraft}
+                onChange={(e) => onHexChange(e.target.value)}
+                placeholder="#C9A876"
+                spellCheck={false}
+                maxLength={7}
+                className="w-28 rounded-lg border border-line bg-panel-2 px-3 py-2 font-mono text-sm uppercase text-ink outline-none transition focus:border-accent/60"
+              />
+              <span className="text-[11px] text-ink-mute">código hex</span>
+            </div>
           </div>
 
           <SectionTitle>Baixar proposta</SectionTitle>

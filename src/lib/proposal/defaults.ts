@@ -13,7 +13,7 @@ export const DEFAULT_PROPOSAL: ProposalData = {
   clientLegalName: "",
   dateLabel: "30 de maio de 2026",
   validUntilLabel: "29 de junho de 2026",
-  coverEyebrow: "Preparado exclusivamente para você",
+  coverEyebrow: "Parceria sob medida",
   coverHeadline: "Uma proposta para impulsionar a",
   headlineLead:
     "Um plano claro, sob medida para o momento atual da sua operação — desenhado a partir do que conversamos.",
