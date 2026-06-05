@@ -38,7 +38,7 @@ export default function EmpresaWorkspace() {
           [
             { id: "solucoes", label: "Soluções & Planos" },
             { id: "consultores", label: "Consultores" },
-            { id: "marca", label: "Marca" },
+            { id: "marca", label: "Sua marca" },
           ] as const
         ).map((t) => (
           <button
