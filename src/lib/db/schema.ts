@@ -8,10 +8,66 @@ import {
   integer,
   jsonb,
   timestamp,
+  uuid,
+  unique,
 } from "drizzle-orm/pg-core";
+
+// ---------------- Multi-tenant: organizações, membros e convites ----------------
+
+// Cada comprador = uma organização. O plano define o limite de assentos.
+export const organizations = pgTable("organizations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().default("Minha empresa"),
+  ownerId: uuid("owner_id").notNull(), // auth.users.id (FK adicionada via SQL)
+  plan: text("plan").notNull().default("individual"), // individual | time
+  seatLimit: integer("seat_limit").notNull().default(1),
+  status: text("status").notNull().default("active"), // active | past_due | canceled
+  billingProvider: text("billing_provider"), // ex: kiwify
+  billingRef: text("billing_ref"), // id da assinatura no provedor
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// Vínculo usuário ↔ organização (1 usuário pode estar em várias orgs).
+export const memberships = pgTable(
+  "memberships",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull(), // auth.users.id
+    role: text("role").notNull().default("member"), // owner | member
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [unique("memberships_org_user_uq").on(t.orgId, t.userId)],
+);
+
+// Convites pendentes (o dono convida vendedores por e-mail).
+export const invitations = pgTable("invitations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  role: text("role").notNull().default("member"),
+  token: uuid("token").notNull().defaultRandom().unique(),
+  invitedBy: uuid("invited_by"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 export const solutions = pgTable("solutions", {
   id: text("id").primaryKey(),
+  orgId: uuid("org_id").references(() => organizations.id, {
+    onDelete: "cascade",
+  }),
   icon: text("icon").notNull().default(""),
   name: text("name").notNull().default(""),
   tagline: text("tagline").notNull().default(""),
@@ -35,6 +91,9 @@ export const solutions = pgTable("solutions", {
 
 export const solutionPlans = pgTable("solution_plans", {
   id: text("id").primaryKey(),
+  orgId: uuid("org_id").references(() => organizations.id, {
+    onDelete: "cascade",
+  }),
   solutionId: text("solution_id")
     .notNull()
     .references(() => solutions.id, { onDelete: "cascade" }),
@@ -48,7 +107,10 @@ export const solutionPlans = pgTable("solution_plans", {
 });
 
 export const companySettings = pgTable("company_settings", {
-  id: text("id").primaryKey(), // sempre "default" (linha única)
+  id: text("id").primaryKey(), // "default" por org (chave vira org_id no passo 2)
+  orgId: uuid("org_id").references(() => organizations.id, {
+    onDelete: "cascade",
+  }),
   logo: text("logo"), // PNG em data URL base64 (transparente), nullable
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
@@ -57,6 +119,9 @@ export const companySettings = pgTable("company_settings", {
 
 export const consultants = pgTable("consultants", {
   id: text("id").primaryKey(),
+  orgId: uuid("org_id").references(() => organizations.id, {
+    onDelete: "cascade",
+  }),
   name: text("name").notNull().default(""),
   role: text("role").notNull().default("Consultor"), // cargo/papel comercial
   email: text("email").notNull().default(""),
@@ -69,6 +134,9 @@ export const consultants = pgTable("consultants", {
 
 export const blockTemplates = pgTable("block_templates", {
   id: text("id").primaryKey(),
+  orgId: uuid("org_id").references(() => organizations.id, {
+    onDelete: "cascade",
+  }),
   block: text("block").notNull(), // understanding | cost | strategy | ...
   name: text("name").notNull().default(""),
   payload: jsonb("payload")
