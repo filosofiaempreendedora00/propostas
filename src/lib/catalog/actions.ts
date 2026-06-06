@@ -1,14 +1,23 @@
 "use server";
 
-import { asc, eq } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
+import { and, asc, count, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { solutions, solutionPlans, consultants } from "@/lib/db/schema";
-import type {
-  CatalogSolution,
-  CatalogConsultant,
-  Billing,
-} from "./types";
+import { requireOrgId } from "@/lib/auth/org";
+import { LIMITS, LimitError } from "@/lib/limits";
+import type { CatalogSolution, CatalogConsultant, Billing } from "./types";
 import { SEED_SOLUTIONS, SEED_CONSULTANTS } from "./seed";
+
+// IDs do seed são fixos; ao semear para uma org nova, geramos IDs frescos
+// (o ID é PK global — reaproveitar causaria colisão entre orgs).
+function freshSolution(s: CatalogSolution): CatalogSolution {
+  return {
+    ...s,
+    id: randomUUID(),
+    plans: s.plans.map((p) => ({ ...p, id: randomUUID() })),
+  };
+}
 
 // ---------------- Soluções ----------------
 
@@ -42,9 +51,14 @@ function rowToSolution(s: SolutionRow, plans: PlanRow[]): CatalogSolution {
   };
 }
 
-async function writeSolution(sol: CatalogSolution, sortOrder: number) {
+async function writeSolution(
+  orgId: string,
+  sol: CatalogSolution,
+  sortOrder: number,
+) {
   await db.transaction(async (tx) => {
     const base = {
+      orgId,
       icon: sol.icon,
       name: sol.name,
       tagline: sol.tagline,
@@ -63,13 +77,26 @@ async function writeSolution(sol: CatalogSolution, sortOrder: number) {
     await tx
       .insert(solutions)
       .values({ id: sol.id, ...base })
-      .onConflictDoUpdate({ target: solutions.id, set: base });
+      .onConflictDoUpdate({
+        target: solutions.id,
+        set: base,
+        where: eq(solutions.orgId, orgId), // só atualiza se for da própria org
+      });
 
-    await tx.delete(solutionPlans).where(eq(solutionPlans.solutionId, sol.id));
-    if (sol.plans.length > 0) {
+    await tx
+      .delete(solutionPlans)
+      .where(
+        and(
+          eq(solutionPlans.solutionId, sol.id),
+          eq(solutionPlans.orgId, orgId),
+        ),
+      );
+    const plans = sol.plans.slice(0, LIMITS.plansPerSolution);
+    if (plans.length > 0) {
       await tx.insert(solutionPlans).values(
-        sol.plans.map((p, i) => ({
+        plans.map((p, i) => ({
           id: p.id,
+          orgId,
           solutionId: sol.id,
           name: p.name,
           billing: p.billing,
@@ -85,25 +112,29 @@ async function writeSolution(sol: CatalogSolution, sortOrder: number) {
 }
 
 export async function listSolutions(): Promise<CatalogSolution[]> {
+  const orgId = await requireOrgId();
   let sols = await db
     .select()
     .from(solutions)
+    .where(eq(solutions.orgId, orgId))
     .orderBy(asc(solutions.sortOrder), asc(solutions.createdAt));
 
-  // Seed no primeiro acesso (tabela vazia).
+  // Seed no primeiro acesso DESTA organização.
   if (sols.length === 0) {
     for (let i = 0; i < SEED_SOLUTIONS.length; i++) {
-      await writeSolution(SEED_SOLUTIONS[i], i);
+      await writeSolution(orgId, freshSolution(SEED_SOLUTIONS[i]), i);
     }
     sols = await db
       .select()
       .from(solutions)
+      .where(eq(solutions.orgId, orgId))
       .orderBy(asc(solutions.sortOrder), asc(solutions.createdAt));
   }
 
   const plans = await db
     .select()
     .from(solutionPlans)
+    .where(eq(solutionPlans.orgId, orgId))
     .orderBy(asc(solutionPlans.sortOrder));
   const byId = new Map<string, PlanRow[]>();
   for (const p of plans) {
@@ -118,28 +149,57 @@ export async function upsertSolution(
   sol: CatalogSolution,
   sortOrder: number,
 ): Promise<void> {
-  await writeSolution(sol, sortOrder);
+  const orgId = await requireOrgId();
+  // Trava: bloqueia criar solução nova acima do limite.
+  const exists = await db
+    .select({ id: solutions.id })
+    .from(solutions)
+    .where(and(eq(solutions.id, sol.id), eq(solutions.orgId, orgId)))
+    .limit(1);
+  if (exists.length === 0) {
+    const [{ c }] = await db
+      .select({ c: count() })
+      .from(solutions)
+      .where(eq(solutions.orgId, orgId));
+    if (Number(c) >= LIMITS.solutions) {
+      throw new LimitError(`Limite de ${LIMITS.solutions} soluções atingido.`);
+    }
+  }
+  await writeSolution(orgId, sol, sortOrder);
 }
 
 export async function deleteSolution(id: string): Promise<void> {
-  await db.delete(solutions).where(eq(solutions.id, id)); // cascade nos planos
+  const orgId = await requireOrgId();
+  await db
+    .delete(solutions)
+    .where(and(eq(solutions.id, id), eq(solutions.orgId, orgId))); // cascade nos planos
 }
 
 // ---------------- Consultores ----------------
 
 export async function listConsultants(): Promise<CatalogConsultant[]> {
+  const orgId = await requireOrgId();
   let rows = await db
     .select()
     .from(consultants)
+    .where(eq(consultants.orgId, orgId))
     .orderBy(asc(consultants.sortOrder), asc(consultants.createdAt));
 
   if (rows.length === 0) {
-    await db.insert(consultants).values(
-      SEED_CONSULTANTS.map((c, i) => ({ ...c, sortOrder: i })),
-    );
+    await db
+      .insert(consultants)
+      .values(
+        SEED_CONSULTANTS.map((c, i) => ({
+          ...c,
+          id: randomUUID(),
+          orgId,
+          sortOrder: i,
+        })),
+      );
     rows = await db
       .select()
       .from(consultants)
+      .where(eq(consultants.orgId, orgId))
       .orderBy(asc(consultants.sortOrder), asc(consultants.createdAt));
   }
 
@@ -156,7 +216,25 @@ export async function upsertConsultant(
   c: CatalogConsultant,
   sortOrder: number,
 ): Promise<void> {
+  const orgId = await requireOrgId();
+  const exists = await db
+    .select({ id: consultants.id })
+    .from(consultants)
+    .where(and(eq(consultants.id, c.id), eq(consultants.orgId, orgId)))
+    .limit(1);
+  if (exists.length === 0) {
+    const [{ c: n }] = await db
+      .select({ c: count() })
+      .from(consultants)
+      .where(eq(consultants.orgId, orgId));
+    if (Number(n) >= LIMITS.consultants) {
+      throw new LimitError(
+        `Limite de ${LIMITS.consultants} consultores atingido.`,
+      );
+    }
+  }
   const base = {
+    orgId,
     name: c.name,
     role: c.role,
     email: c.email,
@@ -166,9 +244,16 @@ export async function upsertConsultant(
   await db
     .insert(consultants)
     .values({ id: c.id, ...base })
-    .onConflictDoUpdate({ target: consultants.id, set: base });
+    .onConflictDoUpdate({
+      target: consultants.id,
+      set: base,
+      where: eq(consultants.orgId, orgId),
+    });
 }
 
 export async function deleteConsultant(id: string): Promise<void> {
-  await db.delete(consultants).where(eq(consultants.id, id));
+  const orgId = await requireOrgId();
+  await db
+    .delete(consultants)
+    .where(and(eq(consultants.id, id), eq(consultants.orgId, orgId)));
 }
