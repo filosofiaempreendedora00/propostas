@@ -360,7 +360,6 @@ export default function ClientBuilder() {
         </div>
         <DownloadActions
           layout="header"
-          accent={form.accent}
           disabled={clientMissing}
           onPdf={handleExportPDF}
           onHtml={handleExport}
@@ -825,7 +824,6 @@ export default function ClientBuilder() {
           )}
           <DownloadActions
             layout="panel"
-            accent={form.accent}
             disabled={clientMissing}
             onPdf={handleExportPDF}
             onHtml={handleExport}
@@ -898,39 +896,72 @@ function DownloadActions({
   onPdf,
   onHtml,
   disabled,
-  accent,
   layout,
 }: {
   onPdf: () => void;
   onHtml: () => void;
   disabled: boolean;
-  accent: string;
   layout: "header" | "panel";
 }) {
   const header = layout === "header";
+  const [open, setOpen] = useState(false);
+  const choose = (fn: () => void) => {
+    setOpen(false);
+    fn();
+  };
   return (
-    <div className={header ? "flex items-center gap-2" : "grid grid-cols-2 gap-2"}>
+    <div className={`relative ${header ? "" : "w-full"}`}>
       <button
         type="button"
-        onClick={onPdf}
+        onClick={() => setOpen((o) => !o)}
         disabled={disabled}
-        style={{ background: accent }}
-        className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full font-semibold text-bg transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 ${
-          header ? "px-5 py-2 text-sm" : "px-4 py-2.5 text-sm"
+        aria-expanded={open}
+        className={`flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-accent font-semibold text-bg transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 ${
+          header ? "px-5 py-2 text-sm" : "w-full px-4 py-2.5 text-sm"
         }`}
       >
-        ⬇ Baixar PDF
+        ⬇ Baixar
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
       </button>
-      <button
-        type="button"
-        onClick={onHtml}
-        disabled={disabled}
-        className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-line font-medium text-ink-soft transition enabled:hover:border-accent/60 enabled:hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 ${
-          header ? "px-4 py-2 text-sm" : "px-4 py-2.5 text-sm"
-        }`}
-      >
-        ⬇ {header ? "HTML" : "Baixar HTML"}
-      </button>
+      {open && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+            aria-hidden
+          />
+          <div
+            className={`absolute z-50 mt-2 min-w-[170px] overflow-hidden rounded-xl border border-line bg-panel shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] ${
+              header ? "right-0" : "left-0 w-full"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => choose(onPdf)}
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-ink transition hover:bg-panel-2"
+            >
+              <span>📄</span> Baixar em PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => choose(onHtml)}
+              className="flex w-full items-center gap-2.5 border-t border-line px-4 py-2.5 text-left text-sm text-ink transition hover:bg-panel-2"
+            >
+              <span>🌐</span> Baixar em HTML
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

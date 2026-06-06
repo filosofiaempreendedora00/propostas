@@ -38,3 +38,7 @@ yarn-error.log*
 
 # Fontes dos ativos de marca (as cópias usadas pelo app ficam em /public)
 /Ativos Kronos/
+
+# Produção de GIFs/demo (local apenas)
+/out/
+/scripts/gif/
