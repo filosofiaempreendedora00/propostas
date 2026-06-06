@@ -98,6 +98,23 @@ function IconTemplates({ className = "" }: { className?: string }) {
   );
 }
 
+function IconAdmin({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" />
+      <path d="M9.5 12l1.8 1.8L15 10" />
+    </svg>
+  );
+}
+
 function Chevron({ collapsed }: { collapsed: boolean }) {
   return (
     <svg
@@ -121,7 +138,7 @@ const ITEMS = [
   { href: "/cliente", label: "Gerador", Icon: IconGerador, highlight: true },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
@@ -249,6 +266,24 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Painel master — só admin */}
+      {isAdmin && (
+        <Link
+          href="/admin"
+          title={isCollapsed ? "Painel master" : undefined}
+          className={`mx-2.5 mt-1 flex items-center gap-3 rounded-lg border border-accent/30 px-2.5 py-2.5 text-sm font-medium transition ${
+            pathname.startsWith("/admin")
+              ? "bg-accent/15 text-accent"
+              : "text-ink-soft hover:bg-accent/10 hover:text-accent"
+          } ${isCollapsed ? "justify-center" : ""}`}
+        >
+          <span className="grid h-7 w-7 shrink-0 place-items-center">
+            <IconAdmin className="h-5 w-5" />
+          </span>
+          {!isCollapsed && <span className="truncate">Painel master</span>}
+        </Link>
+      )}
 
       {/* Sair */}
       <button
