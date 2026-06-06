@@ -342,12 +342,18 @@ export function renderProposalHTML(
      descarta os fundos e tudo vira branco) e cuida da paginação: preenche as
      páginas, mantém títulos com o conteúdo e não corta cards no meio. */
   @media print{
-    @page{margin:0}
+    /* Margem vertical nas páginas de conteúdo = respiro no topo/rodapé, pra
+       nenhum card/seção ficar colado na quebra. Laterais 0 = fundo full-bleed. */
+    @page{margin:14mm 0}
+    @page cover{margin:0} /* a capa ocupa a página inteira, sem margem */
     html,body{background:var(--bg)!important}
     *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    /* Fundo fixo repetido em TODA página — cobre a área de margem pra não
+       sobrar faixa branca do papel no tema escuro (mantém o full-bleed). */
+    body::after{content:"";position:fixed;inset:0;background:var(--bg);z-index:-1;pointer-events:none}
 
     /* Capa = página de rosto cheia, conteúdo distribuído (sem vazio embaixo). */
-    .cover{min-height:100vh;justify-content:space-between;padding:9vh 0;break-after:page}
+    .cover{page:cover;min-height:100vh;justify-content:space-between;padding:9vh 0;break-after:page}
     .cover-mid{padding-block:0}
 
     /* Seções mais compactas e em fluxo contínuo — preenche as páginas. */
