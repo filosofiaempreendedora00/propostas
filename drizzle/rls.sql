@@ -59,3 +59,6 @@ create policy tpl_all on public.block_templates for all
 drop policy if exists comp_all on public.company_settings;
 create policy comp_all on public.company_settings for all
   using (org_id in (select public.user_org_ids())) with check (org_id in (select public.user_org_ids()));
+
+-- Assinaturas: travada (sem políticas = só o servidor/owner acessa)
+alter table public.billing_customers enable row level security;

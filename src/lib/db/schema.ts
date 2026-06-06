@@ -46,6 +46,22 @@ export const memberships = pgTable(
   (t) => [unique("memberships_org_user_uq").on(t.orgId, t.userId)],
 );
 
+// Assinaturas vindas do provedor de pagamento (Kiwify), chaveadas por e-mail —
+// funciona mesmo se a pessoa comprar antes de criar a conta no app.
+export const billingCustomers = pgTable("billing_customers", {
+  email: text("email").primaryKey(), // sempre em minúsculas
+  plan: text("plan").notNull().default("individual"), // individual | time
+  seatLimit: integer("seat_limit").notNull().default(1),
+  status: text("status").notNull().default("active"), // active | canceled | past_due
+  provider: text("provider"), // kiwify
+  productId: text("product_id"),
+  subscriptionId: text("subscription_id"),
+  raw: jsonb("raw").$type<Record<string, unknown>>(), // último payload (debug)
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Convites pendentes (o dono convida vendedores por e-mail).
 export const invitations = pgTable("invitations", {
   id: uuid("id").primaryKey().defaultRandom(),

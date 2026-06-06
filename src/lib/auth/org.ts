@@ -4,6 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { organizations, memberships } from "@/lib/db/schema";
 import { createSupabaseServer } from "@/lib/supabase/server";
+import { applyEntitlementToOrg } from "@/lib/billing/entitlement";
 
 // Usuário autenticado (valida o JWT no Supabase). Lança se não houver sessão.
 // Toda Server Action deve passar por aqui (defesa além do proxy).
@@ -31,7 +32,7 @@ export async function requireOrgId(): Promise<string> {
   if (found.length) return found[0].id;
 
   // Cria a org pessoal (lock por usuário pra não duplicar).
-  return db.transaction(async (tx) => {
+  const orgId = await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${user.id}))`);
     const again = await tx
       .select({ id: memberships.orgId })
@@ -50,4 +51,12 @@ export async function requireOrgId(): Promise<string> {
       .values({ orgId: org.id, userId: user.id, role: "owner" });
     return org.id;
   });
+
+  // Se a pessoa já comprou (assinatura por e-mail), aplica o plano na org nova.
+  try {
+    await applyEntitlementToOrg(orgId, user.email);
+  } catch {
+    /* sem assinatura ainda — segue com o padrão */
+  }
+  return orgId;
 }
