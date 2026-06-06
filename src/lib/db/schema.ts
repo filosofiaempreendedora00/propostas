@@ -127,7 +127,8 @@ export const companySettings = pgTable("company_settings", {
   orgId: uuid("org_id").references(() => organizations.id, {
     onDelete: "cascade",
   }),
-  logo: text("logo"), // PNG em data URL base64 (transparente), nullable
+  logo: text("logo"), // logo p/ FUNDO ESCURO (versão clara). data URL base64, nullable
+  logoDark: text("logo_dark"), // logo p/ FUNDO CLARO (versão escura). data URL, nullable
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

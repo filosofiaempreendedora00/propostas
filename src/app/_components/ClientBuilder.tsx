@@ -64,7 +64,7 @@ export default function ClientBuilder() {
     add: addTemplate,
     update: updateTemplate,
   } = useTemplates();
-  const { logo: companyLogo } = useCompany();
+  const { logo: companyLogo, logoDark: companyLogoDark } = useCompany();
 
   const [form, setForm] = useState<ClientForm>(() => {
     const {
@@ -139,9 +139,15 @@ export default function ClientBuilder() {
         solution: s.name,
         plans: s.plans.map(planToTier),
       }));
+    // Logo conforme o tema da proposta: claro → logo escura; escuro → logo clara.
+    // Cai para a outra versão se só uma estiver cadastrada.
+    const themedLogo =
+      form.theme === "light"
+        ? companyLogoDark ?? companyLogo
+        : companyLogo ?? companyLogoDark;
     return {
       ...form,
-      logo: companyLogo ?? undefined,
+      logo: themedLogo ?? undefined,
       consultantTerm: consultant?.role || "Consultor",
       solutions: chosen.map(toRenderSolution),
       investmentGroups,
@@ -149,7 +155,7 @@ export default function ClientBuilder() {
       phone: consultant?.phone ?? "",
       email: consultant?.email ?? "",
     };
-  }, [form, solutions, selSolutions, consultant, companyLogo]);
+  }, [form, solutions, selSolutions, consultant, companyLogo, companyLogoDark]);
 
   // ----- edição inline vinda do preview -----
   useEffect(() => {
