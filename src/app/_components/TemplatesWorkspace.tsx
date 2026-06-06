@@ -6,6 +6,7 @@ import { BLOCKS, NON_EDITABLE_BLOCKS, type BlockKey } from "@/lib/templates/type
 import type { BlockTemplate } from "@/lib/templates/types";
 import TemplateEditor from "./TemplateEditor";
 import SectionPreview from "./SectionPreview";
+import ResizableSplit from "./ResizableSplit";
 
 // Lista completa dos 8 blocos da proposta (editáveis + não-editáveis em cinza).
 type DisplayBlock = { n: number; label: string; key?: BlockKey; hint?: string };
@@ -139,9 +140,9 @@ export default function TemplatesWorkspace() {
   };
 
   return (
-    <div className="grid h-full grid-cols-[264px_minmax(400px,1.3fr)_minmax(300px,1fr)]">
+    <div className="flex h-full">
       {/* Menu de blocos */}
-      <aside className="form-scroll overflow-y-auto border-r border-line p-3">
+      <aside className="w-[264px] shrink-0 form-scroll overflow-y-auto border-r border-line p-3">
         <div className="px-2 pb-3 pt-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-mute">
           Blocos da proposta
         </div>
@@ -202,8 +203,9 @@ export default function TemplatesWorkspace() {
         })}
       </aside>
 
-      {/* Variações do bloco (cards) */}
-      <section className="form-scroll overflow-y-auto border-r border-line">
+      <ResizableSplit storageKey="propostas.templates.split" defaultRight={420}>
+        {/* Variações do bloco (cards) */}
+        <section className="form-scroll h-full w-full overflow-y-auto">
         <div className="px-6 py-7">
           <div className="mb-6 flex items-start justify-between gap-3 border-b border-line pb-4">
             <div className="min-w-0">
@@ -255,7 +257,8 @@ export default function TemplatesWorkspace() {
         title="Preview da seção"
         subtitle="Como esta variação fica na proposta gerada."
         empty="Abra uma variação para ver o preview da seção."
-      />
+        />
+      </ResizableSplit>
     </div>
   );
 }

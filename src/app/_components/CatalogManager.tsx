@@ -8,6 +8,7 @@ import type { PreviewBlock } from "@/lib/proposal/render";
 import { toRenderSolution, planToTier } from "@/lib/proposal/fromCatalog";
 import { Label, TextInput, TextArea, ItemList, MiniBtn } from "./fields";
 import SectionPreview from "./SectionPreview";
+import ResizableSplit from "./ResizableSplit";
 
 type EditorTab = "detalhes" | "planos";
 
@@ -54,9 +55,9 @@ export default function CatalogManager() {
   }, [selected, tab]);
 
   return (
-    <div className="grid h-full grid-cols-[260px_minmax(420px,1.2fr)_minmax(300px,1fr)]">
+    <div className="flex h-full">
       {/* Lista */}
-      <aside className="form-scroll overflow-y-auto border-r border-line">
+      <aside className="w-[260px] shrink-0 form-scroll overflow-y-auto border-r border-line">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/95 px-4 py-4 backdrop-blur">
           <div>
             <div className="font-display text-3xl font-semibold tracking-tight text-ink">
@@ -106,8 +107,9 @@ export default function CatalogManager() {
         </ul>
       </aside>
 
-      {/* Editor */}
-      <section className="form-scroll overflow-y-auto">
+      <ResizableSplit storageKey="propostas.catalog.split" defaultRight={440}>
+        {/* Editor */}
+        <section className="form-scroll h-full w-full overflow-y-auto">
         {selected ? (
           <div className="mx-auto max-w-4xl px-10 py-9">
             <div className="mb-7 flex items-start justify-between gap-4 border-b border-line pb-5">
@@ -281,7 +283,8 @@ export default function CatalogManager() {
             ? "Adicione um plano para ver o preview."
             : "Selecione uma solução para ver o preview."
         }
-      />
+        />
+      </ResizableSplit>
     </div>
   );
 }

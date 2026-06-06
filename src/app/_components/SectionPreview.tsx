@@ -44,7 +44,7 @@ export default function SectionPreview({
   }, [block, payload, theme]);
 
   return (
-    <section className="flex min-h-0 flex-col">
+    <section className="flex h-full w-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-3 border-b border-line px-5 py-3">
         <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent/15 text-[10px] text-accent">
           ◉
