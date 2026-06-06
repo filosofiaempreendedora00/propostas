@@ -83,7 +83,9 @@ export default function TeamManager() {
               Equipe
             </h1>
             <p className="mt-1.5 text-sm text-ink-mute">
-              Convide vendedores para usar o mesmo catálogo e templates.
+              {isOwner
+                ? "Convide vendedores para usar o mesmo catálogo e templates."
+                : "Você faz parte desta equipe e usa o catálogo compartilhado."}
             </p>
           </div>
           <span className="shrink-0 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink-soft">
@@ -98,7 +100,7 @@ export default function TeamManager() {
         )}
 
         {individual ? (
-          <div className="rounded-xl border border-accent/40 bg-accent/10 p-5 text-sm leading-relaxed text-ink-soft">
+          <div className="mb-7 rounded-xl border border-accent/40 bg-accent/10 p-5 text-sm leading-relaxed text-ink-soft">
             Seu plano é <strong className="text-ink">Individual</strong> (1
             assento). Para adicionar sua equipe (até 10 pessoas), faça upgrade
             para o{" "}
@@ -108,7 +110,7 @@ export default function TeamManager() {
             .
           </div>
         ) : !isOwner ? (
-          <p className="text-sm text-ink-mute">
+          <p className="mb-7 text-sm text-ink-mute">
             Só o dono da conta gerencia a equipe.
           </p>
         ) : (
