@@ -7,6 +7,32 @@ import { createSupabaseBrowser } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup";
 
+function Spinner() {
+  return (
+    <svg
+      className="h-[18px] w-[18px] animate-spin"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        className="opacity-25"
+      />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 // Traduz as mensagens de erro do Supabase (que vêm em inglês) para PT-BR.
 function traduzErro(raw: string): string {
   const m = raw.toLowerCase();
@@ -194,10 +220,13 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-1 w-full rounded-xl bg-accent px-4 py-3.5 text-[15px] font-semibold text-bg transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-[15px] font-semibold text-bg transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
+              {loading && <Spinner />}
               {loading
-                ? "Aguarde…"
+                ? mode === "login"
+                  ? "Entrando…"
+                  : "Criando conta…"
                 : mode === "login"
                   ? "Entrar"
                   : "Criar conta"}
