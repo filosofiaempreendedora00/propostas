@@ -44,7 +44,13 @@ export async function requireOrgId(): Promise<string> {
     const name = user.email?.split("@")[0] || "Minha empresa";
     const [org] = await tx
       .insert(organizations)
-      .values({ ownerId: user.id, name, plan: "individual", seatLimit: 1 })
+      .values({
+        ownerId: user.id,
+        name,
+        plan: "individual",
+        seatLimit: 1,
+        status: "inactive", // sem acesso até uma assinatura ativar (paywall)
+      })
       .returning({ id: organizations.id });
     await tx
       .insert(memberships)
@@ -59,4 +65,21 @@ export async function requireOrgId(): Promise<string> {
     /* sem assinatura ainda — segue com o padrão */
   }
   return orgId;
+}
+
+// Org atual completa (cria na 1ª vez). Usado pra checar acesso (paywall).
+export async function getCurrentOrg() {
+  const orgId = await requireOrgId();
+  const [org] = await db
+    .select()
+    .from(organizations)
+    .where(eq(organizations.id, orgId))
+    .limit(1);
+  return org;
+}
+
+// Tem acesso = assinatura ativa.
+export async function hasActiveAccess(): Promise<boolean> {
+  const org = await getCurrentOrg();
+  return org?.status === "active";
 }
