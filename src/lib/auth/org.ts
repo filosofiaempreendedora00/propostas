@@ -1,8 +1,8 @@
 import "server-only";
 
-import { eq, sql } from "drizzle-orm";
+import { and, count, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { organizations, memberships } from "@/lib/db/schema";
+import { organizations, memberships, invitations } from "@/lib/db/schema";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { applyEntitlementToOrg } from "@/lib/billing/entitlement";
 
@@ -31,17 +31,51 @@ export async function requireOrgId(): Promise<string> {
     .limit(1);
   if (found.length) return found[0].id;
 
-  // Cria a org pessoal (lock por usuário pra não duplicar).
-  const orgId = await db.transaction(async (tx) => {
+  const email = user.email?.toLowerCase() ?? null;
+
+  // Serializado por usuário (lock) pra não duplicar org/aceitar convite 2x.
+  const result = await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${user.id}))`);
     const again = await tx
       .select({ id: memberships.orgId })
       .from(memberships)
       .where(eq(memberships.userId, user.id))
       .limit(1);
-    if (again.length) return again[0].id;
+    if (again.length) return { orgId: again[0].id, created: false };
 
-    const name = user.email?.split("@")[0] || "Minha empresa";
+    // Tem convite pendente pra esse e-mail? Entra na equipe (se houver assento).
+    if (email) {
+      const [inv] = await tx
+        .select()
+        .from(invitations)
+        .where(and(eq(invitations.email, email), isNull(invitations.acceptedAt)))
+        .limit(1);
+      if (inv) {
+        const [o] = await tx
+          .select({ seatLimit: organizations.seatLimit })
+          .from(organizations)
+          .where(eq(organizations.id, inv.orgId))
+          .limit(1);
+        const [{ c }] = await tx
+          .select({ c: count() })
+          .from(memberships)
+          .where(eq(memberships.orgId, inv.orgId));
+        if (o && Number(c) < o.seatLimit) {
+          await tx
+            .insert(memberships)
+            .values({ orgId: inv.orgId, userId: user.id, role: inv.role })
+            .onConflictDoNothing();
+          await tx
+            .update(invitations)
+            .set({ acceptedAt: new Date() })
+            .where(eq(invitations.id, inv.id));
+          return { orgId: inv.orgId, created: false };
+        }
+      }
+    }
+
+    // Senão, cria a org pessoal.
+    const name = email?.split("@")[0] || "Minha empresa";
     const [org] = await tx
       .insert(organizations)
       .values({
@@ -55,16 +89,18 @@ export async function requireOrgId(): Promise<string> {
     await tx
       .insert(memberships)
       .values({ orgId: org.id, userId: user.id, role: "owner" });
-    return org.id;
+    return { orgId: org.id, created: true };
   });
 
-  // Se a pessoa já comprou (assinatura por e-mail), aplica o plano na org nova.
-  try {
-    await applyEntitlementToOrg(orgId, user.email);
-  } catch {
-    /* sem assinatura ainda — segue com o padrão */
+  // Só aplica assinatura própria quando é org pessoal recém-criada.
+  if (result.created) {
+    try {
+      await applyEntitlementToOrg(result.orgId, user.email);
+    } catch {
+      /* sem assinatura ainda */
+    }
   }
-  return orgId;
+  return result.orgId;
 }
 
 // Org atual completa (cria na 1ª vez). Usado pra checar acesso (paywall).
