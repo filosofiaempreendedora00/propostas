@@ -3,7 +3,44 @@
 import { useRef, useState } from "react";
 import { useCompany } from "@/lib/company/store";
 
-const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
+const MAX_BYTES = 2 * 1024 * 1024; // 2 MB (arquivo de origem)
+const MAX_DIM = 800; // maior lado após compressão (logo não precisa de mais)
+
+function readAsDataURL(file: File): Promise<string> {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result));
+    r.onerror = () => rej(new Error("read"));
+    r.readAsDataURL(file);
+  });
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error("img"));
+    img.src = src;
+  });
+}
+
+// Redimensiona/comprime para um PNG leve (preserva transparência).
+// SVG é vetorial e já leve — mantém como está.
+async function compressLogo(file: File): Promise<string> {
+  const dataUrl = await readAsDataURL(file);
+  if (file.type === "image/svg+xml") return dataUrl;
+  const img = await loadImage(dataUrl);
+  const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return dataUrl;
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL("image/png");
+}
 
 function LogoSlot({
   title,
@@ -35,13 +72,10 @@ function LogoSlot({
       setError("Arquivo muito grande — máximo 2 MB.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setError(null);
-      onChange(String(reader.result));
-    };
-    reader.onerror = () => setError("Não consegui ler o arquivo. Tente outro.");
-    reader.readAsDataURL(file);
+    setError(null);
+    compressLogo(file)
+      .then(onChange)
+      .catch(() => setError("Não consegui processar a imagem. Tente outra."));
   };
 
   return (

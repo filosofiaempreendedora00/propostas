@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import CatalogManager from "./CatalogManager";
 import ConsultantsManager from "./ConsultantsManager";
 import BrandManager from "./BrandManager";
@@ -10,10 +10,15 @@ const TAB_KEY = "propostas.empresa.tab";
 type Tab = "solucoes" | "consultores" | "marca" | "equipe";
 const TABS: Tab[] = ["solucoes", "consultores", "marca", "equipe"];
 
+// Roda antes da pintura no cliente (evita o "flash" da aba padrão ao navegar);
+// cai pra useEffect no servidor pra não emitir aviso de SSR.
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 export default function EmpresaWorkspace() {
   const [tab, setTab] = useState<Tab>("solucoes");
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     try {
       const saved = window.localStorage.getItem(TAB_KEY) as Tab | null;
       if (saved && TABS.includes(saved)) setTab(saved);

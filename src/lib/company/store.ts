@@ -26,12 +26,12 @@ export function useCompany() {
 
   const setLogo = useCallback((l: string | null) => {
     setLogoState(l); // otimista
-    void setCompanyLogo("logo", l);
+    setCompanyLogo("logo", l).catch(() => {});
   }, []);
 
   const setLogoDark = useCallback((l: string | null) => {
     setLogoDarkState(l); // otimista
-    void setCompanyLogo("logoDark", l);
+    setCompanyLogo("logoDark", l).catch(() => {});
   }, []);
 
   return { logo, logoDark, ready, setLogo, setLogoDark };
