@@ -835,7 +835,7 @@ export default function ClientBuilder() {
             onHtml={handleExport}
           />
 
-          <div className="h-10" />
+          <div className="h-24" />
         </div>
 
         {/* Preview (editável) — documento contido e centralizado, com margem */}
@@ -911,12 +911,33 @@ function DownloadActions({
 }) {
   const header = layout === "header";
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const choose = (fn: () => void) => {
     setOpen(false);
     fn();
   };
+
+  // Fecha ao clicar fora / Esc — SEM overlay (que travava o scroll).
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
-    <div className={`relative ${header ? "" : "w-full"}`}>
+    <div ref={rootRef} className={`relative ${header ? "" : "w-full"}`}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -940,33 +961,28 @@ function DownloadActions({
         </svg>
       </button>
       {open && (
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setOpen(false)}
-            aria-hidden
-          />
-          <div
-            className={`absolute z-50 mt-2 min-w-[170px] overflow-hidden rounded-xl border border-line bg-panel shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] ${
-              header ? "right-0" : "left-0 w-full"
-            }`}
+        <div
+          className={`absolute z-50 min-w-[170px] overflow-hidden rounded-xl border border-line bg-panel shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] ${
+            header
+              ? "right-0 top-full mt-2"
+              : "left-0 bottom-full mb-2 w-full" /* painel de baixo: abre p/ cima */
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => choose(onPdf)}
+            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-ink transition hover:bg-panel-2"
           >
-            <button
-              type="button"
-              onClick={() => choose(onPdf)}
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-ink transition hover:bg-panel-2"
-            >
-              <span>📄</span> Baixar em PDF
-            </button>
-            <button
-              type="button"
-              onClick={() => choose(onHtml)}
-              className="flex w-full items-center gap-2.5 border-t border-line px-4 py-2.5 text-left text-sm text-ink transition hover:bg-panel-2"
-            >
-              <span>🌐</span> Baixar em HTML
-            </button>
-          </div>
-        </>
+            <span>📄</span> Baixar em PDF
+          </button>
+          <button
+            type="button"
+            onClick={() => choose(onHtml)}
+            className="flex w-full items-center gap-2.5 border-t border-line px-4 py-2.5 text-left text-sm text-ink transition hover:bg-panel-2"
+          >
+            <span>🌐</span> Baixar em HTML
+          </button>
+        </div>
       )}
     </div>
   );
