@@ -95,7 +95,7 @@ function PlanCard({
         {annual ? (
           <div className="mt-2">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-              <span className="text-ink-mute">em 12× ou</span>
+              <span className="text-ink-mute">Parcele em até 12× ou</span>
               <span className="font-semibold text-ink">
                 R$ {brl(annualUpfront)} à vista
               </span>
@@ -104,7 +104,7 @@ function PlanCard({
               </span>
             </div>
             <p className="mt-1 text-[11px] text-emerald-400/90">
-              economize R$ {brl(saveUpfront)} no ano à vista
+              Economize R$ {brl(saveUpfront)} no Plano Anual à vista
             </p>
           </div>
         ) : (
