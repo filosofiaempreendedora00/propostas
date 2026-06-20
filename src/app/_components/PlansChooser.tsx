@@ -109,7 +109,7 @@ function PlanCard({
           </div>
         ) : (
           <p className="mt-2 text-xs text-ink-mute">
-            cobrado mensalmente · cancele quando quiser
+            Cobrado mensalmente. Cancele quando quiser.
           </p>
         )}
       </div>
