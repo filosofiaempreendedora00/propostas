@@ -133,7 +133,7 @@ function PlanCard({
         }`}
       >
         Assinar {name}
-        {annual ? " anual" : ""}
+        {annual ? " anual" : " mensal"}
       </a>
 
       <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[11px] text-ink-mute">
