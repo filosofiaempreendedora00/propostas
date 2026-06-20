@@ -18,14 +18,14 @@ function WhatsAppIcon() {
 // Faixa de teste gratuito — fixa no topo, em todas as telas do app.
 export default function TrialBar() {
   return (
-    <div className="flex shrink-0 flex-wrap items-center justify-center gap-x-5 gap-y-2 bg-accent px-4 py-3 text-bg">
+    <div className="flex shrink-0 flex-wrap items-center justify-center gap-x-5 gap-y-2 bg-accent px-4 py-3 text-white">
       <span className="text-sm font-medium sm:text-[15px]">
         Você está em um teste gratuito.
       </span>
       <div className="flex items-center gap-2.5">
         <Link
           href="/planos"
-          className="rounded-full bg-bg px-5 py-2 text-sm font-semibold text-ink transition hover:opacity-90"
+          className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-[#2a2018] transition hover:opacity-90"
         >
           Ver planos
         </Link>
@@ -33,7 +33,7 @@ export default function TrialBar() {
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 rounded-full border border-bg/30 px-5 py-2 text-sm font-semibold text-bg transition hover:bg-bg/10"
+          className="flex items-center gap-1.5 rounded-full border border-white/45 px-5 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
         >
           <WhatsAppIcon />
           Falar no WhatsApp
