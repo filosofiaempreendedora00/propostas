@@ -5,10 +5,10 @@ import { useState } from "react";
 // ⚠️ CONFIRME ESTES VALORES com as suas ofertas na Kiwify (precisam bater com o checkout).
 // annualPerMonth = preço "por mês" equivalente no plano anual; annualTotal = cobrança anual.
 const PRICES = {
-  individual: { monthly: 67, annualPerMonth: 40, annualTotal: 480 },
-  time: { monthly: 197, annualPerMonth: 118, annualTotal: 1416 },
+  individual: { monthly: 67, annualPerMonth: 49, annualTotal: 588 },
+  time: { monthly: 197, annualPerMonth: 147, annualTotal: 1764 },
 };
-const DISCOUNT = 40; // % de desconto no anual
+const DISCOUNT = 25; // % de desconto no anual (Individual ~27%, Time ~25%)
 
 const brl = (n: number) => n.toLocaleString("pt-BR");
 
