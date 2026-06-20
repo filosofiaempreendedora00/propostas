@@ -2,22 +2,19 @@
 
 import { useState } from "react";
 
-// ⚠️ CONFIRME ESTES VALORES com as suas ofertas na Kiwify (precisam bater com o checkout).
-// annualPerMonth = preço "por mês" equivalente no plano anual; annualTotal = cobrança anual.
+// ⚠️ CONFIRME com as ofertas na Kiwify (precisam bater com o checkout).
+// monthly        = plano mensal (R$/mês)
+// annualPerMonth = anual PARCELADO (R$/mês em 12×, com juros embutidos)
+// annualUpfront  = anual À VISTA (pagamento único no ano) — maior desconto
 const PRICES = {
-  individual: { monthly: 67, annualPerMonth: 49, annualTotal: 588 },
-  time: { monthly: 197, annualPerMonth: 147, annualTotal: 1764 },
+  individual: { monthly: 67, annualPerMonth: 49, annualUpfront: 480 },
+  time: { monthly: 197, annualPerMonth: 147, annualUpfront: 1416 },
 };
-const DISCOUNT = 25; // % de desconto no anual (Individual ~27%, Time ~25%)
 
 const brl = (n: number) => n.toLocaleString("pt-BR");
 
 type Links = { monthly: string; annual: string };
-type Props = {
-  email: string | null;
-  individual: Links;
-  time: Links;
-};
+type Props = { email: string | null; individual: Links; time: Links };
 
 function withEmail(url: string, email: string | null) {
   if (!url) return "#";
@@ -46,7 +43,7 @@ function PlanCard({
   tagline,
   monthly,
   annualPerMonth,
-  annualTotal,
+  annualUpfront,
   features,
   link,
   annual,
@@ -57,15 +54,17 @@ function PlanCard({
   tagline: string;
   monthly: number;
   annualPerMonth: number;
-  annualTotal: number;
+  annualUpfront: number;
   features: string[];
   link: string;
   annual: boolean;
   focus?: boolean;
   email: string | null;
 }) {
-  const price = annual ? annualPerMonth : monthly;
-  const save = monthly * 12 - annualTotal;
+  const annualizedMonthly = monthly * 12;
+  const saveUpfront = annualizedMonthly - annualUpfront;
+  const discUpfront = Math.round((saveUpfront / annualizedMonthly) * 100);
+
   return (
     <div
       className={`relative flex flex-col rounded-2xl border p-6 transition ${
@@ -84,21 +83,32 @@ function PlanCard({
       </h2>
       <p className="mt-1 text-sm text-ink-mute">{tagline}</p>
 
-      <div className="mt-4 min-h-[68px]">
+      <div className="mt-4 min-h-[92px]">
         <div className="flex items-end gap-1">
           <span className="text-sm text-ink-mute">R$</span>
           <span className="font-display text-4xl font-semibold leading-none text-ink">
-            {brl(price)}
+            {brl(annual ? annualPerMonth : monthly)}
           </span>
           <span className="mb-1 text-sm text-ink-mute">/mês</span>
         </div>
+
         {annual ? (
-          <p className="mt-1.5 text-xs text-ink-mute">
-            <span className="text-emerald-400">Economize R$ {brl(save)}/ano</span>{" "}
-            · cobrado R$ {brl(annualTotal)}/ano
-          </p>
+          <div className="mt-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+              <span className="text-ink-mute">em 12× ou</span>
+              <span className="font-semibold text-ink">
+                R$ {brl(annualUpfront)} à vista
+              </span>
+              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                {discUpfront}% OFF
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-emerald-400/90">
+              economize R$ {brl(saveUpfront)} no ano à vista
+            </p>
+          </div>
         ) : (
-          <p className="mt-1.5 text-xs text-ink-mute">
+          <p className="mt-2 text-xs text-ink-mute">
             cobrado mensalmente · cancele quando quiser
           </p>
         )}
@@ -156,12 +166,10 @@ export default function PlansChooser({ email, individual, time }: Props) {
             Anual
             <span
               className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                annual
-                  ? "bg-bg/20 text-bg"
-                  : "bg-emerald-500/15 text-emerald-400"
+                annual ? "bg-bg/20 text-bg" : "bg-emerald-500/15 text-emerald-400"
               }`}
             >
-              −{DISCOUNT}%
+              até −40%
             </span>
           </button>
         </div>
@@ -173,7 +181,7 @@ export default function PlansChooser({ email, individual, time }: Props) {
           tagline="Para o vendedor que quer render como um time."
           monthly={PRICES.individual.monthly}
           annualPerMonth={PRICES.individual.annualPerMonth}
-          annualTotal={PRICES.individual.annualTotal}
+          annualUpfront={PRICES.individual.annualUpfront}
           link={annual ? individual.annual : individual.monthly}
           annual={annual}
           focus
@@ -191,7 +199,7 @@ export default function PlansChooser({ email, individual, time }: Props) {
           tagline="Para multiplicar o comercial inteiro."
           monthly={PRICES.time.monthly}
           annualPerMonth={PRICES.time.annualPerMonth}
-          annualTotal={PRICES.time.annualTotal}
+          annualUpfront={PRICES.time.annualUpfront}
           link={annual ? time.annual : time.monthly}
           annual={annual}
           email={email}
