@@ -140,7 +140,7 @@ export default function TemplatesWorkspace() {
   };
 
   return (
-    <div className="flex h-full">
+    <div className="cream flex h-full">
       {/* Menu de blocos */}
       <aside className="w-[264px] shrink-0 form-scroll overflow-y-auto border-r border-line p-3">
         <div className="px-2 pb-3 pt-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-mute">

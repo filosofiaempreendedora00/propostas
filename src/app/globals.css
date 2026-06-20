@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme inline {
+@theme {
   --font-sans: var(--font-instrument); /* Instrument Sans — corpo/interface */
   --font-display: var(--font-cormorant); /* Cormorant — títulos e destaques */
   /* ===== Paleta Kronos ===== */
@@ -40,6 +40,45 @@ body {
   color: var(--color-ink);
   font-family: var(--font-instrument), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Tema "creme" por escopo (Início, Sua Empresa, Templates) =====
+   Troca os tokens de cor para o claro/creme da identidade. Como tudo usa
+   tokens, textos e containers se adaptam sozinhos. A sidebar e o preview
+   ficam FORA deste escopo (a sidebar é irmã; o preview re-escurece). */
+.cream {
+  --color-bg: #f4eee3; /* creme de fundo */
+  --color-panel: #ffffff; /* containers brancos sobre o creme */
+  --color-panel-2: #f7f1e7; /* superfícies aninhadas */
+  --color-line: rgba(40, 30, 20, 0.12);
+  --color-ink: #2a2018; /* texto principal (escuro) */
+  --color-ink-soft: #5b5249;
+  --color-ink-mute: #8a8175;
+  --color-accent: #6e5226; /* dourado antigo — contraste no creme (texto e botões) */
+  --color-field: #ffffff; /* campos brancos destacam no creme */
+  --color-field-ink: #2a2018;
+  --color-field-mute: #9a9184;
+  --color-field-line: rgba(40, 30, 20, 0.16);
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+/* Re-aplica o tema escuro (ônix) dentro de um escopo creme — usado no preview. */
+.theme-onyx {
+  --color-bg: #150c06;
+  --color-panel: #2e2017;
+  --color-panel-2: #3a2a1e;
+  --color-line: #3d2c1f;
+  --color-ink: #ffffff;
+  --color-ink-soft: #cdb99a;
+  --color-ink-mute: #a89070;
+  --color-accent: #a89070;
+  --color-field: #f5efe6;
+  --color-field-ink: #2e2017;
+  --color-field-mute: #9c886a;
+  --color-field-line: #dacfbe;
+  background: var(--color-bg);
+  color: var(--color-ink);
 }
 
 /* Areia "caindo" dentro do item Gerador — grãos sutis em queda contínua. */

@@ -97,7 +97,7 @@ const STEPS: Step[] = [
 
 export default function HomeWorkspace() {
   return (
-    <div className="form-scroll h-full overflow-y-auto">
+    <div className="cream form-scroll h-full overflow-y-auto">
       <div className="mx-auto max-w-4xl px-10 py-12">
         {/* Hero */}
         <div className="mb-12">

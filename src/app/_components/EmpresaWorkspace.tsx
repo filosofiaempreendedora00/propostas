@@ -37,7 +37,7 @@ export default function EmpresaWorkspace() {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="cream flex h-full flex-col">
       {/* Sub-abas */}
       <div className="flex items-center gap-1 border-b border-line px-4 py-2.5">
         {(
