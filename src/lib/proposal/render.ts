@@ -360,12 +360,17 @@ export function renderProposalHTML(
     .eyebrow{break-after:avoid}
     .h2,.display{break-after:avoid;break-before:avoid}
     .lead{break-before:avoid}
-    .k,.sol2-k,.invest-group-name,.sol2-head{break-after:avoid}
+    .k,.sol2-k,.invest-group-name,.sol2-head,.sol2-num,.pnum,.snum,.tname,.tier-head{break-after:avoid}
     p{orphans:3;widows:3}
 
-    /* Protege só as "caixas" reais; blocos altos (soluções/grupos) fluem
-       entre páginas em vez de deixar metade da página vazia. */
-    .block,.tier,.pillar,.step,.rec-card,.rec-reason,.sol2-cell{break-inside:avoid}
+    /* ===== Paginação à prova de corte =====
+       Toda unidade visual atômica é "indivisível": a quebra de página só pode
+       cair NOS VÃOS entre blocos, nunca atravessando um. Numa solução alta, ela
+       parte entre o cabeçalho, as células e os entregáveis — sem cortar texto. */
+    .block,.tier,.pillar,.step,.rec-card,.rec-reason,.sol2-cell,
+    .sol2-head,.sol2-deliver,.fact,.contact,.closing-cta,
+    .rec-reasons li,.tier li,.sol2-deliver li,.contact > div,
+    figure,img{break-inside:avoid}
   }
 </style>
 ${only ? `<style>.cover,footer{display:none!important}section{border-top:none!important}.pad{padding:40px 0}</style>` : ""}
