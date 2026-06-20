@@ -135,6 +135,22 @@ function PlanCard({
         Assinar {name}
         {annual ? " anual" : ""}
       </a>
+
+      <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[11px] text-ink-mute">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-3.5 w-3.5 text-emerald-400"
+        >
+          <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" />
+          <path d="M9.5 12l1.8 1.8L15 10" />
+        </svg>
+        7 dias de garantia incondicional
+      </p>
     </div>
   );
 }
