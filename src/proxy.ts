@@ -7,8 +7,9 @@ const PUBLIC_PREFIXES = ["/login", "/signup", "/auth"];
 // Proxy (no Next 16 substitui o middleware): mantém a sessão do Supabase
 // atualizada nos cookies e protege as rotas — sem login → /login.
 export async function proxy(request: NextRequest) {
-  // Webhooks (ex: Kiwify) são públicos e validam o próprio segredo — não passam por auth.
-  if (request.nextUrl.pathname.startsWith("/api/webhooks")) {
+  // Webhooks (Kiwify) e keep-alive (cron) são públicos — não passam por auth.
+  const p0 = request.nextUrl.pathname;
+  if (p0.startsWith("/api/webhooks") || p0.startsWith("/api/keepalive")) {
     return NextResponse.next();
   }
 
