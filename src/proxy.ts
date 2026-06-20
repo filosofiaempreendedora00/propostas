@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Rotas acessíveis sem login.
-const PUBLIC_PREFIXES = ["/login", "/signup", "/auth"];
+const PUBLIC_PREFIXES = ["/login", "/cadastro", "/auth"];
 
 // Proxy (no Next 16 substitui o middleware): mantém a sessão do Supabase
 // atualizada nos cookies e protege as rotas — sem login → /login.
@@ -51,8 +51,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Logado tentando ver login/signup → manda pro app.
-  if (user && (path === "/login" || path === "/signup")) {
+  // Logado tentando ver login/cadastro → manda pro app.
+  if (user && (path === "/login" || path === "/cadastro")) {
     const url = request.nextUrl.clone();
     url.pathname = "/inicio";
     return NextResponse.redirect(url);
