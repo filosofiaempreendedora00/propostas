@@ -8,6 +8,9 @@ export const LIMITS = {
   logoBytes: 700_000,
 } as const;
 
+// Freemium: downloads de proposta grátis (total) antes de exigir assinatura.
+export const FREE_DOWNLOADS = 3;
+
 export class LimitError extends Error {
   constructor(message: string) {
     super(message);

@@ -12,6 +12,13 @@ import { useTemplates } from "@/lib/templates/store";
 import { BLOCK_FIELDS, type BlockKey } from "@/lib/templates/types";
 import type { BlockTemplate } from "@/lib/templates/types";
 import { Label, TextInput, SectionTitle, MiniBtn } from "./fields";
+import {
+  recordDownload,
+  refreshAccess,
+  getUsage,
+  type Usage,
+} from "@/lib/billing/usage";
+import { CHECKOUT } from "@/lib/billing/checkout";
 
 function extractPayload(
   block: BlockKey,
@@ -290,6 +297,53 @@ export default function ClientBuilder() {
     }, 850);
   };
 
+  // ----- freemium: cota de downloads -----
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const [paywall, setPaywall] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [checkMsg, setCheckMsg] = useState<string | null>(null);
+  useEffect(() => {
+    getUsage().then(setUsage).catch(() => {});
+  }, []);
+
+  // "Já assinei → liberar": reaplica o entitlement e fecha se virou assinante.
+  const handleRefresh = async () => {
+    setChecking(true);
+    setCheckMsg(null);
+    try {
+      const u = await refreshAccess();
+      setUsage(u);
+      if (u.unlimited) setPaywall(false);
+      else setCheckMsg("Ainda não encontramos sua assinatura. Aguarde alguns segundos após o pagamento e tente de novo.");
+    } catch {
+      setCheckMsg("Não consegui verificar agora. Tente de novo em instantes.");
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  // Link de checkout (Individual mensal) com e-mail pré-preenchido → webhook casa sozinho.
+  const checkoutUrl = (() => {
+    const base = CHECKOUT.individual.monthly;
+    if (!base) return "/planos";
+    const email = usage?.email;
+    return email ? `${base}${base.includes("?") ? "&" : "?"}email=${encodeURIComponent(email)}` : base;
+  })();
+
+  // Portão do download: assinante baixa; free consome 1 da cota; esgotado → paywall.
+  const tryDownload = async (run: () => void) => {
+    if (clientMissing) return;
+    try {
+      const res = await recordDownload();
+      setUsage(res);
+      if (res.allowed) run();
+      else setPaywall(true);
+    } catch {
+      // Em caso de erro de rede, não trava o usuário.
+      run();
+    }
+  };
+
   // ----- export -----
   const exportRef = useRef<HTMLAnchorElement | null>(null);
   const handleExport = () => {
@@ -364,12 +418,30 @@ export default function ClientBuilder() {
             </>
           )}
         </div>
-        <DownloadActions
-          layout="header"
-          disabled={clientMissing}
-          onPdf={handleExportPDF}
-          onHtml={handleExport}
-        />
+        <div className="flex items-center gap-3">
+          {usage && !usage.unlimited && (
+            <button
+              type="button"
+              onClick={() => setPaywall(true)}
+              title="Sua cota grátis"
+              className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                usage.remaining === 0
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
+                  : "border-line text-ink-mute hover:text-ink-soft"
+              }`}
+            >
+              {usage.remaining === 0
+                ? "Grátis esgotado"
+                : `Grátis · ${usage.remaining} de ${usage.limit}`}
+            </button>
+          )}
+          <DownloadActions
+            layout="header"
+            disabled={clientMissing}
+            onPdf={() => tryDownload(handleExportPDF)}
+            onHtml={() => tryDownload(handleExport)}
+          />
+        </div>
         <a ref={exportRef} className="hidden" />
       </div>
 
@@ -831,8 +903,8 @@ export default function ClientBuilder() {
           <DownloadActions
             layout="panel"
             disabled={clientMissing}
-            onPdf={handleExportPDF}
-            onHtml={handleExport}
+            onPdf={() => tryDownload(handleExportPDF)}
+            onHtml={() => tryDownload(handleExport)}
           />
 
           <div className="h-24" />
@@ -890,6 +962,88 @@ export default function ClientBuilder() {
               >
                 Salvar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Paywall freemium — modal in-app, sem sair da tela */}
+      {paywall && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={() => setPaywall(false)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-2xl border border-line bg-panel p-7 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPaywall(false)}
+              aria-label="Fechar"
+              className="absolute right-4 top-4 text-ink-mute transition hover:text-ink"
+            >
+              ✕
+            </button>
+
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">
+              Cota grátis atingida
+            </div>
+            <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-ink">
+              Gere propostas ilimitadas
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-ink-mute">
+              Você já usou suas{" "}
+              <strong className="text-ink-soft">
+                {usage?.limit ?? 3} propostas grátis
+              </strong>
+              . Assine para continuar gerando e baixando sem limite — seu
+              trabalho continua salvo aqui.
+            </p>
+
+            <div className="mt-5 rounded-xl border border-accent/30 bg-accent/[0.06] p-4">
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-semibold text-ink">Individual</span>
+                <span className="text-sm text-ink-soft">
+                  <strong className="text-ink">R$ 67</strong>/mês
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-ink-mute">
+                Propostas e downloads ilimitados. Cancele quando quiser.
+              </p>
+            </div>
+
+            <a
+              href={checkoutUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block w-full rounded-full bg-accent px-4 py-3 text-center text-sm font-semibold text-bg transition hover:opacity-90"
+            >
+              Assinar agora
+            </a>
+
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={checking}
+              className="mt-2 w-full rounded-full border border-line px-4 py-2.5 text-center text-sm font-medium text-ink-soft transition enabled:hover:border-accent/60 enabled:hover:text-ink disabled:opacity-50"
+            >
+              {checking ? "Verificando…" : "Já assinei — liberar acesso"}
+            </button>
+
+            {checkMsg && (
+              <p className="mt-2 text-center text-[11px] text-amber-300">
+                {checkMsg}
+              </p>
+            )}
+
+            <div className="mt-3 text-center">
+              <Link
+                href="/planos"
+                className="text-[11px] text-ink-mute transition hover:text-accent"
+              >
+                Ver todos os planos
+              </Link>
             </div>
           </div>
         </div>

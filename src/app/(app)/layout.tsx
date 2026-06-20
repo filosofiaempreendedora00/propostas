@@ -1,16 +1,14 @@
-import { redirect } from "next/navigation";
 import Sidebar from "@/app/_components/Sidebar";
-import { hasActiveAccess } from "@/lib/auth/org";
 import { isCurrentUserAdmin } from "@/lib/admin/data";
 
 // Layout das telas autenticadas — inclui a barra lateral.
-// Paywall: sem assinatura ativa → manda pra /planos.
+// Freemium: todo usuário entra e usa o app; o limite incide só no DOWNLOAD
+// da proposta (cota grátis), tratado no Gerador.
 export default async function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  if (!(await hasActiveAccess())) redirect("/planos");
   const isAdmin = await isCurrentUserAdmin();
 
   return (

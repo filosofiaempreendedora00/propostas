@@ -83,7 +83,7 @@ export async function requireOrgId(): Promise<string> {
         name,
         plan: "individual",
         seatLimit: 1,
-        status: "inactive", // sem acesso até uma assinatura ativar (paywall)
+        status: "free", // freemium: entra com cota grátis; assina p/ liberar ilimitado
       })
       .returning({ id: organizations.id });
     await tx

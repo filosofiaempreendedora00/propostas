@@ -21,7 +21,8 @@ export const organizations = pgTable("organizations", {
   ownerId: uuid("owner_id").notNull(), // auth.users.id (FK adicionada via SQL)
   plan: text("plan").notNull().default("individual"), // individual | time
   seatLimit: integer("seat_limit").notNull().default(1),
-  status: text("status").notNull().default("active"), // active | past_due | canceled
+  status: text("status").notNull().default("free"), // free | active | past_due | canceled
+  downloadsUsed: integer("downloads_used").notNull().default(0), // freemium: cota grátis usada
   billingProvider: text("billing_provider"), // ex: kiwify
   billingRef: text("billing_ref"), // id da assinatura no provedor
   createdAt: timestamp("created_at", { withTimezone: true })
