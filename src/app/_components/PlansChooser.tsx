@@ -184,7 +184,6 @@ export default function PlansChooser({ email, individual, time }: Props) {
           annualUpfront={PRICES.individual.annualUpfront}
           link={annual ? individual.annual : individual.monthly}
           annual={annual}
-          focus
           email={email}
           features={[
             "1 usuário",
@@ -202,6 +201,7 @@ export default function PlansChooser({ email, individual, time }: Props) {
           annualUpfront={PRICES.time.annualUpfront}
           link={annual ? time.annual : time.monthly}
           annual={annual}
+          focus
           email={email}
           features={[
             "Tudo do Individual",

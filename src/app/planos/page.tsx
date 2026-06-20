@@ -27,9 +27,15 @@ export default async function PlanosPage() {
             {canceled ? "Sua assinatura terminou" : "Escolha seu plano"}
           </h1>
           <p className="mt-1.5 max-w-md text-sm text-ink-mute">
-            {canceled
-              ? "Reative para voltar a gerar propostas. Seus dados continuam salvos."
-              : "Comece pelo Individual ou escale com o Time. No plano anual você economiza."}
+            {canceled ? (
+              "Reative para voltar a gerar propostas. Seus dados continuam salvos."
+            ) : (
+              <>
+                Comece pelo Individual ou escale com o Time.
+                <br />
+                No plano anual você economiza em até 40%.
+              </>
+            )}
           </p>
         </div>
 
