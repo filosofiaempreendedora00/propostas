@@ -47,6 +47,24 @@ function GoogleG() {
   );
 }
 
+function MonitorIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[#6e5226]"
+      aria-hidden
+    >
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <path d="M8 21h8M12 17v4" />
+    </svg>
+  );
+}
+
 /* ───────────── Estilo dos campos (creme com texto escuro) ───────────── */
 
 export const fieldCls =
@@ -70,7 +88,7 @@ export function AuthShell({
       />
       <div className="relative w-full max-w-md">
         {/* Logo acima, fora da box, centralizada */}
-        <div className="mb-7 flex justify-center">
+        <div className="mb-5 flex justify-center">
           <Image
             src="/kronos-logo-dark.png"
             alt="Kronos"
@@ -80,6 +98,22 @@ export function AuthShell({
             unoptimized
             className="h-12 w-auto select-none"
           />
+        </div>
+
+        {/* Aviso: ferramenta feita para computador */}
+        <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-[#dcd0bb] bg-[#faf6ee] px-4 py-3 text-[12.5px] leading-snug text-[#5b5249]">
+          <MonitorIcon />
+          <p>
+            <strong className="font-semibold text-[#2a2018]">
+              Feito para computador.
+            </strong>{" "}
+            O Gerador da Kronos é otimizado para desktop. Você pode se cadastrar
+            pelo celular, mas para usar a ferramenta acesse de um computador em{" "}
+            <strong className="font-semibold text-[#6e5226]">
+              kronos-ias.com.br
+            </strong>
+            .
+          </p>
         </div>
 
         {/* Box marrom */}
