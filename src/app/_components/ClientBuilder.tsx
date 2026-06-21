@@ -163,8 +163,27 @@ export default function ClientBuilder() {
   useEffect(() => {
     function onMsg(e: MessageEvent) {
       const m = e.data;
-      if (!m || m.source !== "proposal-edit" || typeof m.field !== "string")
+      if (!m || m.source !== "proposal-edit") return;
+      // Ações estruturais vindas do preview (add/remover pilar) — re-renderiza.
+      if (m.action === "addPillar") {
+        setForm((f) => ({
+          ...f,
+          pillars: [
+            ...f.pillars,
+            { title: "Novo pilar", description: "Descrição." },
+          ],
+        }));
         return;
+      }
+      if (m.action === "removePillar") {
+        const idx = Number(m.index);
+        setForm((f) => ({
+          ...f,
+          pillars: f.pillars.filter((_, j) => j !== idx),
+        }));
+        return;
+      }
+      if (typeof m.field !== "string") return;
       const field: string = m.field;
       const value = String(m.value ?? "");
       skipRender.current = true;

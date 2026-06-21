@@ -30,17 +30,22 @@ export function slugify(s: string): string {
 }
 
 // ---------- blocos ----------
-function pillarsHtml(pillars: Pillar[]): string {
-  return pillars
+function pillarsHtml(pillars: Pillar[], editable = false): string {
+  const cards = pillars
     .map(
       (p, i) => `
       <div class="pillar">
+        ${editable ? `<button class="pill-x" data-action="removePillar" data-index="${i}" title="Remover pilar" aria-label="Remover pilar">×</button>` : ""}
         <div class="pnum">${n2(i)}</div>
         <h3 data-edit="pillar.${i}.title">${esc(p.title)}</h3>
         <p data-edit="pillar.${i}.description">${esc(p.description)}</p>
       </div>`,
     )
     .join("");
+  const add = editable
+    ? `<button class="pill-add" data-action="addPillar" title="Adicionar pilar" aria-label="Adicionar pilar"><span>+</span> pilar</button>`
+    : "";
+  return cards + add;
 }
 
 function solList(
@@ -241,12 +246,19 @@ export function renderProposalHTML(
   .cost .k{color:#E8765C}
   .cost .eyebrow{color:#E8765C}.cost .eyebrow::before{background:#E8765C}
 
-  /* Estratégia / pilares */
-  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:48px}
-  .pillar{border-top:1px solid var(--line-2);padding-top:22px}
+  /* Estratégia / pilares — boxes lado a lado (auto-fit mantém na horizontal) */
+  .pillars{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-top:48px}
+  .pillar{position:relative;border:1px solid var(--line-2);border-radius:14px;padding:22px 20px;background:var(--bg-soft)}
   .pillar .pnum{font-family:'Fraunces',serif;font-size:30px;color:var(--accent);line-height:1;margin-bottom:14px}
-  .pillar h3{font-size:20px;font-weight:600;margin-bottom:10px}
-  .pillar p{font-size:15px;color:var(--ink-soft);font-weight:300}
+  .pillar h3{font-size:19px;font-weight:600;margin-bottom:10px}
+  .pillar p{font-size:14.5px;color:var(--ink-soft);font-weight:300}
+  /* Controles inline dos pilares — só aparecem no preview editável */
+  .pill-x{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:999px;border:1px solid var(--line-2);background:var(--bg);color:var(--ink-mute);font-size:15px;line-height:1;cursor:pointer;opacity:0;transition:opacity .12s,color .12s,border-color .12s;display:grid;place-items:center}
+  .pillar:hover .pill-x{opacity:1}
+  .pill-x:hover{color:#E8765C;border-color:#E8765C}
+  .pill-add{display:flex;align-items:center;justify-content:center;gap:6px;min-height:120px;border:1px dashed var(--line-2);border-radius:14px;padding:22px 20px;background:transparent;color:var(--ink-mute);font-size:14px;font-weight:500;cursor:pointer;transition:color .12s,border-color .12s}
+  .pill-add:hover{color:var(--accent);border-color:var(--accent)}
+  .pill-add span{font-size:20px;line-height:1}
 
   /* Soluções (ricas) */
   .sol2{padding:40px 0;border-top:1px solid var(--line)}
@@ -327,7 +339,7 @@ export function renderProposalHTML(
 
   @media(max-width:860px){
     .wrap{padding-inline:44px}
-    .g2,.g3,.pillars,.tiers,.steps,.sol2-grid{grid-template-columns:1fr}
+    .g2,.g3,.tiers,.steps,.sol2-grid{grid-template-columns:1fr}
     .pad{padding:72px 0}.rec-card{padding:28px}
     .cover-foot,.cover-top,.contact{gap:24px}
   }
@@ -426,9 +438,9 @@ ${
     <span class="eyebrow">O custo de continuar igual</span>
     <h2 class="display h2" data-edit="costQuestion">${esc(d.costQuestion)}</h2>
     <div class="gblocks g3">
-      <div class="block"><div class="k">Operacional</div><p data-edit="costOperational">${esc(d.costOperational)}</p></div>
-      <div class="block"><div class="k">Financeiro</div><p data-edit="costFinancial">${esc(d.costFinancial)}</p></div>
-      <div class="block"><div class="k">Estratégico</div><p data-edit="costStrategic">${esc(d.costStrategic)}</p></div>
+      <div class="block"><div class="k" data-edit="costOperationalLabel">${esc(d.costOperationalLabel || "Operacional")}</div><p data-edit="costOperational">${esc(d.costOperational)}</p></div>
+      <div class="block"><div class="k" data-edit="costFinancialLabel">${esc(d.costFinancialLabel || "Financeiro")}</div><p data-edit="costFinancial">${esc(d.costFinancial)}</p></div>
+      <div class="block"><div class="k" data-edit="costStrategicLabel">${esc(d.costStrategicLabel || "Estratégico")}</div><p data-edit="costStrategic">${esc(d.costStrategic)}</p></div>
     </div>
   </div>
 </section>`
@@ -440,10 +452,10 @@ ${
   d.showStrategy
     ? `<section class="pad strategy">
   <div class="wrap">
-    <span class="eyebrow">Estratégia recomendada</span>
+    <span class="eyebrow" data-edit="strategyEyebrow">${esc(d.strategyEyebrow || "Estratégia recomendada")}</span>
     <h2 class="display h2" data-edit="strategyHeading">${esc(d.strategyHeading)}</h2>
     <p class="lead" style="margin-top:18px" data-edit="strategyIntro">${esc(d.strategyIntro)}</p>
-    <div class="pillars">${pillarsHtml(d.pillars)}</div>
+    <div class="pillars">${pillarsHtml(d.pillars, editable)}</div>
   </div>
 </section>`
     : ""
@@ -533,6 +545,10 @@ ${
     document.querySelectorAll('[data-edit="'+f+'"]').forEach(function(o){ if(o!==el){ o.textContent=val; } });
   }
   document.addEventListener('click',function(e){
+    var btn=e.target.closest?e.target.closest('[data-action]'):null;
+    if(btn){ e.preventDefault();
+      try{ parent.postMessage({source:'proposal-edit',action:btn.getAttribute('data-action'),index:Number(btn.getAttribute('data-index'))},'*'); }catch(e){}
+      return; }
     var el=e.target.closest?e.target.closest('[data-edit]'):null;
     if(!el||el.isContentEditable) return;
     el.setAttribute('contenteditable','true'); el.focus();

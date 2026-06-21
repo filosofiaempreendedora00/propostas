@@ -114,6 +114,25 @@ export default function TemplateEditor({
                 onChange={(v) => setField({ costQuestion: v })}
               />
             </Field>
+            <Field label="Rótulos das categorias">
+              <div className="grid grid-cols-3 gap-2">
+                <TextInput
+                  value={txt(p.costOperationalLabel)}
+                  onChange={(v) => setField({ costOperationalLabel: v })}
+                  placeholder="Operacional"
+                />
+                <TextInput
+                  value={txt(p.costFinancialLabel)}
+                  onChange={(v) => setField({ costFinancialLabel: v })}
+                  placeholder="Financeiro"
+                />
+                <TextInput
+                  value={txt(p.costStrategicLabel)}
+                  onChange={(v) => setField({ costStrategicLabel: v })}
+                  placeholder="Estratégico"
+                />
+              </div>
+            </Field>
             <Field label="Consequência operacional">
               <TextArea
                 value={txt(p.costOperational)}
@@ -140,6 +159,13 @@ export default function TemplateEditor({
 
         {template.block === "strategy" && (
           <>
+            <Field label="Rótulo da seção">
+              <TextInput
+                value={txt(p.strategyEyebrow)}
+                onChange={(v) => setField({ strategyEyebrow: v })}
+                placeholder="Estratégia recomendada"
+              />
+            </Field>
             <Field label="Título do bloco">
               <TextInput
                 value={txt(p.strategyHeading)}

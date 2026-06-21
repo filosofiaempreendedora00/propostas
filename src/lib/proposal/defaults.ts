@@ -31,10 +31,13 @@ export const DEFAULT_PROPOSAL: ProposalData = {
 
   // 3. O custo de continuar igual
   costQuestion: "O que acontece se nada mudar?",
+  costOperationalLabel: "Operacional",
   costOperational:
     "A equipe segue operando no limite, apagando incêndios em vez de construir o que escala.",
+  costFinancialLabel: "Financeiro",
   costFinancial:
     "O custo de aquisição continua subindo e a margem é corroída mês após mês.",
+  costStrategicLabel: "Estratégico",
   costStrategic:
     "Oportunidades de crescimento seguem sendo desperdiçadas e a concorrência ganha terreno.",
 
@@ -48,6 +51,7 @@ export const DEFAULT_PROPOSAL: ProposalData = {
   showNextSteps: true,
 
   // 4. Estratégia recomendada
+  strategyEyebrow: "Estratégia recomendada",
   strategyHeading: "A estratégia antes da execução.",
   strategyIntro:
     "Antes de falar de serviços, este é o raciocínio que guia a recomendação — você compra estratégia; os serviços são a execução dela.",

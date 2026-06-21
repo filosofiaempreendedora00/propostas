@@ -42,8 +42,16 @@ export const BLOCK_FIELDS: Record<BlockKey, (keyof ProposalData)[]> = {
     "opportunity",
     "objective",
   ],
-  cost: ["costQuestion", "costOperational", "costFinancial", "costStrategic"],
-  strategy: ["strategyHeading", "strategyIntro", "pillars"],
+  cost: [
+    "costQuestion",
+    "costOperationalLabel",
+    "costOperational",
+    "costFinancialLabel",
+    "costFinancial",
+    "costStrategicLabel",
+    "costStrategic",
+  ],
+  strategy: ["strategyEyebrow", "strategyHeading", "strategyIntro", "pillars"],
   solutions: ["solutionsHeading", "solutionsNote"],
   consultantRec: [
     "consultantRecHeading",

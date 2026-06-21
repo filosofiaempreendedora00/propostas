@@ -68,8 +68,11 @@ export interface ProposalData {
 
   // ---- 3. O custo de continuar igual (urgência) ----
   costQuestion: string;
+  costOperationalLabel: string; // rótulo da categoria (ex.: "Operacional")
   costOperational: string;
+  costFinancialLabel: string;
   costFinancial: string;
+  costStrategicLabel: string;
   costStrategic: string;
 
   // ---- Visibilidade de blocos (olho) ----
@@ -82,6 +85,7 @@ export interface ProposalData {
   showNextSteps: boolean;
 
   // ---- 4. Estratégia recomendada (convicção) ----
+  strategyEyebrow: string; // rótulo da seção (ex.: "Estratégia recomendada")
   strategyHeading: string;
   strategyIntro: string;
   pillars: Pillar[];
