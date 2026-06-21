@@ -327,12 +327,19 @@ export default function ClientBuilder() {
   const router = useRouter();
 
   // Clique na logo do preview → Sua Empresa, na logo do tema atual (clara/escura).
+  // Passa a intenção por sessionStorage (síncrono, antes do push) — evita corrida
+  // com a URL que às vezes não abria a aba "Sua marca" de primeira.
   useEffect(() => {
     function onLogoMsg(e: MessageEvent) {
       const m = e.data;
       if (!m || m.source !== "proposal-logo") return;
       const which = m.which === "escura" ? "escura" : "clara";
-      router.push(`/empresa?marca=${which}`);
+      try {
+        sessionStorage.setItem("kronos:marca", which);
+      } catch {
+        /* ignora */
+      }
+      router.push("/empresa");
     }
     window.addEventListener("message", onLogoMsg);
     return () => window.removeEventListener("message", onLogoMsg);

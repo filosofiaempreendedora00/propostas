@@ -223,6 +223,7 @@ export function renderProposalHTML(
   .brandmark{display:flex;align-items:center;gap:12px;font-weight:600;font-size:17px;letter-spacing:.02em}
   .brandmark .dot{width:32px;height:32px;border-radius:9px;background:linear-gradient(140deg,var(--accent),#8c7044);display:grid;place-items:center;color:#0A0B0D;font-family:'Fraunces',serif;font-weight:600;font-size:16px}
   .brandmark .brand-logo{height:40px;width:auto;max-width:240px;object-fit:contain;display:block}
+  .brandmark .brand-add{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;letter-spacing:0;color:var(--ink-mute);border:1px dashed var(--line-2);border-radius:999px;padding:7px 15px}
   .cover-meta{font-size:11.5px;color:var(--ink-mute);letter-spacing:.2em;text-transform:uppercase;white-space:nowrap}
   .cover-mid{padding-block:0}
   .cover .eyebrow{font-size:12.5px;letter-spacing:.26em}
@@ -396,12 +397,14 @@ ${only ? `<style>.cover,footer{display:none!important}section{border-top:none!im
   <div class="wrap cover-top">
     <div class="brandmark"${
       editable
-        ? ` data-logo="${d.theme === "light" ? "escura" : "clara"}" title="Clique para trocar a logo em Sua Empresa"`
+        ? ` data-logo="${d.theme === "light" ? "escura" : "clara"}" title="${d.logo ? "Clique para trocar a logo em Sua Empresa" : "Clique para adicionar sua logo em Sua Empresa"}"`
         : ""
     }>${
       d.logo
         ? `<img class="brand-logo" src="${esc(d.logo)}" alt="${esc(d.companyName)}">`
-        : `<span class="dot">${esc(d.companyInitial)}</span><span data-edit="companyName">${esc(d.companyName)}</span>`
+        : editable
+          ? `<span class="brand-add">＋ Adicione sua logo</span>`
+          : `<span class="dot">${esc(d.companyInitial)}</span><span>${esc(d.companyName)}</span>`
     }</div>
     <div class="cover-meta">PROPOSTA COMERCIAL${d.showProposalNumber ? ` · Nº ${esc(d.proposalNumber)}` : ""}</div>
   </div>

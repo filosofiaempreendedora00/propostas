@@ -23,11 +23,11 @@ export default function EmpresaWorkspace() {
   useIsoLayoutEffect(() => {
     try {
       // Veio do clique na logo do preview? Abre "Sua marca" e destaca o campo.
-      const marca = new URLSearchParams(window.location.search).get("marca");
+      const marca = window.sessionStorage.getItem("kronos:marca");
       if (marca === "clara" || marca === "escura") {
+        window.sessionStorage.removeItem("kronos:marca");
         setTab("marca");
         setHighlight(marca);
-        window.history.replaceState(null, "", window.location.pathname);
         return;
       }
       const saved = window.localStorage.getItem(TAB_KEY) as Tab | null;
