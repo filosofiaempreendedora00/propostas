@@ -3,6 +3,7 @@ import "server-only";
 import { sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/org";
+import { FREE_DOWNLOADS } from "@/lib/limits";
 
 // E-mails autorizados a ver o painel /admin (configurável por env).
 export function adminEmails(): string[] {
@@ -34,6 +35,7 @@ export type AdminOrg = {
   pending: number;
   ownerEmail: string | null;
   createdAt: string | null;
+  downloadsUsed: number; // propostas baixadas na cota grátis (0..FREE_DOWNLOADS)
 };
 
 export type AdminEvent = {
@@ -54,7 +56,9 @@ export type AdminOverview = {
     users: number;
     individual: number;
     time: number;
+    exhausted: number; // contas grátis que esgotaram os 3 downloads
   };
+  freeDownloads: number;
   orgs: AdminOrg[];
   events: AdminEvent[];
 };
@@ -67,6 +71,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       o.plan                                as plan,
       o.status                              as status,
       o.seat_limit                          as seat_limit,
+      o.downloads_used                      as downloads_used,
       o.created_at                          as created_at,
       (select u.email from auth.users u where u.id = o.owner_id) as owner_email,
       (select count(*)::int from memberships m where m.org_id = o.id) as members,
@@ -80,6 +85,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     plan: string;
     status: string;
     seat_limit: number;
+    downloads_used: number;
     created_at: Date | string | null;
     owner_email: string | null;
     members: number;
@@ -117,6 +123,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     pending: o.pending,
     ownerEmail: o.owner_email,
     createdAt: toIso(o.created_at),
+    downloadsUsed: Number(o.downloads_used) || 0,
   }));
 
   const totals = {
@@ -127,6 +134,9 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     users: Number(users) || 0,
     individual: orgs.filter((o) => o.plan === "individual").length,
     time: orgs.filter((o) => o.plan === "time").length,
+    exhausted: orgs.filter(
+      (o) => o.status !== "active" && o.downloadsUsed >= FREE_DOWNLOADS,
+    ).length,
   };
 
   const events: AdminEvent[] = eventsRaw.map((e) => ({
@@ -138,5 +148,5 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     updatedAt: toIso(e.updated_at),
   }));
 
-  return { totals, orgs, events };
+  return { totals, orgs, events, freeDownloads: FREE_DOWNLOADS };
 }
