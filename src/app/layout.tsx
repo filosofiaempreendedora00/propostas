@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, Cormorant } from "next/font/google";
 import "./globals.css";
+import Clarity from "./_components/Clarity";
 
 // Corpo / interface
 const instrumentSans = Instrument_Sans({
@@ -31,7 +32,10 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${instrumentSans.variable} ${cormorant.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        <Clarity />
+      </body>
     </html>
   );
 }
