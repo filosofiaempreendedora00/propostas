@@ -5,6 +5,7 @@ import { db } from "@/lib/db/client";
 import { organizations, memberships, invitations } from "@/lib/db/schema";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { applyEntitlementToOrg } from "@/lib/billing/entitlement";
+import { FREE_DOWNLOADS } from "@/lib/limits";
 
 // Usuário autenticado (valida o JWT no Supabase). Lança se não houver sessão.
 // Toda Server Action deve passar por aqui (defesa além do proxy).
@@ -118,4 +119,25 @@ export async function getCurrentOrg() {
 export async function hasActiveAccess(): Promise<boolean> {
   const org = await getCurrentOrg();
   return org?.status === "active";
+}
+
+// Estado de acesso freemium: assinante, em teste (com cota) ou travado (esgotou).
+// `locked` = não-assinante que já usou os downloads grátis → preso em /planos.
+export async function getAccessState(): Promise<{
+  active: boolean;
+  used: number;
+  limit: number;
+  remaining: number;
+  locked: boolean;
+}> {
+  const org = await getCurrentOrg();
+  const active = org?.status === "active";
+  const used = org?.downloadsUsed ?? 0;
+  return {
+    active,
+    used,
+    limit: FREE_DOWNLOADS,
+    remaining: Math.max(0, FREE_DOWNLOADS - used),
+    locked: !active && used >= FREE_DOWNLOADS,
+  };
 }

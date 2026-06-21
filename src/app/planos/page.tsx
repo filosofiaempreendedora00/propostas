@@ -1,14 +1,35 @@
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import { requireUser, getCurrentOrg } from "@/lib/auth/org";
+import { FREE_DOWNLOADS } from "@/lib/limits";
 import { CHECKOUT } from "@/lib/billing/checkout";
 import PlansChooser from "@/app/_components/PlansChooser";
+import PlanosActions from "@/app/_components/PlanosActions";
 
 export const dynamic = "force-dynamic";
 
 export default async function PlanosPage() {
   const user = await requireUser();
   const org = await getCurrentOrg();
+
+  // Assinante não tem o que fazer aqui — manda pro app.
+  if (org?.status === "active") redirect("/inicio");
+
   const canceled = org?.status === "canceled";
+  const used = org?.downloadsUsed ?? 0;
+  const remaining = Math.max(0, FREE_DOWNLOADS - used);
+  const locked = used >= FREE_DOWNLOADS; // free e esgotou os downloads
+
+  const heading = canceled
+    ? "Sua assinatura terminou"
+    : locked
+      ? `Você usou suas ${FREE_DOWNLOADS} propostas grátis`
+      : "Escolha seu plano";
+  const subheading = canceled
+    ? "Reative para voltar a gerar propostas. Seus dados continuam salvos."
+    : locked
+      ? "Assine para continuar gerando propostas — seus dados continuam salvos."
+      : null;
 
   return (
     <div className="min-h-screen bg-bg px-5 py-12 text-ink">
@@ -24,12 +45,10 @@ export default async function PlanosPage() {
             className="h-10 w-10 select-none"
           />
           <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight">
-            {canceled ? "Sua assinatura terminou" : "Escolha seu plano"}
+            {heading}
           </h1>
           <p className="mt-1.5 max-w-md text-sm text-ink-mute">
-            {canceled ? (
-              "Reative para voltar a gerar propostas. Seus dados continuam salvos."
-            ) : (
+            {subheading ?? (
               <>
                 Comece pelo Individual ou escale com o Time.
                 <br />
@@ -51,25 +70,11 @@ export default async function PlanosPage() {
           }}
         />
 
-        <div className="mt-8 flex flex-col items-center gap-3 text-center">
-          <a
-            href="/inicio"
-            className="rounded-full border border-line px-5 py-2 text-sm font-medium text-ink-soft transition hover:border-accent/60 hover:text-ink"
-          >
-            Já assinei — entrar
-          </a>
-          <p className="text-[11px] text-ink-mute">
-            Use o mesmo e-mail da compra: <strong>{user.email}</strong>.
-          </p>
-          <form action="/auth/signout" method="post">
-            <button
-              type="submit"
-              className="text-[11px] text-accent hover:underline"
-            >
-              Trocar conta
-            </button>
-          </form>
-        </div>
+        <PlanosActions
+          email={user.email ?? null}
+          locked={locked}
+          remaining={remaining}
+        />
       </div>
     </div>
   );

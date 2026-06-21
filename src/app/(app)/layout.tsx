@@ -1,20 +1,27 @@
+import { redirect } from "next/navigation";
 import Sidebar from "@/app/_components/Sidebar";
 import TrialBar from "@/app/_components/TrialBar";
 import { isCurrentUserAdmin } from "@/lib/admin/data";
-import { hasActiveAccess } from "@/lib/auth/org";
+import { getAccessState } from "@/lib/auth/org";
 
 // Layout das telas autenticadas — inclui a barra lateral.
-// Freemium: todo usuário entra e usa o app; o limite incide só no DOWNLOAD
-// da proposta (cota grátis), tratado no Gerador.
+// Freemium: em teste, todo usuário usa o app e o limite incide no DOWNLOAD.
+// Mas quem ESGOTOU a cota grátis (e não assinou) fica preso em /planos.
 export default async function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [isAdmin, paid] = await Promise.all([
+  const [isAdmin, access] = await Promise.all([
     isCurrentUserAdmin(),
-    hasActiveAccess(),
+    getAccessState(),
   ]);
+
+  // Cota grátis esgotada e sem assinatura → travado na tela de planos.
+  // (O admin master nunca é barrado.)
+  if (access.locked && !isAdmin) redirect("/planos");
+
+  const paid = access.active;
 
   return (
     <div className="flex h-screen flex-col">
