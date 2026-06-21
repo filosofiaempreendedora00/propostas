@@ -62,3 +62,11 @@ create policy comp_all on public.company_settings for all
 
 -- Assinaturas: travada (sem políticas = só o servidor/owner acessa)
 alter table public.billing_customers enable row level security;
+
+-- Sugestões: o autor vê/cria as suas; triagem (update/delete/listagem geral)
+-- só pelo servidor (conexão direta, fora do RLS — gate de admin no código).
+alter table public.suggestions enable row level security;
+drop policy if exists sug_insert on public.suggestions;
+create policy sug_insert on public.suggestions for insert with check (user_id = auth.uid());
+drop policy if exists sug_select_own on public.suggestions;
+create policy sug_select_own on public.suggestions for select using (user_id = auth.uid());

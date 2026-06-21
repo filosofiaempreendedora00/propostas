@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   isCurrentUserAdmin,
@@ -5,6 +6,7 @@ import {
   type AdminOrg,
   type AdminEvent,
 } from "@/lib/admin/data";
+import { listAllSuggestions } from "@/lib/suggestions/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -102,6 +104,8 @@ export default async function AdminPage() {
   if (!(await isCurrentUserAdmin())) redirect("/inicio");
 
   const { totals, orgs, events } = await getAdminOverview();
+  const suggestions = await listAllSuggestions();
+  const novasSugestoes = suggestions.filter((s) => s.status === "new").length;
 
   return (
     <div className="form-scroll h-full overflow-y-auto">
@@ -118,6 +122,31 @@ export default async function AdminPage() {
             altera nada daqui.
           </p>
         </div>
+
+        {/* Triagem de sugestões */}
+        <Link
+          href="/admin/sugestoes"
+          className="mb-8 flex items-center gap-4 rounded-2xl border border-accent/40 bg-accent/[0.06] p-5 transition hover:bg-accent/[0.1]"
+        >
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent/15 text-accent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+              <path d="M9 18h6M10 21h4" />
+              <path d="M12 3a6 6 0 0 0-4 10.5c.6.5 1 1.2 1 2V16h6v-.5c0-.8.4-1.5 1-2A6 6 0 0 0 12 3Z" />
+            </svg>
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-ink">Sugestões dos clientes</p>
+            <p className="text-sm text-ink-mute">
+              Kanban de triagem — leia, priorize e descarte.
+            </p>
+          </div>
+          {novasSugestoes > 0 && (
+            <span className="shrink-0 rounded-full bg-accent px-2.5 py-1 text-[12px] font-semibold text-bg">
+              {novasSugestoes} nova{novasSugestoes > 1 ? "s" : ""}
+            </span>
+          )}
+          <span className="shrink-0 text-accent">→</span>
+        </Link>
 
         {/* Métricas */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

@@ -150,6 +150,27 @@ export const consultants = pgTable("consultants", {
     .defaultNow(),
 });
 
+// Sugestões de melhoria enviadas pelos clientes. O master tria num Kanban.
+export const suggestions = pgTable("suggestions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").references(() => organizations.id, {
+    onDelete: "set null",
+  }), // mantém a sugestão mesmo se a conta for removida
+  userId: uuid("user_id"), // auth.users.id (autor)
+  authorEmail: text("author_email"), // denormalizado p/ exibir no painel
+  title: text("title").notNull(),
+  body: text("body").notNull().default(""),
+  category: text("category").notNull().default("melhoria"), // ideia | melhoria | problema | outro
+  status: text("status").notNull().default("new"), // new | reviewing | planned | done | declined
+  adminNote: text("admin_note").notNull().default(""), // anotação interna do master
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const blockTemplates = pgTable("block_templates", {
   id: text("id").primaryKey(),
   orgId: uuid("org_id").references(() => organizations.id, {

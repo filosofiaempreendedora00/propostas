@@ -115,6 +115,24 @@ function IconAdmin({ className = "" }: { className?: string }) {
   );
 }
 
+function IconSuggestion({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M9 18h6" />
+      <path d="M10 21h4" />
+      <path d="M12 3a6 6 0 0 0-4 10.5c.6.5 1 1.2 1 2V16h6v-.5c0-.8.4-1.5 1-2A6 6 0 0 0 12 3Z" />
+    </svg>
+  );
+}
+
 function Chevron({ collapsed }: { collapsed: boolean }) {
   return (
     <svg
@@ -284,6 +302,22 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
           {!isCollapsed && <span className="truncate">Painel master</span>}
         </Link>
       )}
+
+      {/* Sugestões — espaço de feedback, disponível para todas as contas */}
+      <Link
+        href="/sugestoes"
+        title={isCollapsed ? "Sugestões" : undefined}
+        className={`mx-2.5 mt-1 flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-medium transition ${
+          pathname.startsWith("/sugestoes")
+            ? "bg-panel text-ink"
+            : "text-ink-mute hover:bg-panel/50 hover:text-ink-soft"
+        } ${isCollapsed ? "justify-center" : ""}`}
+      >
+        <span className="grid h-7 w-7 shrink-0 place-items-center">
+          <IconSuggestion className="h-5 w-5" />
+        </span>
+        {!isCollapsed && <span className="truncate">Sugestões</span>}
+      </Link>
 
       {/* Sair */}
       <button
