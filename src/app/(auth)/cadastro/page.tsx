@@ -140,11 +140,6 @@ export default function CadastroPage() {
           {loading && <Spinner />}
           {loading ? "Criando conta…" : "Criar conta"}
         </button>
-
-        <p className="pt-1 text-center text-[11px] leading-relaxed text-ink-mute">
-          Ao criar a conta, você concorda com os Termos de Uso e a Política de
-          Privacidade.
-        </p>
       </form>
     </AuthShell>
   );
