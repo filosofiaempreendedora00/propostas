@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 
-// Badge da cota grátis na top-bar. Começa com o valor do servidor e atualiza
+// Texto + badge da top-bar de teste. Começa com o valor do servidor e atualiza
 // na hora (sem reload) quando o Gerador dispara "kronos:usage" após um download.
-export default function UsageBadge({
+// Quando a cota acaba, MUDA a mensagem (de "está em teste" → "teste acabou").
+export default function TrialStatus({
   initialRemaining,
   limit,
 }: {
@@ -28,14 +29,18 @@ export default function UsageBadge({
     return () => window.removeEventListener("kronos:usage", onUsage);
   }, []);
 
-  const label =
-    remaining <= 0
-      ? "Grátis esgotado"
-      : `${remaining} de ${limit} ${remaining === 1 ? "proposta" : "propostas"} grátis`;
+  const over = remaining <= 0;
 
   return (
-    <span className="rounded-full bg-white/15 px-3 py-0.5 text-[13px] font-semibold tabular-nums">
-      {label}
-    </span>
+    <>
+      <span className="text-sm font-medium sm:text-[15px]">
+        {over ? "Seu teste gratuito acabou" : "Você está em um teste gratuito"}
+      </span>
+      <span className="rounded-full bg-white/15 px-3 py-0.5 text-[13px] font-semibold tabular-nums">
+        {over
+          ? "Grátis esgotado"
+          : `${remaining} de ${limit} ${remaining === 1 ? "proposta" : "propostas"} grátis`}
+      </span>
+    </>
   );
 }

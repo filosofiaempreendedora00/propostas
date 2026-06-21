@@ -1,5 +1,5 @@
 import Link from "next/link";
-import UsageBadge from "./UsageBadge";
+import TrialStatus from "./TrialStatus";
 
 // Número e mensagem do WhatsApp (dúvidas sobre a assinatura).
 const WHATSAPP = "5527998001953";
@@ -27,10 +27,7 @@ export default function TrialBar({
 }) {
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-accent px-4 py-3 text-white">
-      <span className="text-sm font-medium sm:text-[15px]">
-        Você está em um teste gratuito
-      </span>
-      <UsageBadge initialRemaining={remaining} limit={limit} />
+      <TrialStatus initialRemaining={remaining} limit={limit} />
       <div className="flex items-center gap-2.5">
         <Link
           href="/planos"
