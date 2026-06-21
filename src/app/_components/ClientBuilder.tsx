@@ -13,7 +13,8 @@ import { useTemplates } from "@/lib/templates/store";
 import { BLOCK_FIELDS, type BlockKey } from "@/lib/templates/types";
 import type { BlockTemplate } from "@/lib/templates/types";
 import { Label, TextInput, SectionTitle, MiniBtn } from "./fields";
-import { recordDownload } from "@/lib/billing/usage";
+import { recordDownload, getUsage, type Usage } from "@/lib/billing/usage";
+import { FREE_DOWNLOADS } from "@/lib/limits";
 
 function extractPayload(
   block: BlockKey,
@@ -322,8 +323,20 @@ export default function ClientBuilder() {
   };
 
   // ----- freemium: cota de downloads -----
-  // A contagem "X de 3 grátis" aparece na top-bar (TrialBar), não aqui.
+  // A contagem "X de 3 grátis" aparece na top-bar; aqui usamos só p/ a lógica.
   const router = useRouter();
+  const [usage, setUsage] = useState<Usage | null>(null);
+  useEffect(() => {
+    getUsage().then(setUsage).catch(() => {});
+  }, []);
+
+  // Confirmação antes de gastar 1 crédito (só para quem está no teste grátis).
+  const [confirmDl, setConfirmDl] = useState<{
+    run: () => void;
+    format: string;
+    remaining: number;
+    limit: number;
+  } | null>(null);
 
   // Portão do download: assinante baixa; free consome 1 da cota;
   // esgotado → manda pra tela de planos (pricing padrão).
@@ -331,12 +344,38 @@ export default function ClientBuilder() {
     if (clientMissing) return;
     try {
       const res = await recordDownload();
+      setUsage(res);
       if (res.allowed) run();
       else router.push("/planos");
     } catch {
       // Em caso de erro de rede, não trava o usuário.
       run();
     }
+  };
+
+  // Clique em "Baixar PDF/HTML": assinante baixa direto; free vê a confirmação
+  // (pra não gastar crédito sem ter certeza do conteúdo/estética).
+  const requestDownload = async (run: () => void, format: string) => {
+    if (clientMissing) return;
+    let u = usage;
+    if (!u) {
+      try {
+        u = await getUsage();
+        setUsage(u);
+      } catch {
+        /* sem dados → trata como grátis */
+      }
+    }
+    if (u?.unlimited) {
+      tryDownload(run);
+      return;
+    }
+    setConfirmDl({
+      run,
+      format,
+      remaining: u?.remaining ?? FREE_DOWNLOADS,
+      limit: u?.limit ?? FREE_DOWNLOADS,
+    });
   };
 
   // ----- export -----
@@ -417,8 +456,8 @@ export default function ClientBuilder() {
           <DownloadActions
             layout="header"
             disabled={clientMissing}
-            onPdf={() => tryDownload(handleExportPDF)}
-            onHtml={() => tryDownload(handleExport)}
+            onPdf={() => requestDownload(handleExportPDF, "PDF")}
+            onHtml={() => requestDownload(handleExport, "HTML")}
           />
         </div>
         <a ref={exportRef} className="hidden" />
@@ -882,8 +921,8 @@ export default function ClientBuilder() {
           <DownloadActions
             layout="panel"
             disabled={clientMissing}
-            onPdf={() => tryDownload(handleExportPDF)}
-            onHtml={() => tryDownload(handleExport)}
+            onPdf={() => requestDownload(handleExportPDF, "PDF")}
+            onHtml={() => requestDownload(handleExport, "HTML")}
           />
 
           <div className="h-24" />
@@ -920,6 +959,57 @@ export default function ClientBuilder() {
           />
         </div>
       </div>
+
+      {confirmDl && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => setConfirmDl(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-line bg-panel p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-base font-semibold text-ink">
+              {confirmDl.remaining <= 1
+                ? "Usar seu último download grátis?"
+                : "Usar 1 download grátis?"}
+            </div>
+            <p className="mt-2 text-sm text-ink-soft">
+              Você tem{" "}
+              <strong className="text-ink">
+                {confirmDl.remaining} de {confirmDl.limit}
+              </strong>{" "}
+              downloads grátis. Baixar em{" "}
+              <strong className="text-ink">{confirmDl.format}</strong> usa{" "}
+              <strong className="text-ink">1</strong>.
+            </p>
+            <div className="mt-3 rounded-xl border border-accent/30 bg-accent/10 p-3 text-[13px] leading-relaxed text-ink-soft">
+              💡 Confira o preview à vontade — capriche no conteúdo e na estética.
+              O crédito só é gasto quando você baixa.
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDl(null)}
+                className="rounded-lg px-3 py-1.5 text-sm text-ink-soft transition hover:text-ink"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const run = confirmDl.run;
+                  setConfirmDl(null);
+                  tryDownload(run);
+                }}
+                className="rounded-lg bg-accent px-4 py-1.5 text-sm font-semibold text-bg transition hover:opacity-90"
+              >
+                Baixar {confirmDl.format}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {saveBlock && (
         <div
