@@ -88,6 +88,8 @@ export default function ClientBuilder() {
   const [dragOver, setDragOver] = useState(false);
   const [validISO, setValidISO] = useState("2026-06-29");
   const skipRender = useRef(false);
+  // Rolagem do preview preservada através do reload do iframe (não volta ao topo).
+  const savedScroll = useRef(0);
 
   const setValidity = (iso: string) => {
     setValidISO(iso);
@@ -288,7 +290,15 @@ export default function ClientBuilder() {
       skipRender.current = false;
       return;
     }
-    const id = setTimeout(() => setPreviewHtml(renderProposalHTML(data)), 300);
+    const id = setTimeout(() => {
+      // Guarda a rolagem atual antes do iframe recarregar com o novo HTML.
+      try {
+        savedScroll.current = previewRef.current?.contentWindow?.scrollY ?? 0;
+      } catch {
+        /* ignora */
+      }
+      setPreviewHtml(renderProposalHTML(data));
+    }, 300);
     return () => clearTimeout(id);
   }, [data]);
 
@@ -905,6 +915,26 @@ export default function ClientBuilder() {
             ref={previewRef}
             title="Preview da proposta"
             srcDoc={previewHtml}
+            onLoad={() => {
+              // Restaura a rolagem após o reload (mantém você na mesma seção).
+              const y = savedScroll.current;
+              if (y <= 0) return;
+              const restore = () => {
+                try {
+                  previewRef.current?.contentWindow?.scrollTo(0, y);
+                } catch {
+                  /* ignora */
+                }
+              };
+              restore();
+              try {
+                previewRef.current?.contentWindow?.document?.fonts?.ready.then(
+                  restore,
+                );
+              } catch {
+                /* ignora */
+              }
+            }}
             style={{ maxWidth: 860 }}
             className="h-full w-full border-0"
           />
