@@ -16,11 +16,21 @@ function WhatsAppIcon() {
 }
 
 // Faixa de teste gratuito — fixa no topo, em todas as telas do app.
-export default function TrialBar() {
+// Mostra de forma elegante quantas propostas grátis ainda restam.
+export default function TrialBar({
+  remaining,
+  limit,
+}: {
+  remaining: number;
+  limit: number;
+}) {
   return (
-    <div className="flex shrink-0 flex-wrap items-center justify-center gap-x-5 gap-y-2 bg-accent px-4 py-3 text-white">
+    <div className="flex shrink-0 flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-accent px-4 py-3 text-white">
       <span className="text-sm font-medium sm:text-[15px]">
-        Você está em um teste gratuito.
+        Você está em um teste gratuito
+      </span>
+      <span className="rounded-full bg-white/15 px-3 py-0.5 text-[13px] font-semibold tabular-nums">
+        {remaining} de {limit} {remaining === 1 ? "proposta" : "propostas"} grátis
       </span>
       <div className="flex items-center gap-2.5">
         <Link

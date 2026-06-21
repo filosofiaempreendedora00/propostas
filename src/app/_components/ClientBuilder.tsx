@@ -13,7 +13,7 @@ import { useTemplates } from "@/lib/templates/store";
 import { BLOCK_FIELDS, type BlockKey } from "@/lib/templates/types";
 import type { BlockTemplate } from "@/lib/templates/types";
 import { Label, TextInput, SectionTitle, MiniBtn } from "./fields";
-import { recordDownload, getUsage, type Usage } from "@/lib/billing/usage";
+import { recordDownload } from "@/lib/billing/usage";
 
 function extractPayload(
   block: BlockKey,
@@ -322,11 +322,8 @@ export default function ClientBuilder() {
   };
 
   // ----- freemium: cota de downloads -----
+  // A contagem "X de 3 grátis" aparece na top-bar (TrialBar), não aqui.
   const router = useRouter();
-  const [usage, setUsage] = useState<Usage | null>(null);
-  useEffect(() => {
-    getUsage().then(setUsage).catch(() => {});
-  }, []);
 
   // Portão do download: assinante baixa; free consome 1 da cota;
   // esgotado → manda pra tela de planos (pricing padrão).
@@ -334,7 +331,6 @@ export default function ClientBuilder() {
     if (clientMissing) return;
     try {
       const res = await recordDownload();
-      setUsage(res);
       if (res.allowed) run();
       else router.push("/planos");
     } catch {
@@ -418,22 +414,6 @@ export default function ClientBuilder() {
           )}
         </div>
         <div className="flex items-center gap-3">
-          {usage && !usage.unlimited && (
-            <button
-              type="button"
-              onClick={() => router.push("/planos")}
-              title="Sua cota grátis"
-              className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
-                usage.remaining === 0
-                  ? "border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
-                  : "border-line text-ink-mute hover:text-ink-soft"
-              }`}
-            >
-              {usage.remaining === 0
-                ? "Grátis esgotado"
-                : `Grátis · ${usage.remaining} de ${usage.limit}`}
-            </button>
-          )}
           <DownloadActions
             layout="header"
             disabled={clientMissing}

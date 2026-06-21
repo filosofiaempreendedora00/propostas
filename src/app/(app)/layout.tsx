@@ -29,7 +29,9 @@ export default async function AppLayout({
       {/* Dispara CompleteRegistration no 1º acesso após um cadastro novo (?novo=1) */}
       <RegistrationPixel />
       {/* Faixa de teste gratuito — só para quem ainda não assinou */}
-      {!paid && <TrialBar />}
+      {!paid && (
+        <TrialBar remaining={access.remaining} limit={access.limit} />
+      )}
       <div className="flex min-h-0 flex-1">
         <Sidebar isAdmin={isAdmin} />
         <main className="min-h-0 min-w-0 flex-1">{children}</main>
