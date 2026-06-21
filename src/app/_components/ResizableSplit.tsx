@@ -81,7 +81,7 @@ export default function ResizableSplit({
   };
 
   return (
-    <div ref={ref} className="flex min-h-0 flex-1">
+    <div ref={ref} className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden">{left}</div>
 
       {/* Alça */}
