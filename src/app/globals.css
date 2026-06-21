@@ -108,6 +108,29 @@ body {
   }
 }
 
+/* Pulso de destaque — quando um campo recebe foco vindo de outra tela
+   (ex.: clicar na logo do preview → destaca o slot certo em "Sua marca"). */
+@keyframes kronos-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 50%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 12px color-mix(in srgb, var(--color-accent) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent);
+  }
+}
+.kronos-pulse {
+  border-color: var(--color-accent) !important;
+  animation: kronos-pulse-ring 0.9s ease-out 3;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kronos-pulse {
+    animation: none;
+  }
+}
+
 /* Scrollbar discreta no painel do formulário */
 .form-scroll {
   scrollbar-width: thin;

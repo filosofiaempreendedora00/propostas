@@ -325,6 +325,18 @@ export default function ClientBuilder() {
   // ----- freemium: cota de downloads -----
   // A contagem "X de 3 grátis" aparece na top-bar; aqui usamos só p/ a lógica.
   const router = useRouter();
+
+  // Clique na logo do preview → Sua Empresa, na logo do tema atual (clara/escura).
+  useEffect(() => {
+    function onLogoMsg(e: MessageEvent) {
+      const m = e.data;
+      if (!m || m.source !== "proposal-logo") return;
+      const which = m.which === "escura" ? "escura" : "clara";
+      router.push(`/empresa?marca=${which}`);
+    }
+    window.addEventListener("message", onLogoMsg);
+    return () => window.removeEventListener("message", onLogoMsg);
+  }, [router]);
   const [usage, setUsage] = useState<Usage | null>(null);
   useEffect(() => {
     getUsage().then(setUsage).catch(() => {});

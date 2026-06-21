@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCompany } from "@/lib/company/store";
 
 const MAX_BYTES = 2 * 1024 * 1024; // 2 MB (arquivo de origem)
@@ -49,6 +49,7 @@ function LogoSlot({
   value,
   onChange,
   previewBg,
+  highlighted = false,
 }: {
   title: string;
   hint: string;
@@ -56,10 +57,22 @@ function LogoSlot({
   value: string | null;
   onChange: (v: string | null) => void;
   previewBg: string;
+  highlighted?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pulse, setPulse] = useState(false);
+
+  // Veio do clique na logo do Gerador: rola até aqui e pulsa pra ficar óbvio.
+  useEffect(() => {
+    if (!highlighted) return;
+    rootRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setPulse(true);
+    const t = setTimeout(() => setPulse(false), 2800);
+    return () => clearTimeout(t);
+  }, [highlighted]);
 
   const onFiles = (files: FileList | null) => {
     const file = files?.[0];
@@ -79,7 +92,12 @@ function LogoSlot({
   };
 
   return (
-    <div className="rounded-2xl border border-line bg-panel/30 p-4">
+    <div
+      ref={rootRef}
+      className={`scroll-mt-6 rounded-2xl border bg-panel/30 p-4 ${
+        pulse ? "kronos-pulse" : "border-line"
+      }`}
+    >
       <div className="mb-1 flex items-center gap-2">
         <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
           {badge}
@@ -174,7 +192,11 @@ function LogoSlot({
   );
 }
 
-export default function BrandManager() {
+export default function BrandManager({
+  highlight = null,
+}: {
+  highlight?: "clara" | "escura" | null;
+}) {
   const { logo, logoDark, ready, setLogo, setLogoDark } = useCompany();
 
   return (
@@ -201,6 +223,7 @@ export default function BrandManager() {
               value={logo}
               onChange={setLogo}
               previewBg="#0A0B0D"
+              highlighted={highlight === "clara"}
             />
             <LogoSlot
               badge="Fundo claro"
@@ -209,6 +232,7 @@ export default function BrandManager() {
               value={logoDark}
               onChange={setLogoDark}
               previewBg="#FBF9F5"
+              highlighted={highlight === "escura"}
             />
           </div>
         )}

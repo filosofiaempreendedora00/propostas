@@ -17,9 +17,19 @@ const useIsoLayoutEffect =
 
 export default function EmpresaWorkspace() {
   const [tab, setTab] = useState<Tab>("solucoes");
+  // Destaque vindo do clique na logo do Gerador (?marca=clara|escura).
+  const [highlight, setHighlight] = useState<"clara" | "escura" | null>(null);
 
   useIsoLayoutEffect(() => {
     try {
+      // Veio do clique na logo do preview? Abre "Sua marca" e destaca o campo.
+      const marca = new URLSearchParams(window.location.search).get("marca");
+      if (marca === "clara" || marca === "escura") {
+        setTab("marca");
+        setHighlight(marca);
+        window.history.replaceState(null, "", window.location.pathname);
+        return;
+      }
       const saved = window.localStorage.getItem(TAB_KEY) as Tab | null;
       if (saved && TABS.includes(saved)) setTab(saved);
     } catch {
@@ -65,7 +75,7 @@ export default function EmpresaWorkspace() {
       <div className="min-h-0 flex-1">
         {tab === "solucoes" && <CatalogManager />}
         {tab === "consultores" && <ConsultantsManager />}
-        {tab === "marca" && <BrandManager />}
+        {tab === "marca" && <BrandManager highlight={highlight} />}
         {tab === "equipe" && <TeamManager />}
       </div>
     </div>

@@ -333,7 +333,9 @@ export function renderProposalHTML(
   [data-edit]{outline:1px dashed transparent;outline-offset:4px;border-radius:3px;transition:outline-color .12s ease}
   [data-edit]:hover{outline-color:color-mix(in srgb, var(--accent) 55%, transparent);cursor:text}
   [data-edit]:focus{outline:1px dashed var(--accent);outline-offset:4px}
-  [data-edit]:empty::before{content:attr(data-placeholder);color:var(--ink-mute);opacity:.65}`
+  [data-edit]:empty::before{content:attr(data-placeholder);color:var(--ink-mute);opacity:.65}
+  [data-logo]{cursor:pointer;outline:1px dashed transparent;outline-offset:6px;border-radius:6px;transition:outline-color .12s ease}
+  [data-logo]:hover{outline-color:color-mix(in srgb, var(--accent) 60%, transparent)}`
       : ""
   }
 
@@ -392,7 +394,11 @@ ${only ? `<style>.cover,footer{display:none!important}section{border-top:none!im
 <!-- 1. CAPA -->
 <section class="cover">
   <div class="wrap cover-top">
-    <div class="brandmark">${
+    <div class="brandmark"${
+      editable
+        ? ` data-logo="${d.theme === "light" ? "escura" : "clara"}" title="Clique para trocar a logo em Sua Empresa"`
+        : ""
+    }>${
       d.logo
         ? `<img class="brand-logo" src="${esc(d.logo)}" alt="${esc(d.companyName)}">`
         : `<span class="dot">${esc(d.companyInitial)}</span><span data-edit="companyName">${esc(d.companyName)}</span>`
@@ -550,9 +556,16 @@ ${
       try{ parent.postMessage({source:'proposal-edit',action:btn.getAttribute('data-action'),index:Number(btn.getAttribute('data-index'))},'*'); }catch(e){}
       return; }
     var el=e.target.closest?e.target.closest('[data-edit]'):null;
-    if(!el||el.isContentEditable) return;
-    el.setAttribute('contenteditable','true'); el.focus();
-    try{ var r=document.createRange(); r.selectNodeContents(el); var s=getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){}
+    if(el){
+      if(el.isContentEditable) return;
+      el.setAttribute('contenteditable','true'); el.focus();
+      try{ var r=document.createRange(); r.selectNodeContents(el); var s=getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){}
+      return;
+    }
+    var logo=e.target.closest?e.target.closest('[data-logo]'):null;
+    if(logo){ e.preventDefault();
+      try{ parent.postMessage({source:'proposal-logo',which:logo.getAttribute('data-logo')},'*'); }catch(e){}
+    }
   });
   document.addEventListener('blur',function(e){ var el=e.target; if(el&&el.isContentEditable) commit(el); },true);
   document.addEventListener('keydown',function(e){
