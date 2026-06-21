@@ -43,8 +43,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, note: "sem email no payload" });
   }
 
+  // Carrinho abandonado, pagamento pendente, recusado, evento desconhecido:
+  // não é cliente — não registramos nada (evita falsos "cancelados" no painel).
+  if (parsed.outcome === "ignore") {
+    return NextResponse.json({ ok: true, note: "evento não-cliente ignorado" });
+  }
+
   const { plan, seatLimit } = planForProduct(parsed.productId, parsed.productName);
-  const status = parsed.active ? "active" : "canceled";
+  const status = parsed.outcome === "active" ? "active" : "canceled";
   const set = {
     plan,
     seatLimit,

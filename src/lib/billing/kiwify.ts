@@ -6,12 +6,18 @@ const PRODUCTS: Record<string, { plan: string; seatLimit: number }> = {
   "2d950500-6143-11f1-adec-45b26bfa8fc5": { plan: "time", seatLimit: 10 },
 };
 
+// "active"   = compra/renovação aprovada → liberar acesso
+// "canceled" = reembolso/chargeback/cancelamento/atraso → bloquear
+// "ignore"   = não é cliente (carrinho abandonado, pagamento pendente, recusado…)
+//              → não registrar como assinante nenhum
+export type KiwifyOutcome = "active" | "canceled" | "ignore";
+
 export type ParsedKiwify = {
   email: string | null;
   productId: string | null;
   productName: string | null;
   subscriptionId: string | null;
-  active: boolean; // true = liberar acesso; false = bloquear
+  outcome: KiwifyOutcome;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,6 +75,7 @@ export function parseKiwify(body: Any): ParsedKiwify {
     "completed",
     "trialing",
   ];
+  // Cancelamentos REAIS (a pessoa foi cliente e deixou de ser).
   const CANCEL = [
     "refunded",
     "canceled",
@@ -76,21 +83,25 @@ export function parseKiwify(body: Any): ParsedKiwify {
     "chargeback",
     "expired",
     "past_due",
-    "unpaid",
     "reembolsado",
     "cancelado",
     "atrasado",
-    "recusado",
   ];
-  let active = ACTIVE.some((w) => statusStr.includes(w));
-  if (CANCEL.some((w) => statusStr.includes(w))) active = false;
+
+  // Classificação conservadora: aprovado → active; cancelamento real → canceled;
+  // qualquer outra coisa (abandoned, waiting_payment, pix/boleto gerado, recusado,
+  // evento desconhecido) → ignore, pra não poluir o painel com "cancelados" que
+  // nunca compraram.
+  let outcome: KiwifyOutcome = "ignore";
+  if (ACTIVE.some((w) => statusStr.includes(w))) outcome = "active";
+  else if (CANCEL.some((w) => statusStr.includes(w))) outcome = "canceled";
 
   return {
     email: emailRaw ? String(emailRaw).toLowerCase().trim() : null,
     productId: productId ? String(productId) : null,
     productName: productName ? String(productName) : null,
     subscriptionId: subscriptionId ? String(subscriptionId) : null,
-    active,
+    outcome,
   };
 }
 
