@@ -42,21 +42,44 @@ export async function getUsage(): Promise<Usage> {
   return pack(user.email ?? null, org?.status, org?.used ?? 0);
 }
 
+// Marca o 1º download da conta (atômico, à prova de corrida) e devolve true
+// SÓ para quem acabou de marcar — ou seja, uma única vez por conta, para sempre.
+async function markFirstDownload(
+  orgId: string,
+  already: Date | string | null | undefined,
+): Promise<boolean> {
+  if (already) return false;
+  const rows = (await db.execute(sql`
+    update organizations set first_download_at = now()
+    where id = ${orgId} and first_download_at is null
+    returning id
+  `)) as unknown as Array<{ id: string }>;
+  return rows.length > 0;
+}
+
 // Registra um download: assinante = liberado; free = consome 1 da cota
 // (incremento atômico condicional, à prova de corrida). allowed=false quando esgotou.
-export async function recordDownload(): Promise<{ allowed: boolean } & Usage> {
+// `firstDownload` = true apenas no PRIMEIRO download bem-sucedido da conta.
+export async function recordDownload(): Promise<
+  { allowed: boolean; firstDownload: boolean } & Usage
+> {
   const user = await requireUser();
   const orgId = await requireOrgId();
   const email = user.email ?? null;
 
   const [org] = await db
-    .select({ status: organizations.status, used: organizations.downloadsUsed })
+    .select({
+      status: organizations.status,
+      used: organizations.downloadsUsed,
+      firstDownloadAt: organizations.firstDownloadAt,
+    })
     .from(organizations)
     .where(eq(organizations.id, orgId))
     .limit(1);
 
   if (org?.status === "active") {
-    return { allowed: true, ...pack(email, "active", org.used) };
+    const firstDownload = await markFirstDownload(orgId, org.firstDownloadAt);
+    return { allowed: true, firstDownload, ...pack(email, "active", org.used) };
   }
 
   const rows = (await db.execute(sql`
@@ -66,9 +89,18 @@ export async function recordDownload(): Promise<{ allowed: boolean } & Usage> {
   `)) as unknown as Array<{ downloads_used: number }>;
 
   if (rows.length) {
-    return { allowed: true, ...pack(email, org?.status, rows[0].downloads_used) };
+    const firstDownload = await markFirstDownload(orgId, org?.firstDownloadAt);
+    return {
+      allowed: true,
+      firstDownload,
+      ...pack(email, org?.status, rows[0].downloads_used),
+    };
   }
-  return { allowed: false, ...pack(email, org?.status, org?.used ?? FREE_DOWNLOADS) };
+  return {
+    allowed: false,
+    firstDownload: false,
+    ...pack(email, org?.status, org?.used ?? FREE_DOWNLOADS),
+  };
 }
 
 // "Já assinei → liberar": reaplica o entitlement pelo e-mail e devolve o estado.

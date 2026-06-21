@@ -347,6 +347,14 @@ export default function ClientBuilder() {
       setUsage(res);
       if (res.allowed) {
         run();
+        // Conversão Meta: 1ª proposta baixada pela conta (uma única vez).
+        if (res.firstDownload) {
+          const fbq = (window as Window & { fbq?: (...a: unknown[]) => void })
+            .fbq;
+          if (typeof fbq === "function") {
+            fbq("trackCustom", "BaixouPrimeiraProposta");
+          }
+        }
         // Avisa a top-bar pra atualizar a contagem na hora (sem reload).
         if (!res.unlimited) {
           window.dispatchEvent(

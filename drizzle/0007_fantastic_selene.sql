@@ -1,0 +1,1 @@
+ALTER TABLE "organizations" ADD COLUMN "first_download_at" timestamp with time zone;

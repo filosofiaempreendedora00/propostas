@@ -50,6 +50,13 @@
       "when": 1782051643185,
       "tag": "0006_lumpy_puppet_master",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782071940484,
+      "tag": "0007_fantastic_selene",
+      "breakpoints": true
     }
   ]
 }
