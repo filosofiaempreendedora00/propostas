@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Sidebar from "@/app/_components/Sidebar";
 import TrialBar from "@/app/_components/TrialBar";
+import RegistrationPixel from "@/app/_components/RegistrationPixel";
 import { isCurrentUserAdmin } from "@/lib/admin/data";
 import { getAccessState } from "@/lib/auth/org";
 
@@ -25,6 +26,8 @@ export default async function AppLayout({
 
   return (
     <div className="flex h-screen flex-col">
+      {/* Dispara CompleteRegistration no 1º acesso após um cadastro novo (?novo=1) */}
+      <RegistrationPixel />
       {/* Faixa de teste gratuito — só para quem ainda não assinou */}
       {!paid && <TrialBar />}
       <div className="flex min-h-0 flex-1">

@@ -43,7 +43,8 @@ export default function CadastroPage() {
       });
       if (error) throw error;
       if (data.session) {
-        router.push("/inicio");
+        // ?novo=1 sinaliza cadastro novo → dispara CompleteRegistration uma vez.
+        router.push("/inicio?novo=1");
         router.refresh();
       } else {
         setInfo("Conta criada! Verifique seu e-mail para confirmar e depois entre.");
