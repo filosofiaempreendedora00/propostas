@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Instrument_Sans, Cormorant } from "next/font/google";
 import "./globals.css";
 import Clarity from "./_components/Clarity";
+import MetaPixel from "./_components/MetaPixel";
 
 // Corpo / interface
 const instrumentSans = Instrument_Sans({
@@ -35,6 +36,7 @@ export default function RootLayout({
       <body className="min-h-full">
         {children}
         <Clarity />
+        <MetaPixel />
       </body>
     </html>
   );
