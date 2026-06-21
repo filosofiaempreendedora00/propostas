@@ -345,8 +345,19 @@ export default function ClientBuilder() {
     try {
       const res = await recordDownload();
       setUsage(res);
-      if (res.allowed) run();
-      else router.push("/planos");
+      if (res.allowed) {
+        run();
+        // Avisa a top-bar pra atualizar a contagem na hora (sem reload).
+        if (!res.unlimited) {
+          window.dispatchEvent(
+            new CustomEvent("kronos:usage", {
+              detail: { remaining: res.remaining },
+            }),
+          );
+        }
+      } else {
+        router.push("/planos");
+      }
     } catch {
       // Em caso de erro de rede, não trava o usuário.
       run();
@@ -368,6 +379,11 @@ export default function ClientBuilder() {
     }
     if (u?.unlimited) {
       tryDownload(run);
+      return;
+    }
+    // Já esgotou → vai direto pros planos (sem modal confuso de "0 de 3").
+    if ((u?.remaining ?? 0) <= 0) {
+      router.push("/planos");
       return;
     }
     setConfirmDl({
