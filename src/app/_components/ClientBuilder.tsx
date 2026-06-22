@@ -1063,29 +1063,36 @@ function AppearanceControls({
 
   return (
     <div className="flex items-center gap-2">
-      {/* Tema: toggle compacto (escuro/claro) */}
-      <div className="inline-flex rounded-full border border-line p-0.5">
-        {(
-          [
-            { key: "dark", icon: "🌙", title: "Tema escuro" },
-            { key: "light", icon: "☀️", title: "Tema claro" },
-          ] as const
-        ).map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            title={t.title}
-            onClick={() => onTheme(t.key)}
-            className={`grid h-7 w-7 place-items-center rounded-full text-[13px] leading-none transition ${
-              theme === t.key
-                ? "bg-accent"
-                : "opacity-55 hover:opacity-100"
-            }`}
-          >
-            {t.icon}
-          </button>
-        ))}
-      </div>
+      {/* Tema: switch (clicar em qualquer ponto alterna escuro↔claro) */}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={theme === "light"}
+        title={`Tema ${theme === "dark" ? "escuro" : "claro"} — clique para alternar`}
+        onClick={() => onTheme(theme === "dark" ? "light" : "dark")}
+        className="relative inline-flex items-center rounded-full border border-line p-0.5"
+      >
+        <span
+          aria-hidden
+          className={`absolute top-0.5 left-0.5 h-7 w-7 rounded-full bg-accent transition-transform duration-200 ${
+            theme === "light" ? "translate-x-7" : "translate-x-0"
+          }`}
+        />
+        <span
+          className={`relative z-10 grid h-7 w-7 place-items-center text-[13px] leading-none transition-opacity ${
+            theme === "dark" ? "" : "opacity-50"
+          }`}
+        >
+          🌙
+        </span>
+        <span
+          className={`relative z-10 grid h-7 w-7 place-items-center text-[13px] leading-none transition-opacity ${
+            theme === "light" ? "" : "opacity-50"
+          }`}
+        >
+          ☀️
+        </span>
+      </button>
 
       {/* Acento: bolinha + popover */}
       <div ref={rootRef} className="relative">
