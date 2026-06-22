@@ -496,6 +496,16 @@ export default function ClientBuilder() {
           )}
         </div>
         <div className="flex items-center gap-3">
+          <AppearanceControls
+            theme={form.theme}
+            onTheme={(t) => set("theme", t)}
+            accent={form.accent}
+            onAccent={(v) => set("accent", v)}
+            hexDraft={hexDraft}
+            onHexChange={onHexChange}
+            isHex={isHex}
+          />
+          <span className="h-5 w-px bg-line" />
           <DownloadActions
             layout="header"
             disabled={clientMissing}
@@ -865,96 +875,6 @@ export default function ClientBuilder() {
             </span>
           </label>
 
-          <SectionTitle>Aparência</SectionTitle>
-          <div className="mb-4">
-            <Label>Tema do documento</Label>
-            <div className="inline-flex rounded-lg border border-line p-0.5 text-xs">
-              {(
-                [
-                  { key: "dark", label: "🌙 Escuro" },
-                  { key: "light", label: "☀️ Claro" },
-                ] as const
-              ).map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => set("theme", t.key)}
-                  className={`rounded-md px-3 py-1.5 font-medium transition ${
-                    form.theme === t.key
-                      ? "bg-accent text-bg"
-                      : "text-ink-mute hover:text-ink-soft"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <Label>Cor de acento</Label>
-            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-              {ACCENT_PRESETS.map((c) => {
-                const active =
-                  form.accent.toLowerCase() === c.value.toLowerCase();
-                return (
-                  <button
-                    key={c.value}
-                    type="button"
-                    title={c.name}
-                    onClick={() => set("accent", c.value)}
-                    className={`h-6 w-6 rounded-full border-2 transition ${
-                      active
-                        ? "border-white"
-                        : "border-transparent hover:border-line"
-                    }`}
-                    style={{ background: c.value }}
-                  />
-                );
-              })}
-              {/* Cor personalizada — abre o seletor de cores do sistema */}
-              <label
-                title="Escolher cor personalizada"
-                className="relative grid h-6 w-6 cursor-pointer place-items-center overflow-hidden rounded-full border border-line"
-              >
-                <span
-                  aria-hidden
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      "conic-gradient(from 0deg, #ef4444, #eab308, #22c55e, #3b82f6, #a855f7, #ef4444)",
-                  }}
-                />
-                <span className="relative text-xs font-bold leading-none text-white mix-blend-difference">
-                  +
-                </span>
-                <input
-                  type="color"
-                  value={isHex(form.accent) ? form.accent : "#C9A876"}
-                  onChange={(e) => set("accent", e.target.value)}
-                  className="absolute inset-0 cursor-pointer opacity-0"
-                  aria-label="Cor personalizada"
-                />
-              </label>
-            </div>
-
-            {/* Código da cor (hex) */}
-            <div className="mt-2.5 flex items-center gap-2">
-              <span
-                className="h-8 w-8 shrink-0 rounded-md border border-line"
-                style={{ background: isHex(form.accent) ? form.accent : "#000" }}
-              />
-              <input
-                value={hexDraft}
-                onChange={(e) => onHexChange(e.target.value)}
-                placeholder="#C9A876"
-                spellCheck={false}
-                maxLength={7}
-                className="w-28 rounded-lg border border-line bg-panel-2 px-3 py-2 font-mono text-sm uppercase text-ink outline-none transition focus:border-accent/60"
-              />
-              <span className="text-[11px] text-ink-mute">código hex</span>
-            </div>
-          </div>
-
           <SectionTitle>Baixar proposta</SectionTitle>
           {clientMissing && (
             <p className="mb-2.5 text-[11px] text-amber-400/90">
@@ -1098,6 +1018,151 @@ export default function ClientBuilder() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Aparência compacta na barra do topo: toggle de tema + bolinha de cor (popover).
+function AppearanceControls({
+  theme,
+  onTheme,
+  accent,
+  onAccent,
+  hexDraft,
+  onHexChange,
+  isHex,
+}: {
+  theme: "dark" | "light";
+  onTheme: (t: "dark" | "light") => void;
+  accent: string;
+  onAccent: (v: string) => void;
+  hexDraft: string;
+  onHexChange: (v: string) => void;
+  isHex: (v: string) => boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="flex items-center gap-2">
+      {/* Tema: toggle compacto (escuro/claro) */}
+      <div className="inline-flex rounded-full border border-line p-0.5">
+        {(
+          [
+            { key: "dark", icon: "🌙", title: "Tema escuro" },
+            { key: "light", icon: "☀️", title: "Tema claro" },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            title={t.title}
+            onClick={() => onTheme(t.key)}
+            className={`grid h-7 w-7 place-items-center rounded-full text-[13px] leading-none transition ${
+              theme === t.key
+                ? "bg-accent"
+                : "opacity-55 hover:opacity-100"
+            }`}
+          >
+            {t.icon}
+          </button>
+        ))}
+      </div>
+
+      {/* Acento: bolinha + popover */}
+      <div ref={rootRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          title="Cor de acento"
+          aria-expanded={open}
+          className="grid h-8 w-8 place-items-center rounded-full border border-line transition hover:border-accent/60"
+        >
+          <span
+            className="h-4 w-4 rounded-full border border-black/15"
+            style={{ background: isHex(accent) ? accent : "#000" }}
+          />
+        </button>
+        {open && (
+          <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-line bg-panel p-3 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)]">
+            <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-ink-mute">
+              Cor de acento
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {ACCENT_PRESETS.map((c) => {
+                const active = accent.toLowerCase() === c.value.toLowerCase();
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    title={c.name}
+                    onClick={() => onAccent(c.value)}
+                    className={`h-6 w-6 rounded-full border-2 transition ${
+                      active ? "border-white" : "border-transparent hover:border-line"
+                    }`}
+                    style={{ background: c.value }}
+                  />
+                );
+              })}
+              <label
+                title="Cor personalizada"
+                className="relative grid h-6 w-6 cursor-pointer place-items-center overflow-hidden rounded-full border border-line"
+              >
+                <span
+                  aria-hidden
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "conic-gradient(from 0deg, #ef4444, #eab308, #22c55e, #3b82f6, #a855f7, #ef4444)",
+                  }}
+                />
+                <span className="relative text-xs font-bold leading-none text-white mix-blend-difference">
+                  +
+                </span>
+                <input
+                  type="color"
+                  value={isHex(accent) ? accent : "#C9A876"}
+                  onChange={(e) => onAccent(e.target.value)}
+                  className="absolute inset-0 cursor-pointer opacity-0"
+                  aria-label="Cor personalizada"
+                />
+              </label>
+            </div>
+            <div className="mt-2.5 flex items-center gap-2">
+              <span
+                className="h-7 w-7 shrink-0 rounded-md border border-line"
+                style={{ background: isHex(accent) ? accent : "#000" }}
+              />
+              <input
+                value={hexDraft}
+                onChange={(e) => onHexChange(e.target.value)}
+                placeholder="#C9A876"
+                spellCheck={false}
+                maxLength={7}
+                className="w-24 rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 font-mono text-xs uppercase text-ink outline-none transition focus:border-accent/60"
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
