@@ -131,20 +131,19 @@ body {
   }
 }
 
-/* Loader da ID — ampulheta que vira em loop (a areia "cai"). Como os dois
-   triângulos de areia são simétricos, girar 180° volta ao mesmo visual → sem pulo. */
+/* Loader da ID — ampulheta virando CONTINUAMENTE (sem pausa): rotação no <svg>
+   raiz (que pega CSS transform de forma confiável). Areia simétrica → loop limpo. */
 @keyframes kronos-hourglass {
-  0%,
-  50% {
+  from {
     transform: rotate(0deg);
   }
-  100% {
+  to {
     transform: rotate(180deg);
   }
 }
 .kronos-hourglass {
   transform-origin: 50% 50%;
-  animation: kronos-hourglass 1.4s ease-in-out infinite;
+  animation: kronos-hourglass 1.6s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .kronos-hourglass {
