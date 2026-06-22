@@ -7,6 +7,7 @@ import type { BlockTemplate } from "@/lib/templates/types";
 import TemplateEditor from "./TemplateEditor";
 import SectionPreview from "./SectionPreview";
 import ResizableSplit from "./ResizableSplit";
+import KronosLoader from "./KronosLoader";
 
 // Lista completa dos 8 blocos da proposta (editáveis + não-editáveis em cinza).
 type DisplayBlock = { n: number; label: string; key?: BlockKey; hint?: string };
@@ -241,6 +242,7 @@ export default function TemplatesWorkspace() {
                 onRemove={() => remove(t.id)}
               />
             ))}
+            {!ready && <KronosLoader label="Carregando templates…" />}
             {ready && blockItems.length === 0 && (
               <div className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-ink-mute">
                 Nenhuma variação ainda. Clique em <strong>+ Nova</strong>.

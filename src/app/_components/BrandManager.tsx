@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useCompany } from "@/lib/company/store";
+import KronosLoader from "./KronosLoader";
 
 const MAX_BYTES = 2 * 1024 * 1024; // 2 MB (arquivo de origem)
 const MAX_DIM = 800; // maior lado após compressão (logo não precisa de mais)
@@ -213,7 +214,7 @@ export default function BrandManager({
         </div>
 
         {!ready ? (
-          <p className="text-sm text-ink-mute">Carregando…</p>
+          <KronosLoader label="Carregando suas logos…" />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             <LogoSlot

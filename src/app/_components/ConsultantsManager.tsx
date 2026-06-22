@@ -3,6 +3,7 @@
 import { useConsultants } from "@/lib/catalog/store";
 import { ROLE_OPTIONS } from "@/lib/company/terms";
 import { Label, TextInput, MiniBtn } from "./fields";
+import KronosLoader from "./KronosLoader";
 
 export default function ConsultantsManager() {
   const { items, ready, add, update, remove } = useConsultants();
@@ -90,6 +91,7 @@ export default function ConsultantsManager() {
           ))}
         </div>
 
+        {!ready && <KronosLoader label="Carregando consultores…" />}
         {ready && items.length === 0 && (
           <div className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-ink-mute">
             Nenhum consultor cadastrado.

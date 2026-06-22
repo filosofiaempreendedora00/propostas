@@ -9,6 +9,7 @@ import { toRenderSolution, planToTier } from "@/lib/proposal/fromCatalog";
 import { Label, TextInput, TextArea, ItemList, MiniBtn } from "./fields";
 import SectionPreview from "./SectionPreview";
 import ResizableSplit from "./ResizableSplit";
+import KronosLoader from "./KronosLoader";
 
 type EditorTab = "detalhes" | "planos";
 
@@ -99,6 +100,11 @@ export default function CatalogManager() {
               </li>
             );
           })}
+          {!ready && (
+            <li>
+              <KronosLoader label={null} className="py-8" />
+            </li>
+          )}
           {ready && items.length === 0 && (
             <li className="px-3 py-8 text-center text-xs text-ink-mute">
               Nenhuma solução. Clique em <strong>+ Nova</strong>.

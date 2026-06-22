@@ -9,6 +9,7 @@ import {
   cancelInvite,
   type Team,
 } from "@/lib/team/actions";
+import KronosLoader from "./KronosLoader";
 
 export default function TeamManager() {
   const [team, setTeam] = useState<Team | null>(null);
@@ -25,7 +26,7 @@ export default function TeamManager() {
   }, []);
 
   if (!team) {
-    return <div className="p-10 text-sm text-ink-mute">Carregando…</div>;
+    return <KronosLoader label="Carregando a equipe…" />;
   }
 
   const isOwner = team.myRole === "owner";

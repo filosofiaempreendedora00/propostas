@@ -131,6 +131,27 @@ body {
   }
 }
 
+/* Loader da ID — ampulheta que vira em loop (a areia "cai"). Como os dois
+   triângulos de areia são simétricos, girar 180° volta ao mesmo visual → sem pulo. */
+@keyframes kronos-hourglass {
+  0%,
+  50% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(180deg);
+  }
+}
+.kronos-hourglass {
+  transform-origin: 50% 50%;
+  animation: kronos-hourglass 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kronos-hourglass {
+    animation: none;
+  }
+}
+
 /* Scrollbar discreta no painel do formulário */
 .form-scroll {
   scrollbar-width: thin;
