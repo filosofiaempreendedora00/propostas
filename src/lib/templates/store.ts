@@ -25,7 +25,13 @@ export function useTemplates() {
     const t = timers.current;
     return () => {
       alive = false;
-      for (const id of t.values()) clearTimeout(id);
+      // Grava as pendências do debounce antes de desmontar (não perder edição).
+      for (const [id, timer] of t.entries()) {
+        clearTimeout(timer);
+        const idx = itemsRef.current.findIndex((tpl) => tpl.id === id);
+        if (idx !== -1) void upsertTemplate(itemsRef.current[idx], idx);
+      }
+      t.clear();
     };
   }, []);
 

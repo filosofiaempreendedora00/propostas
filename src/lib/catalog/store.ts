@@ -37,7 +37,14 @@ export function useCatalog() {
     const t = timers.current;
     return () => {
       alive = false;
-      for (const id of t.values()) clearTimeout(id);
+      // Antes de desmontar (trocar de aba/página), GRAVA as pendências do
+      // debounce — senão a última edição (nos últimos 600ms) se perderia.
+      for (const [id, timer] of t.entries()) {
+        clearTimeout(timer);
+        const idx = itemsRef.current.findIndex((s) => s.id === id);
+        if (idx !== -1) void upsertSolution(itemsRef.current[idx], idx);
+      }
+      t.clear();
     };
   }, []);
 
@@ -103,7 +110,13 @@ export function useConsultants() {
     const t = timers.current;
     return () => {
       alive = false;
-      for (const id of t.values()) clearTimeout(id);
+      // Grava as pendências do debounce antes de desmontar (não perder edição).
+      for (const [id, timer] of t.entries()) {
+        clearTimeout(timer);
+        const idx = itemsRef.current.findIndex((c) => c.id === id);
+        if (idx !== -1) void upsertConsultant(itemsRef.current[idx], idx);
+      }
+      t.clear();
     };
   }, []);
 
