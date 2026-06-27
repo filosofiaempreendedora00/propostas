@@ -25,6 +25,9 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
   }
 }
 
+// Temperatura do lead — quão engajado/quente ele está.
+export type Temperature = "cliente" | "quente" | "morno" | "frio";
+
 export type AdminOrg = {
   id: string;
   name: string;
@@ -36,6 +39,24 @@ export type AdminOrg = {
   ownerEmail: string | null;
   createdAt: string | null;
   downloadsUsed: number; // propostas baixadas na cota grátis (0..FREE_DOWNLOADS)
+  firstDownloadAt: string | null;
+  // sinais de engajamento (deixou de usar o padrão de exemplo):
+  hasLogo: boolean;
+  customConsultant: boolean;
+  customSolution: boolean;
+  customPlan: boolean;
+  temperature: Temperature;
+};
+
+// Detalhe completo de uma conta — carregado ao clicar/expandir no painel.
+export type AccountDetail = {
+  signupName: string | null;
+  solutions: { name: string; tagline: string }[];
+  consultants: { name: string; role: string; email: string; phone: string }[];
+  plansCount: number;
+  templatesCount: number;
+  hasLogo: boolean;
+  hasLogoDark: boolean;
 };
 
 export type AdminEvent = {
@@ -57,11 +78,33 @@ export type AdminOverview = {
     individual: number;
     time: number;
     exhausted: number; // contas grátis que esgotaram os 3 downloads
+    hot: number; // leads "quentes" (engajados, ainda não clientes)
   };
   freeDownloads: number;
   orgs: AdminOrg[];
   events: AdminEvent[];
 };
+
+// Pontua o engajamento e devolve a temperatura.
+function temperatureOf(o: {
+  status: string;
+  downloadsUsed: number;
+  hasLogo: boolean;
+  customConsultant: boolean;
+  customSolution: boolean;
+  customPlan: boolean;
+}): Temperature {
+  if (o.status === "active") return "cliente";
+  const score =
+    (o.hasLogo ? 2 : 0) +
+    (o.customConsultant ? 2 : 0) +
+    (o.customSolution ? 2 : 0) +
+    (o.customPlan ? 1 : 0) +
+    Math.min(o.downloadsUsed, 3);
+  if (score >= 4) return "quente";
+  if (score >= 1) return "morno";
+  return "frio";
+}
 
 export async function getAdminOverview(): Promise<AdminOverview> {
   const orgsRaw = (await db.execute(sql`
@@ -72,11 +115,33 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       o.status                              as status,
       o.seat_limit                          as seat_limit,
       o.downloads_used                      as downloads_used,
+      o.first_download_at                   as first_download_at,
       o.created_at                          as created_at,
       (select u.email from auth.users u where u.id = o.owner_id) as owner_email,
       (select count(*)::int from memberships m where m.org_id = o.id) as members,
       (select count(*)::int from invitations i
-         where i.org_id = o.id and i.accepted_at is null)             as pending
+         where i.org_id = o.id and i.accepted_at is null)             as pending,
+      exists(
+        select 1 from company_settings cs where cs.org_id = o.id
+        and ((cs.logo is not null and length(cs.logo) > 100)
+          or (cs.logo_dark is not null and length(cs.logo_dark) > 100))
+      ) as has_logo,
+      exists(
+        select 1 from consultants c where c.org_id = o.id
+        and (c.name <> 'Nome do Consultor' or c.email <> 'consultor@suaempresa.com')
+      ) as custom_consultant,
+      exists(
+        select 1 from solutions s where s.org_id = o.id
+        and (s.name !~ '^Solução [0-9]+$'
+          or (s.tagline <> '' and s.tagline not in (
+            'Resumo de uma linha do que esta solução entrega.',
+            'Outra frente de trabalho, totalmente preenchível.')))
+      ) as custom_solution,
+      exists(
+        select 1 from solution_plans p where p.org_id = o.id
+        and (p.name !~ '^Plano [0-9]+$'
+          or p.price not in ('R$ 2.997', 'R$ 4.997', 'R$ 14.997'))
+      ) as custom_plan
     from organizations o
     order by o.created_at desc
   `)) as unknown as Array<{
@@ -86,10 +151,15 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     status: string;
     seat_limit: number;
     downloads_used: number;
+    first_download_at: Date | string | null;
     created_at: Date | string | null;
     owner_email: string | null;
     members: number;
     pending: number;
+    has_logo: boolean;
+    custom_consultant: boolean;
+    custom_solution: boolean;
+    custom_plan: boolean;
   }>;
 
   const [{ n: users }] = (await db.execute(
@@ -113,18 +183,29 @@ export async function getAdminOverview(): Promise<AdminOverview> {
   const toIso = (d: Date | string | null) =>
     d == null ? null : d instanceof Date ? d.toISOString() : String(d);
 
-  const orgs: AdminOrg[] = orgsRaw.map((o) => ({
-    id: o.id,
-    name: o.name,
-    plan: o.plan,
-    status: o.status,
-    seatLimit: o.seat_limit,
-    members: o.members,
-    pending: o.pending,
-    ownerEmail: o.owner_email,
-    createdAt: toIso(o.created_at),
-    downloadsUsed: Number(o.downloads_used) || 0,
-  }));
+  const orgs: AdminOrg[] = orgsRaw.map((o) => {
+    const base = {
+      downloadsUsed: Number(o.downloads_used) || 0,
+      hasLogo: !!o.has_logo,
+      customConsultant: !!o.custom_consultant,
+      customSolution: !!o.custom_solution,
+      customPlan: !!o.custom_plan,
+    };
+    return {
+      id: o.id,
+      name: o.name,
+      plan: o.plan,
+      status: o.status,
+      seatLimit: o.seat_limit,
+      members: o.members,
+      pending: o.pending,
+      ownerEmail: o.owner_email,
+      createdAt: toIso(o.created_at),
+      firstDownloadAt: toIso(o.first_download_at),
+      ...base,
+      temperature: temperatureOf({ status: o.status, ...base }),
+    };
+  });
 
   const totals = {
     orgs: orgs.length,
@@ -137,6 +218,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     exhausted: orgs.filter(
       (o) => o.status !== "active" && o.downloadsUsed >= FREE_DOWNLOADS,
     ).length,
+    hot: orgs.filter((o) => o.temperature === "quente").length,
   };
 
   const events: AdminEvent[] = eventsRaw.map((e) => ({

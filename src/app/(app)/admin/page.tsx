@@ -3,10 +3,10 @@ import { redirect } from "next/navigation";
 import {
   isCurrentUserAdmin,
   getAdminOverview,
-  type AdminOrg,
   type AdminEvent,
 } from "@/lib/admin/data";
 import { listAllSuggestions } from "@/lib/suggestions/actions";
+import AdminAccounts from "@/app/_components/AdminAccounts";
 
 export const dynamic = "force-dynamic";
 
@@ -73,42 +73,6 @@ function PlanBadge({ plan }: { plan: string }) {
 }
 
 // Quantas propostas a conta baixou na cota grátis (assinante = ilimitado).
-function UsageCell({
-  used,
-  limit,
-  active,
-}: {
-  used: number;
-  limit: number;
-  active: boolean;
-}) {
-  if (active) {
-    return (
-      <span className="inline-block rounded-full border border-accent/30 bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium text-accent">
-        Ilimitado
-      </span>
-    );
-  }
-  const exhausted = used >= limit;
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span
-        className={`text-sm font-semibold ${
-          exhausted ? "text-red-300" : "text-ink"
-        }`}
-      >
-        {used}
-        <span className="font-normal text-ink-mute"> / {limit}</span>
-      </span>
-      {exhausted && (
-        <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-300">
-          Esgotado
-        </span>
-      )}
-    </span>
-  );
-}
-
 function StatCard({
   label,
   value,
@@ -140,7 +104,7 @@ function StatCard({
 export default async function AdminPage() {
   if (!(await isCurrentUserAdmin())) redirect("/inicio");
 
-  const { totals, orgs, events, freeDownloads } = await getAdminOverview();
+  const { totals, orgs, events } = await getAdminOverview();
   const suggestions = await listAllSuggestions();
   const novasSugestoes = suggestions.filter((s) => s.status === "new").length;
 
@@ -215,80 +179,24 @@ export default async function AdminPage() {
           <StatCard label="Plano Time" value={totals.time} />
           <StatCard label="Total de contas-empresa" value={totals.orgs} />
           <StatCard
-            label="Esgotaram o grátis"
-            value={totals.exhausted}
-            hint={`Usaram as ${freeDownloads} — leads quentes`}
+            label="Leads quentes"
+            value={totals.hot}
+            hint="🔥 Engajados, ainda não clientes"
+            accent
           />
         </div>
 
-        {/* Organizações */}
+        {/* Contas & leads — temperatura à esquerda; clique pra abrir o raio-x */}
         <section className="mt-10">
-          <h2 className="mb-3 font-display text-2xl font-semibold tracking-tight text-ink">
-            Contas ({orgs.length})
-          </h2>
-          <div className="overflow-hidden rounded-2xl border border-line">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-panel-2 text-[11px] uppercase tracking-wide text-ink-mute">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Empresa / Dono</th>
-                  <th className="px-4 py-3 font-medium">Plano</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Propostas (grátis)</th>
-                  <th className="px-4 py-3 font-medium">Equipe</th>
-                  <th className="px-4 py-3 font-medium">Criada em</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orgs.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-4 py-8 text-center text-ink-mute"
-                    >
-                      Nenhuma conta ainda.
-                    </td>
-                  </tr>
-                )}
-                {orgs.map((o: AdminOrg) => (
-                  <tr
-                    key={o.id}
-                    className="border-t border-line bg-panel/40 align-top"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-ink">{o.name}</div>
-                      <div className="text-xs text-ink-mute">
-                        {o.ownerEmail ?? "—"}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <PlanBadge plan={o.plan} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={o.status} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <UsageCell
-                        used={o.downloadsUsed}
-                        limit={freeDownloads}
-                        active={o.status === "active"}
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-ink-soft">
-                      {o.members} / {o.seatLimit}
-                      {o.pending > 0 && (
-                        <span className="ml-1 text-xs text-ink-mute">
-                          (+{o.pending} pendente{o.pending > 1 ? "s" : ""})
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-ink-mute">
-                      {fmtDate(o.createdAt)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-ink">
+              Contas &amp; leads ({orgs.length})
+            </h2>
+            <span className="text-xs text-ink-mute">
+              🔥 quente · 🌡️ morno · ❄️ frio · ✅ cliente — clique para o raio-x
+            </span>
           </div>
+          <AdminAccounts accounts={orgs} />
         </section>
 
         {/* Eventos de assinatura */}
