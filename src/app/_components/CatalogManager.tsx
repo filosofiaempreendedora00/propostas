@@ -9,6 +9,7 @@ import { toRenderSolution, planToTier } from "@/lib/proposal/fromCatalog";
 import { Label, TextInput, TextArea, ItemList, MiniBtn } from "./fields";
 import SectionPreview from "./SectionPreview";
 import ResizableSplit from "./ResizableSplit";
+import ResizableSidebar from "./ResizableSidebar";
 import KronosLoader from "./KronosLoader";
 import AiCatalogGenerator from "./AiCatalogGenerator";
 
@@ -63,9 +64,9 @@ export default function CatalogManager() {
   }, [selected, tab]);
 
   return (
-    <div className="flex h-full">
-      {/* Lista */}
-      <aside className="w-[260px] shrink-0 form-scroll overflow-y-auto border-r border-line">
+    <ResizableSidebar storageKey="propostas.catalog.sidebar" defaultWidth={260}>
+      {/* Lista (largura arrastável pela alça) */}
+      <aside className="form-scroll h-full w-full overflow-y-auto">
         <div className="sticky top-0 z-10 flex flex-col gap-3 border-b border-line bg-bg/95 px-4 py-4 backdrop-blur">
           <div className="flex items-center justify-between">
             <div>
@@ -301,7 +302,7 @@ export default function CatalogManager() {
         }
         />
       </ResizableSplit>
-    </div>
+    </ResizableSidebar>
   );
 }
 
