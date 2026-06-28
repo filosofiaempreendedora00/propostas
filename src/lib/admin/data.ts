@@ -183,6 +183,10 @@ export async function getAdminOverview(): Promise<AdminOverview> {
   const toIso = (d: Date | string | null) =>
     d == null ? null : d instanceof Date ? d.toISOString() : String(d);
 
+  // Contas internas (admin master + demo "Vórtice") sempre entram como "frio",
+  // pra não enviesar a temperatura/contagem de leads reais.
+  const internal = new Set([...adminEmails(), "demo@kronos.dev"]);
+
   const orgs: AdminOrg[] = orgsRaw.map((o) => {
     const base = {
       downloadsUsed: Number(o.downloads_used) || 0,
@@ -203,7 +207,9 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       createdAt: toIso(o.created_at),
       firstDownloadAt: toIso(o.first_download_at),
       ...base,
-      temperature: temperatureOf({ status: o.status, ...base }),
+      temperature: internal.has((o.owner_email ?? "").toLowerCase())
+        ? "frio"
+        : temperatureOf({ status: o.status, ...base }),
     };
   });
 
