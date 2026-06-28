@@ -86,8 +86,10 @@ export default function ClientBuilder() {
 
   const [selSolutions, setSelSolutions] = useState<Set<string>>(new Set());
   const [selPlans, setSelPlans] = useState<Set<string>>(new Set());
+  // Override do plano "recomendado" por solução (solId → planId; "" = nenhum).
+  // Sem entrada → usa o que estiver marcado como destaque no catálogo.
+  const [recById, setRecById] = useState<Record<string, string>>({});
   const [consultantId, setConsultantId] = useState<string | null>(null);
-  const seededSol = useRef(false);
   const seededCons = useRef(false);
   const [dragOver, setDragOver] = useState(false);
   const [validISO, setValidISO] = useState("2026-06-29");
@@ -101,13 +103,8 @@ export default function ClientBuilder() {
   };
   const clientMissing = !form.clientName.trim() || !form.clientLegalName.trim();
 
-  useEffect(() => {
-    if (solReady && !seededSol.current) {
-      seededSol.current = true;
-      setSelSolutions(new Set(solutions.map((s) => s.id)));
-      setSelPlans(new Set(solutions.flatMap((s) => s.plans.map((p) => p.id))));
-    }
-  }, [solReady, solutions]);
+  // Por padrão, NADA vem selecionado (evita poluição) — o usuário escolhe as
+  // soluções e os planos. (Consultor segue com o primeiro pré-selecionado.)
   useEffect(() => {
     if (consReady && !seededCons.current) {
       seededCons.current = true;
@@ -154,15 +151,36 @@ export default function ClientBuilder() {
     });
   };
 
+  // Plano recomendado vigente da solução (override do usuário ou destaque do catálogo).
+  const recIdFor = (s: CatalogSolution): string | undefined =>
+    s.id in recById
+      ? recById[s.id] || undefined
+      : s.plans.find((p) => p.featured)?.id;
+
+  // Clique na estrela: marca como recomendado (ou remove, se já for).
+  const pickRecommended = (solId: string, planId: string) =>
+    setRecById((prev) => ({
+      ...prev,
+      [solId]: prev[solId] === planId ? "" : planId,
+    }));
+
   const consultant = consultants.find((c) => c.id === consultantId) ?? null;
 
   const data: ProposalData = useMemo(() => {
     const chosen = solutions.filter((s) => selSolutions.has(s.id));
     const investmentGroups: InvestmentGroup[] = chosen
-      .map((s) => ({
-        solution: s.name,
-        plans: s.plans.filter((p) => selPlans.has(p.id)).map(planToTier),
-      }))
+      .map((s) => {
+        const recId =
+          s.id in recById
+            ? recById[s.id] || undefined
+            : s.plans.find((p) => p.featured)?.id;
+        return {
+          solution: s.name,
+          plans: s.plans
+            .filter((p) => selPlans.has(p.id))
+            .map((p) => ({ ...planToTier(p), featured: p.id === recId })),
+        };
+      })
       .filter((g) => g.plans.length > 0);
     // Logo conforme o tema da proposta: claro → logo escura; escuro → logo clara.
     // Cai para a outra versão se só uma estiver cadastrada.
@@ -185,6 +203,7 @@ export default function ClientBuilder() {
     solutions,
     selSolutions,
     selPlans,
+    recById,
     consultant,
     companyLogo,
     companyLogoDark,
@@ -702,47 +721,139 @@ export default function ClientBuilder() {
                 </p>
                 {solutions.map((s) => {
                   const on = selSolutions.has(s.id);
+                  const recId = recIdFor(s);
                   return (
-                    <div key={s.id}>
-                      <SelectCard
-                        on={on}
+                    <div
+                      key={s.id}
+                      className={`overflow-hidden rounded-xl border transition ${
+                        on
+                          ? "border-accent/60 bg-accent/[0.06]"
+                          : "border-line bg-panel"
+                      }`}
+                    >
+                      {/* Cabeçalho: liga/desliga a solução */}
+                      <button
+                        type="button"
                         onClick={() => toggleSolution(s)}
-                        title={`${s.icon} ${s.name}`}
-                        subtitle={s.tagline}
-                      />
+                        className="flex w-full items-start gap-3 px-3.5 py-3 text-left"
+                      >
+                        <span
+                          className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 text-[11px] transition ${
+                            on
+                              ? "border-accent bg-accent text-bg"
+                              : "border-ink-mute/50 text-transparent"
+                          }`}
+                        >
+                          ✓
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-semibold text-ink">
+                            {s.icon} {s.name}
+                          </span>
+                          {s.tagline && (
+                            <span className="block truncate text-xs text-ink-mute">
+                              {s.tagline}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+
+                      {/* Planos — dentro da MESMA seleção da solução */}
                       {on && (
-                        <div className="ml-3 mt-1 space-y-1 border-l border-line pl-3">
+                        <div className="border-t border-accent/20 px-3 py-3">
                           {s.plans.length === 0 ? (
-                            <p className="py-1 text-[11px] text-ink-mute">
-                              Sem planos. Cadastre em Sua Empresa.
+                            <p className="text-[11px] text-ink-mute">
+                              Sem planos. Cadastre em{" "}
+                              <Link
+                                href="/empresa"
+                                className="text-accent hover:underline"
+                              >
+                                Sua Empresa
+                              </Link>
+                              .
                             </p>
                           ) : (
                             <>
-                              <p className="pt-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-mute">
+                              <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-mute">
                                 Planos exibidos ao cliente
                               </p>
-                              {s.plans.map((p) => (
-                                <label
-                                  key={p.id}
-                                  className="flex cursor-pointer items-center gap-2 py-0.5 text-xs"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={selPlans.has(p.id)}
-                                    onChange={() => togglePlan(p.id)}
-                                    className="accent-[var(--color-accent)]"
-                                  />
-                                  <span className="text-ink">{p.name}</span>
-                                  <span className="text-ink-mute">
-                                    · {p.price}
-                                  </span>
-                                  {p.featured && (
-                                    <span className="text-[10px] text-accent">
-                                      ★ destaque
-                                    </span>
-                                  )}
-                                </label>
-                              ))}
+                              <div className="space-y-1.5">
+                                {s.plans.map((p) => {
+                                  const checked = selPlans.has(p.id);
+                                  const rec = recId === p.id;
+                                  return (
+                                    <div
+                                      key={p.id}
+                                      className={`flex items-center gap-2.5 rounded-lg border px-2.5 py-2 transition ${
+                                        checked
+                                          ? "border-accent/40 bg-panel"
+                                          : "border-line bg-panel/40"
+                                      }`}
+                                    >
+                                      {/* Checkbox grande */}
+                                      <button
+                                        type="button"
+                                        onClick={() => togglePlan(p.id)}
+                                        aria-label={
+                                          checked
+                                            ? "Não exibir este plano"
+                                            : "Exibir este plano"
+                                        }
+                                        className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 transition ${
+                                          checked
+                                            ? "border-accent bg-accent text-bg"
+                                            : "border-ink-mute/50 text-transparent hover:border-accent/60"
+                                        }`}
+                                      >
+                                        <svg
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="3"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          className="h-3.5 w-3.5"
+                                        >
+                                          <path d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      </button>
+                                      {/* Nome + preço (clicável) */}
+                                      <button
+                                        type="button"
+                                        onClick={() => togglePlan(p.id)}
+                                        className="min-w-0 flex-1 text-left"
+                                      >
+                                        <span className="block truncate text-[13px] font-medium text-ink">
+                                          {p.name}
+                                        </span>
+                                        <span className="block text-xs text-ink-mute">
+                                          {p.price}
+                                          {p.billing === "recorrente"
+                                            ? "/mês"
+                                            : ""}
+                                        </span>
+                                      </button>
+                                      {/* Recomendado (clique) */}
+                                      <button
+                                        type="button"
+                                        onClick={() => pickRecommended(s.id, p.id)}
+                                        title={
+                                          rec
+                                            ? "Plano recomendado (clique para remover)"
+                                            : "Marcar como recomendado"
+                                        }
+                                        className={`shrink-0 rounded-md px-2 py-1.5 text-[11px] font-semibold transition ${
+                                          rec
+                                            ? "bg-accent/15 text-accent"
+                                            : "text-ink-mute hover:bg-panel-2 hover:text-accent"
+                                        }`}
+                                      >
+                                        {rec ? "★ recomendado" : "☆"}
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </>
                           )}
                         </div>
@@ -1462,41 +1573,6 @@ function ListControl({
   );
 }
 
-function SelectCard({
-  on,
-  onClick,
-  title,
-  subtitle,
-}: {
-  on: boolean;
-  onClick: () => void;
-  title: string;
-  subtitle?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition ${
-        on ? "border-accent/60 bg-accent/10" : "border-line bg-panel"
-      }`}
-    >
-      <span
-        className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border text-[10px] ${
-          on ? "border-accent bg-accent text-bg" : "border-ink-mute text-transparent"
-        }`}
-      >
-        ✓
-      </span>
-      <span className="min-w-0">
-        <span className="block text-sm font-medium">{title}</span>
-        {subtitle && (
-          <span className="block truncate text-xs text-ink-mute">{subtitle}</span>
-        )}
-      </span>
-    </button>
-  );
-}
 
 function EmptyCatalog({ label }: { label: string }) {
   return (
