@@ -10,7 +10,7 @@ import {
   aiGenerations,
 } from "@/lib/db/schema";
 import { requireOrgId, requireUser } from "@/lib/auth/org";
-import { LIMITS, LimitError } from "@/lib/limits";
+import { LIMITS, LimitError, FREE_AI_GENERATIONS } from "@/lib/limits";
 import type { CatalogSolution, CatalogConsultant, Billing } from "./types";
 import { SEED_SOLUTIONS, SEED_CONSULTANTS } from "./seed";
 import { generateCatalogFromBrief } from "./ai";
@@ -270,10 +270,51 @@ export async function deleteConsultant(id: string): Promise<void> {
 // curta do negócio e SUBSTITUI o catálogo atual da organização pelo gerado.
 // Tudo escopado por orgId — multi-tenant preservado. O usuário revisa/edita
 // depois nos campos normais antes de gerar a proposta.
+// Quantas gerações por IA a org ainda tem (mostra "X de 3" no modal).
+export async function getAiGenerationsLeft(): Promise<{
+  used: number;
+  limit: number;
+  remaining: number;
+}> {
+  const orgId = await requireOrgId();
+  let used = 0;
+  try {
+    const [{ c }] = await db
+      .select({ c: count() })
+      .from(aiGenerations)
+      .where(eq(aiGenerations.orgId, orgId));
+    used = Number(c) || 0;
+  } catch {
+    used = 0; // tabela ainda não migrada → não trava
+  }
+  return {
+    used,
+    limit: FREE_AI_GENERATIONS,
+    remaining: Math.max(0, FREE_AI_GENERATIONS - used),
+  };
+}
+
 export async function generateAndReplaceCatalog(
   brief: string,
 ): Promise<{ solutions: number }> {
   const orgId = await requireOrgId();
+
+  // Trava anti-abuso: no máximo FREE_AI_GENERATIONS por conta.
+  try {
+    const [{ c }] = await db
+      .select({ c: count() })
+      .from(aiGenerations)
+      .where(eq(aiGenerations.orgId, orgId));
+    if (Number(c) >= FREE_AI_GENERATIONS) {
+      throw new LimitError(
+        `Você já usou suas ${FREE_AI_GENERATIONS} gerações por IA. Sem problema — agora é só editar e revisar seu catálogo nos campos normais, é rápido.`,
+      );
+    }
+  } catch (e) {
+    if (e instanceof LimitError) throw e;
+    // erro de contagem (ex.: tabela ausente) → não bloqueia a geração
+  }
+
   const { solutions: generated, consultant, usage } =
     await generateCatalogFromBrief(brief);
 

@@ -11,6 +11,9 @@ export const LIMITS = {
 // Freemium: downloads de proposta grátis (total) antes de exigir assinatura.
 export const FREE_DOWNLOADS = 3;
 
+// Gerações de catálogo por IA permitidas por organização (anti-abuso).
+export const FREE_AI_GENERATIONS = 3;
+
 export class LimitError extends Error {
   constructor(message: string) {
     super(message);
