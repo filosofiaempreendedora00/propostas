@@ -111,6 +111,11 @@ REGRAS:
 - Para o consultor: gere um nome próprio plausível e um cargo coerente. NÃO invente e-mail ou telefone — o dono preenche o contato real depois.`;
 
 export type GeneratedConsultant = { name: string; role: string };
+export type GenUsage = {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+};
 
 function str(v: unknown, fallback = ""): string {
   return typeof v === "string" && v.trim() ? v.trim() : fallback;
@@ -147,9 +152,11 @@ function normalizePlans(raw: unknown): SolutionPlan[] {
 }
 
 // Chama a IA e devolve o catálogo já validado/normalizado no shape do app.
-export async function generateCatalogFromBrief(
-  brief: string,
-): Promise<{ solutions: CatalogSolution[]; consultant: GeneratedConsultant }> {
+export async function generateCatalogFromBrief(brief: string): Promise<{
+  solutions: CatalogSolution[];
+  consultant: GeneratedConsultant;
+  usage: GenUsage;
+}> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {
     throw new Error(
@@ -220,5 +227,15 @@ export async function generateCatalogFromBrief(
     role: str(c.role, "Consultor"),
   };
 
-  return { solutions, consultant };
+  // Tokens efetivamente cobrados (entrada + cache contam como input).
+  const usage: GenUsage = {
+    model: MODEL,
+    inputTokens:
+      (resp.usage.input_tokens ?? 0) +
+      (resp.usage.cache_read_input_tokens ?? 0) +
+      (resp.usage.cache_creation_input_tokens ?? 0),
+    outputTokens: resp.usage.output_tokens ?? 0,
+  };
+
+  return { solutions, consultant, usage };
 }

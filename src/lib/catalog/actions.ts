@@ -3,8 +3,13 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, count, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { solutions, solutionPlans, consultants } from "@/lib/db/schema";
-import { requireOrgId } from "@/lib/auth/org";
+import {
+  solutions,
+  solutionPlans,
+  consultants,
+  aiGenerations,
+} from "@/lib/db/schema";
+import { requireOrgId, requireUser } from "@/lib/auth/org";
 import { LIMITS, LimitError } from "@/lib/limits";
 import type { CatalogSolution, CatalogConsultant, Billing } from "./types";
 import { SEED_SOLUTIONS, SEED_CONSULTANTS } from "./seed";
@@ -269,7 +274,7 @@ export async function generateAndReplaceCatalog(
   brief: string,
 ): Promise<{ solutions: number }> {
   const orgId = await requireOrgId();
-  const { solutions: generated, consultant } =
+  const { solutions: generated, consultant, usage } =
     await generateCatalogFromBrief(brief);
 
   // Substitui o catálogo: apaga soluções (cascata nos planos) e consultores
@@ -289,6 +294,23 @@ export async function generateAndReplaceCatalog(
     phone: "",
     sortOrder: 0,
   });
+
+  // Registra o custo (tokens) — visível só no painel admin. Nunca quebra a
+  // geração: se o log falhar (ex.: tabela ainda não migrada), só ignora.
+  try {
+    const user = await requireUser();
+    await db.insert(aiGenerations).values({
+      orgId,
+      userEmail: user.email ?? null,
+      kind: "catalog",
+      model: usage.model,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      solutions: generated.length,
+    });
+  } catch (e) {
+    console.error("[ai] falha ao registrar custo da geração:", e);
+  }
 
   return { solutions: generated.length };
 }

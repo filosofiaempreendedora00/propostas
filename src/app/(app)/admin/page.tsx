@@ -5,6 +5,7 @@ import {
   getAdminOverview,
   type AdminEvent,
 } from "@/lib/admin/data";
+import { USD_BRL } from "@/lib/ai/pricing";
 import { listAllSuggestions } from "@/lib/suggestions/actions";
 import AdminAccounts from "@/app/_components/AdminAccounts";
 
@@ -104,7 +105,7 @@ function StatCard({
 export default async function AdminPage() {
   if (!(await isCurrentUserAdmin())) redirect("/inicio");
 
-  const { totals, orgs, events } = await getAdminOverview();
+  const { totals, orgs, events, aiUsage } = await getAdminOverview();
   const suggestions = await listAllSuggestions();
   const novasSugestoes = suggestions.filter((s) => s.status === "new").length;
 
@@ -249,6 +250,74 @@ export default async function AdminPage() {
               </tbody>
             </table>
           </div>
+        </section>
+
+        {/* IA — custo de geração de catálogo (só admin) */}
+        <section className="mt-10">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-ink">
+              IA — custo de geração
+            </h2>
+            <span className="text-xs text-ink-mute">
+              {aiUsage.count} geração(ões) · total{" "}
+              <strong className="text-ink-soft">
+                US$ {aiUsage.totalUsd.toFixed(4)}
+              </strong>{" "}
+              ≈ R$ {(aiUsage.totalUsd * USD_BRL).toFixed(3)}
+            </span>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-line">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-panel-2 text-[11px] uppercase tracking-wide text-ink-mute">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Quando</th>
+                  <th className="px-4 py-3 font-medium">Conta</th>
+                  <th className="px-4 py-3 font-medium">Soluções</th>
+                  <th className="px-4 py-3 font-medium">Tokens (in/out)</th>
+                  <th className="px-4 py-3 text-right font-medium">Custo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {aiUsage.generations.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-ink-mute"
+                    >
+                      Nenhuma geração por IA ainda.
+                    </td>
+                  </tr>
+                )}
+                {aiUsage.generations.map((g, i) => (
+                  <tr
+                    key={`${g.createdAt}-${i}`}
+                    className="border-t border-line bg-panel/40"
+                  >
+                    <td className="px-4 py-3 text-xs text-ink-mute">
+                      {fmtDate(g.createdAt)}
+                    </td>
+                    <td className="px-4 py-3 text-ink">{g.email ?? "—"}</td>
+                    <td className="px-4 py-3 text-ink-soft">{g.solutions}</td>
+                    <td className="px-4 py-3 text-xs text-ink-mute">
+                      {g.inputTokens.toLocaleString("pt-BR")} /{" "}
+                      {g.outputTokens.toLocaleString("pt-BR")}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right font-medium text-ink">
+                      US$ {g.usd.toFixed(4)}
+                      <span className="ml-1 text-[11px] text-ink-mute">
+                        ≈ R$ {(g.usd * USD_BRL).toFixed(3)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-[11px] text-ink-mute">
+            US$ é o valor cobrado pela Anthropic; R$ é aproximado (cotação ~
+            {USD_BRL.toFixed(2)}). Modelo: Claude Haiku 4.5 ($1/1M entrada ·
+            $5/1M saída). Só você (admin) vê isto.
+          </p>
         </section>
       </div>
     </div>

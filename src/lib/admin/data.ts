@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/org";
 import { FREE_DOWNLOADS } from "@/lib/limits";
+import { aiCostUsd } from "@/lib/ai/pricing";
 
 // E-mails autorizados a ver o painel /admin (configurável por env).
 export function adminEmails(): string[] {
@@ -86,6 +87,23 @@ export type AdminEvent = {
   updatedAt: string | null;
 };
 
+// Custo de IA — uma linha por geração de catálogo (só admin vê).
+export type AdminAiGeneration = {
+  createdAt: string | null;
+  email: string | null;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  solutions: number;
+  usd: number; // custo calculado a partir dos tokens
+};
+
+export type AdminAiUsage = {
+  totalUsd: number;
+  count: number;
+  generations: AdminAiGeneration[];
+};
+
 export type AdminOverview = {
   totals: {
     orgs: number;
@@ -101,6 +119,7 @@ export type AdminOverview = {
   freeDownloads: number;
   orgs: AdminOrg[];
   events: AdminEvent[];
+  aiUsage: AdminAiUsage;
 };
 
 // Pontua o engajamento e devolve a temperatura.
@@ -256,5 +275,53 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     updatedAt: toIso(e.updated_at),
   }));
 
-  return { totals, orgs, events, freeDownloads: FREE_DOWNLOADS };
+  // Custo de IA por geração (try/catch: a tabela pode não existir ainda).
+  let aiUsage: AdminAiUsage = { totalUsd: 0, count: 0, generations: [] };
+  try {
+    const genRows = (await db.execute(sql`
+      select
+        g.created_at,
+        g.model,
+        g.input_tokens,
+        g.output_tokens,
+        g.solutions,
+        coalesce(
+          g.user_email,
+          (select u.email from auth.users u where u.id = o.owner_id)
+        ) as email
+      from ai_generations g
+      left join organizations o on o.id = g.org_id
+      order by g.created_at desc
+      limit 1000
+    `)) as unknown as Array<{
+      created_at: Date | string | null;
+      model: string;
+      input_tokens: number;
+      output_tokens: number;
+      solutions: number;
+      email: string | null;
+    }>;
+    const generations: AdminAiGeneration[] = genRows.map((r) => {
+      const inTok = Number(r.input_tokens) || 0;
+      const outTok = Number(r.output_tokens) || 0;
+      return {
+        createdAt: toIso(r.created_at),
+        email: r.email,
+        model: r.model,
+        inputTokens: inTok,
+        outputTokens: outTok,
+        solutions: Number(r.solutions) || 0,
+        usd: aiCostUsd(r.model, inTok, outTok),
+      };
+    });
+    aiUsage = {
+      totalUsd: generations.reduce((s, g) => s + g.usd, 0),
+      count: generations.length,
+      generations,
+    };
+  } catch {
+    /* tabela ai_generations ainda não migrada → custo zerado */
+  }
+
+  return { totals, orgs, events, aiUsage, freeDownloads: FREE_DOWNLOADS };
 }

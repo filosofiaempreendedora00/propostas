@@ -172,6 +172,26 @@ export const suggestions = pgTable("suggestions", {
     .defaultNow(),
 });
 
+// Cada geração de catálogo por IA — só p/ controle de custo no painel admin
+// (clientes NÃO veem). Guarda tokens + modelo; o custo (US$) é calculado no
+// código a partir do preço do modelo. org_id "set null" preserva o histórico
+// de custo mesmo se a conta for removida.
+export const aiGenerations = pgTable("ai_generations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").references(() => organizations.id, {
+    onDelete: "set null",
+  }),
+  userEmail: text("user_email"), // denormalizado p/ exibir no painel
+  kind: text("kind").notNull().default("catalog"), // tipo de geração (futuro)
+  model: text("model").notNull(),
+  inputTokens: integer("input_tokens").notNull().default(0),
+  outputTokens: integer("output_tokens").notNull().default(0),
+  solutions: integer("solutions").notNull().default(0), // nº de soluções geradas
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const blockTemplates = pgTable("block_templates", {
   id: text("id").primaryKey(),
   orgId: uuid("org_id").references(() => organizations.id, {
