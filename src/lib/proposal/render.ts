@@ -422,7 +422,7 @@ ${only ? `<style>.cover,footer{display:none!important}section{border-top:none!im
           ? `<span class="brand-add">＋ Adicione sua logo</span>`
           : `<span class="dot">${esc(d.companyInitial)}</span><span>${esc(d.companyName)}</span>`
     }</div>
-    <div class="cover-meta">PROPOSTA COMERCIAL${d.showProposalNumber ? ` · Nº ${esc(d.proposalNumber)}` : ""}</div>
+    <div class="cover-meta">PROPOSTA COMERCIAL</div>
   </div>
   <div class="wrap cover-mid">
     <span class="eyebrow" data-edit="coverEyebrow" data-placeholder="[ rótulo da capa ]">${esc(d.coverEyebrow)}</span>

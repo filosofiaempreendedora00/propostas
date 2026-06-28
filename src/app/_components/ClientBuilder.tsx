@@ -8,6 +8,7 @@ import { renderProposalHTML, slugify } from "@/lib/proposal/render";
 import type { ProposalData, InvestmentGroup } from "@/lib/proposal/types";
 import { toRenderSolution, planToTier } from "@/lib/proposal/fromCatalog";
 import { useCatalog, useConsultants } from "@/lib/catalog/store";
+import type { CatalogSolution } from "@/lib/catalog/types";
 import { useCompany } from "@/lib/company/store";
 import { useTemplates } from "@/lib/templates/store";
 import { BLOCK_FIELDS, type BlockKey } from "@/lib/templates/types";
@@ -84,6 +85,7 @@ export default function ClientBuilder() {
   });
 
   const [selSolutions, setSelSolutions] = useState<Set<string>>(new Set());
+  const [selPlans, setSelPlans] = useState<Set<string>>(new Set());
   const [consultantId, setConsultantId] = useState<string | null>(null);
   const seededSol = useRef(false);
   const seededCons = useRef(false);
@@ -103,6 +105,7 @@ export default function ClientBuilder() {
     if (solReady && !seededSol.current) {
       seededSol.current = true;
       setSelSolutions(new Set(solutions.map((s) => s.id)));
+      setSelPlans(new Set(solutions.flatMap((s) => s.plans.map((p) => p.id))));
     }
   }, [solReady, solutions]);
   useEffect(() => {
@@ -127,24 +130,40 @@ export default function ClientBuilder() {
     if (isHex(v)) set("accent", v);
   };
 
-  const toggle = (setter: typeof setSelSolutions, id: string) =>
-    setter((prev) => {
+  const togglePlan = (id: string) =>
+    setSelPlans((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
 
+  // Liga/desliga uma solução E os planos dela (ao ligar, entram todos por padrão).
+  const toggleSolution = (s: CatalogSolution) => {
+    const adding = !selSolutions.has(s.id);
+    setSelSolutions((prev) => {
+      const next = new Set(prev);
+      if (next.has(s.id)) next.delete(s.id);
+      else next.add(s.id);
+      return next;
+    });
+    setSelPlans((prev) => {
+      const next = new Set(prev);
+      s.plans.forEach((p) => (adding ? next.add(p.id) : next.delete(p.id)));
+      return next;
+    });
+  };
+
   const consultant = consultants.find((c) => c.id === consultantId) ?? null;
 
   const data: ProposalData = useMemo(() => {
     const chosen = solutions.filter((s) => selSolutions.has(s.id));
     const investmentGroups: InvestmentGroup[] = chosen
-      .filter((s) => s.plans.length > 0)
       .map((s) => ({
         solution: s.name,
-        plans: s.plans.map(planToTier),
-      }));
+        plans: s.plans.filter((p) => selPlans.has(p.id)).map(planToTier),
+      }))
+      .filter((g) => g.plans.length > 0);
     // Logo conforme o tema da proposta: claro → logo escura; escuro → logo clara.
     // Cai para a outra versão se só uma estiver cadastrada.
     const themedLogo =
@@ -161,7 +180,15 @@ export default function ClientBuilder() {
       phone: consultant?.phone ?? "",
       email: consultant?.email ?? "",
     };
-  }, [form, solutions, selSolutions, consultant, companyLogo, companyLogoDark]);
+  }, [
+    form,
+    solutions,
+    selSolutions,
+    selPlans,
+    consultant,
+    companyLogo,
+    companyLogoDark,
+  ]);
 
   // ----- edição inline vinda do preview -----
   useEffect(() => {
@@ -567,30 +594,6 @@ export default function ClientBuilder() {
               Na capa: “{form.coverHeadline || "…"} {form.clientName || "[nome da empresa]"}.”
             </span>
           </label>
-          <div className="mt-3">
-            <div className="mb-1.5 flex min-h-[28px] items-center justify-between gap-2">
-              <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute">
-                Nº proposta
-              </span>
-              <label className="flex shrink-0 items-center gap-1 text-[10px] text-ink-soft">
-                <input
-                  type="checkbox"
-                  checked={form.showProposalNumber}
-                  onChange={(e) => set("showProposalNumber", e.target.checked)}
-                  className="accent-[var(--color-accent)]"
-                />
-                Mostrar
-              </label>
-            </div>
-            <div className={form.showProposalNumber ? "" : "opacity-40"}>
-              <TextInput
-                value={form.proposalNumber}
-                onChange={(v) => set("proposalNumber", v)}
-                placeholder="0001"
-              />
-            </div>
-          </div>
-
           <SectionTitle
             n={2}
             onJump={() => scrollPreviewTo(".understand")}
@@ -694,17 +697,59 @@ export default function ClientBuilder() {
             ) : (
               <div className="space-y-2">
                 <p className="mb-1 text-xs text-ink-mute">
-                  Selecione quais soluções entram nesta proposta.
+                  Selecione quais soluções entram — e, em cada uma, quais planos
+                  o cliente vê.
                 </p>
-                {solutions.map((s) => (
-                  <SelectCard
-                    key={s.id}
-                    on={selSolutions.has(s.id)}
-                    onClick={() => toggle(setSelSolutions, s.id)}
-                    title={`${s.icon} ${s.name}`}
-                    subtitle={s.tagline}
-                  />
-                ))}
+                {solutions.map((s) => {
+                  const on = selSolutions.has(s.id);
+                  return (
+                    <div key={s.id}>
+                      <SelectCard
+                        on={on}
+                        onClick={() => toggleSolution(s)}
+                        title={`${s.icon} ${s.name}`}
+                        subtitle={s.tagline}
+                      />
+                      {on && (
+                        <div className="ml-3 mt-1 space-y-1 border-l border-line pl-3">
+                          {s.plans.length === 0 ? (
+                            <p className="py-1 text-[11px] text-ink-mute">
+                              Sem planos. Cadastre em Sua Empresa.
+                            </p>
+                          ) : (
+                            <>
+                              <p className="pt-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-mute">
+                                Planos exibidos ao cliente
+                              </p>
+                              {s.plans.map((p) => (
+                                <label
+                                  key={p.id}
+                                  className="flex cursor-pointer items-center gap-2 py-0.5 text-xs"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={selPlans.has(p.id)}
+                                    onChange={() => togglePlan(p.id)}
+                                    className="accent-[var(--color-accent)]"
+                                  />
+                                  <span className="text-ink">{p.name}</span>
+                                  <span className="text-ink-mute">
+                                    · {p.price}
+                                  </span>
+                                  {p.featured && (
+                                    <span className="text-[10px] text-accent">
+                                      ★ destaque
+                                    </span>
+                                  )}
+                                </label>
+                              ))}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -724,9 +769,9 @@ export default function ClientBuilder() {
           <div
             className={`rounded-lg border border-line bg-panel p-3 text-xs leading-relaxed text-ink-soft ${form.showInvestment ? "" : "opacity-40"}`}
           >
-            Os planos vêm das <strong className="text-ink">soluções</strong>{" "}
-            selecionadas — cada solução traz seus planos (recorrente ou pontual).
-            Edite-os em{" "}
+            Os planos exibidos são os que você{" "}
+            <strong className="text-ink">marcou em cada solução</strong> acima.
+            Edite preços e itens em{" "}
             <Link href="/empresa" className="text-accent hover:underline">
               Sua Empresa
             </Link>
