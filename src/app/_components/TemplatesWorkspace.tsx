@@ -264,7 +264,7 @@ export default function TemplatesWorkspace() {
           {ready && (
             <button
               onClick={handleAdd}
-              className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line px-4 py-3.5 text-sm font-semibold text-ink-soft transition hover:border-accent/60 hover:bg-accent/[0.06] hover:text-accent"
+              className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-accent/45 bg-accent/[0.08] px-4 py-3.5 text-sm font-semibold text-accent transition hover:border-accent hover:bg-accent/[0.15]"
             >
               <span className="text-base leading-none">＋</span>
               Nova variação
