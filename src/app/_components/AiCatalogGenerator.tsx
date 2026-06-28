@@ -10,9 +10,6 @@ import KronosLoader from "./KronosLoader";
 const EXAMPLE =
   "Ex: Sou uma agência de marketing para clínicas odontológicas. Faço gestão de tráfego pago (Google e Meta), criação de conteúdo e otimização de perfil. Ticket entre R$ 1.500 e R$ 5.000/mês.";
 
-// Estimativa real de duração (medimos ~26-30s por geração de catálogo).
-const EST_S = 30;
-
 type Left = { used: number; limit: number; remaining: number };
 
 // Botão + modal: o usuário descreve o negócio e a IA gera o catálogo completo
@@ -29,7 +26,6 @@ export default function AiCatalogGenerator({
   const [error, setError] = useState<string | null>(null);
   const [left, setLeft] = useState<Left | null>(null);
   const [progress, setProgress] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Ao abrir, busca quantas gerações ainda restam (mostra "X de 3").
@@ -57,16 +53,17 @@ export default function AiCatalogGenerator({
     setLoading(true);
     setError(null);
     setProgress(0);
-    setElapsed(0);
 
-    // Barra assintótica: cresce rápido e desacelera, NUNCA chega a 100% sozinha
-    // (só ao receber o resultado) — assim nunca parece "travada em 100".
+    // Barra FIEL ao tempo real: curva assintótica calibrada para ~1 minuto (a
+    // geração varia ~25-70s). Avança o tempo todo com base no tempo decorrido
+    // (não é aleatória) e NUNCA chega a 100% sozinha — só ao receber o
+    // resultado. Sem número de segundos, pra não prometer um tempo que pode
+    // não bater e frustrar.
     const start = performance.now();
     timer.current = setInterval(() => {
       const s = (performance.now() - start) / 1000;
-      setElapsed(s);
-      setProgress(Math.min(97, (1 - Math.exp(-s / 12)) * 100));
-    }, 100);
+      setProgress(Math.min(94, (1 - Math.exp(-s / 26)) * 100));
+    }, 150);
 
     try {
       await generateAndReplaceCatalog(brief);
@@ -114,25 +111,22 @@ export default function AiCatalogGenerator({
               <div className="py-6">
                 <KronosLoader label="Gerando seu catálogo…" />
 
-                {/* Barra de progresso com estimativa */}
+                {/* Barra de progresso (sem número de segundos, fiel ao tempo) */}
                 <div className="mx-auto mt-5 max-w-xs">
                   <div className="h-2 overflow-hidden rounded-full bg-panel-2">
                     <div
                       className="h-full rounded-full bg-accent"
                       style={{
                         width: `${progress}%`,
-                        transition: "width 0.2s ease-out",
+                        transition: "width 0.3s ease-out",
                       }}
                     />
-                  </div>
-                  <div className="mt-1.5 flex justify-between text-[11px] text-ink-mute">
-                    <span>{Math.round(elapsed)}s</span>
-                    <span>~{EST_S}s no total</span>
                   </div>
                 </div>
 
                 <p className="mt-3 text-center text-xs text-ink-mute">
-                  Escrevendo soluções, planos e diferenciais no tom do seu nicho.
+                  Escrevendo soluções, planos e diferenciais no tom do seu nicho
+                  — leva alguns instantes.
                 </p>
               </div>
             ) : (
