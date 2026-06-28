@@ -3,6 +3,7 @@ import { Instrument_Sans, Cormorant } from "next/font/google";
 import "./globals.css";
 import Clarity from "./_components/Clarity";
 import MetaPixel from "./_components/MetaPixel";
+import GoogleTag from "./_components/GoogleTag";
 
 // Corpo / interface
 const instrumentSans = Instrument_Sans({
@@ -37,6 +38,7 @@ export default function RootLayout({
         {children}
         <Clarity />
         <MetaPixel />
+        <GoogleTag />
       </body>
     </html>
   );
