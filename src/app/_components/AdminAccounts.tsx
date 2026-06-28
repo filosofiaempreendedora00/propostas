@@ -97,11 +97,21 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
   >({});
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [temps, setTemps] = useState<Set<Temperature>>(new Set());
+
+  const toggleTemp = (k: Temperature) =>
+    setTemps((s) => {
+      const n = new Set(s);
+      if (n.has(k)) n.delete(k);
+      else n.add(k);
+      return n;
+    });
 
   const filtered = accounts.filter((o) => {
     const k = brDateKey(o.createdAt);
     if (from && (!k || k < from)) return false;
     if (to && (!k || k > to)) return false;
+    if (temps.size > 0 && !temps.has(o.temperature)) return false;
     return true;
   });
 
@@ -190,6 +200,39 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
             limpar
           </button>
         )}
+        <span className="mx-1 hidden h-4 w-px bg-line sm:block" />
+        <span className="text-[11px] font-medium uppercase tracking-wide text-ink-mute">
+          Temperatura
+        </span>
+        <div className="inline-flex flex-wrap gap-1">
+          {(["quente", "morno", "frio", "cliente"] as Temperature[]).map((k) => {
+            const tt = TEMP[k];
+            const active = temps.has(k);
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => toggleTemp(k)}
+                className={`cursor-pointer rounded-full border px-2 py-1 text-[11px] font-medium transition ${
+                  active
+                    ? tt.cls
+                    : "border-line text-ink-mute hover:text-ink"
+                }`}
+              >
+                {tt.icon} {tt.label}
+              </button>
+            );
+          })}
+          {temps.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setTemps(new Set())}
+              className="cursor-pointer px-1 text-xs text-accent hover:underline"
+            >
+              limpar
+            </button>
+          )}
+        </div>
         <span className="ml-auto text-xs text-ink-mute">
           {filtered.length} de {accounts.length}
         </span>
@@ -210,7 +253,7 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
             <button
               type="button"
               onClick={() => toggle(o.id)}
-              className={`flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-panel/50 ${
+              className={`flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition hover:bg-panel/50 ${
                 expanded ? "bg-panel/50" : ""
               }`}
             >
@@ -227,19 +270,21 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
                   {o.ownerEmail ?? "—"}
                 </div>
               </div>
-              <div className="hidden shrink-0 whitespace-nowrap text-right text-[11px] text-ink-mute sm:block">
-                {fmtDateTimeBR(o.createdAt)}
-              </div>
-              <div className="hidden flex-wrap items-center justify-end gap-1 sm:flex">
-                <Signal on={o.hasLogo}>logo</Signal>
-                <Signal on={o.customSolution}>solução</Signal>
-                <Signal on={o.customConsultant}>consultor</Signal>
-                <Signal on={o.customPlan}>plano</Signal>
-                {o.downloadsUsed > 0 && (
-                  <span className="rounded-full border border-line bg-panel-2 px-2 py-0.5 text-[10px] font-medium text-ink-soft">
-                    {o.downloadsUsed} baixou
-                  </span>
-                )}
+              <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
+                <div className="whitespace-nowrap text-[11px] text-ink-mute">
+                  {fmtDateTimeBR(o.createdAt)}
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-1">
+                  <Signal on={o.hasLogo}>logo</Signal>
+                  <Signal on={o.customSolution}>solução</Signal>
+                  <Signal on={o.customConsultant}>consultor</Signal>
+                  <Signal on={o.customPlan}>plano</Signal>
+                  {o.downloadsUsed > 0 && (
+                    <span className="rounded-full border border-line bg-panel-2 px-2 py-0.5 text-[10px] font-medium text-ink-soft">
+                      {o.downloadsUsed} baixou
+                    </span>
+                  )}
+                </div>
               </div>
               <svg
                 viewBox="0 0 24 24"
