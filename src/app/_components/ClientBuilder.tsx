@@ -14,6 +14,7 @@ import { BLOCK_FIELDS, type BlockKey } from "@/lib/templates/types";
 import type { BlockTemplate } from "@/lib/templates/types";
 import { Label, TextInput, SectionTitle, MiniBtn } from "./fields";
 import { recordDownload, getUsage, type Usage } from "@/lib/billing/usage";
+import { trackGoogleConversion, GADS_CONVERSIONS } from "@/lib/analytics/google";
 import { FREE_DOWNLOADS } from "@/lib/limits";
 
 function extractPayload(
@@ -366,13 +367,15 @@ export default function ClientBuilder() {
       setUsage(res);
       if (res.allowed) {
         run();
-        // Conversão Meta: 1ª proposta baixada pela conta (uma única vez).
+        // Ativação: 1ª proposta baixada com sucesso pela conta (uma única vez).
+        // firstDownload é decidido no servidor (atômico) → só dispara na 1ª.
         if (res.firstDownload) {
           const fbq = (window as Window & { fbq?: (...a: unknown[]) => void })
             .fbq;
           if (typeof fbq === "function") {
-            fbq("trackCustom", "BaixouPrimeiraProposta");
+            fbq("trackCustom", "BaixouPrimeiraProposta"); // Meta
           }
+          trackGoogleConversion(GADS_CONVERSIONS.primeiraProposta); // Google Ads
         }
         // Avisa a top-bar pra atualizar a contagem na hora (sem reload).
         if (!res.unlimited) {
