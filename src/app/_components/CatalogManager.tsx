@@ -68,27 +68,19 @@ export default function CatalogManager() {
       {/* Lista (largura arrastável pela alça) */}
       <aside className="form-scroll h-full w-full overflow-y-auto">
         <div className="sticky top-0 z-10 flex flex-col gap-3 border-b border-line bg-bg/95 px-4 py-4 backdrop-blur">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-display text-3xl font-semibold tracking-tight text-ink">
-                Soluções
-              </div>
-              <div className="text-[11px] text-ink-mute">
-                {items.length} cadastrada(s)
-              </div>
+          <div>
+            <div className="font-display text-3xl font-semibold tracking-tight text-ink">
+              Soluções
             </div>
-            <button
-              onClick={handleAdd}
-              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-bg transition hover:opacity-90"
-            >
-              + Nova
-            </button>
+            <div className="text-[11px] text-ink-mute">
+              {items.length} cadastrada(s)
+            </div>
           </div>
           <AiCatalogGenerator onGenerated={handleGenerated} />
         </div>
 
         <ul className="p-2">
-          {items.map((s) => {
+          {items.map((s, i) => {
             const active = s.id === selectedId;
             return (
               <li key={s.id}>
@@ -98,8 +90,13 @@ export default function CatalogManager() {
                     active ? "bg-panel" : "hover:bg-panel/60"
                   }`}
                 >
-                  <span className="text-lg leading-none">{s.icon || "✦"}</span>
+                  <span className="mt-0.5 text-lg leading-none">
+                    {s.icon || "✦"}
+                  </span>
                   <span className="min-w-0">
+                    <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-accent/70">
+                      Solução {i + 1}
+                    </span>
                     <span className="block truncate text-sm font-medium text-ink">
                       {s.name || "Sem nome"}
                     </span>
@@ -116,12 +113,20 @@ export default function CatalogManager() {
               <KronosLoader label={null} className="py-8" />
             </li>
           )}
-          {ready && items.length === 0 && (
-            <li className="px-3 py-8 text-center text-xs text-ink-mute">
-              Nenhuma solução. Clique em <strong>+ Nova</strong>.
-            </li>
-          )}
         </ul>
+
+        {/* Botão grande "onde a próxima solução nasce" — abaixo da lista */}
+        {ready && (
+          <div className="px-3 pb-4">
+            <button
+              onClick={handleAdd}
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line px-4 py-3.5 text-sm font-semibold text-ink-soft transition hover:border-accent/60 hover:bg-accent/[0.06] hover:text-accent"
+            >
+              <span className="text-base leading-none">＋</span>
+              Nova solução
+            </button>
+          </div>
+        )}
       </aside>
 
       <ResizableSplit storageKey="propostas.catalog.split" defaultRight={440}>
