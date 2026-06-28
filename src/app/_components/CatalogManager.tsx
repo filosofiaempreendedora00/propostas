@@ -190,13 +190,9 @@ export default function CatalogManager() {
           <div className="mx-auto max-w-4xl px-10 py-9">
             <div className="mb-7 flex items-start justify-between gap-4 border-b border-line pb-5">
               <div className="flex items-center gap-4">
-                <input
+                <EmojiPicker
                   value={selected.icon}
-                  onChange={(e) =>
-                    update(selected.id, { icon: e.target.value.slice(0, 2) })
-                  }
-                  className="h-14 w-14 shrink-0 rounded-xl border border-line bg-panel-2 text-center text-2xl outline-none transition focus:border-accent/70"
-                  aria-label="Ícone"
+                  onChange={(emoji) => update(selected.id, { icon: emoji })}
                 />
                 <div>
                   <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-accent">
@@ -365,6 +361,62 @@ export default function CatalogManager() {
         />
       </ResizableSplit>
     </ResizableSidebar>
+  );
+}
+
+// Paleta curada de emojis comuns de negócio (mantém o padrão visual).
+const EMOJIS = [
+  "📈", "🎯", "🚀", "💡", "⚙️", "🛠️", "📊", "💰",
+  "🤝", "📣", "🧩", "🔧", "🏆", "✨", "🔑", "🧠",
+  "📌", "📦", "🛡️", "⏱️", "🌐", "📱", "💻", "🎨",
+  "📷", "✍️", "📝", "🗂️", "🔍", "💬", "📞", "✅",
+  "⭐", "🔥", "💎", "🏗️", "🧾", "🧪", "🎓", "❤️",
+  "🍽️", "🦷", "🏠", "✈️", "🚗", "📚", "🔒", "🎁",
+];
+
+// Seletor de emoji: clica no quadradinho e escolhe num grid (sem campo de texto).
+function EmojiPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (emoji: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        title="Escolher emoji"
+        aria-label="Escolher emoji"
+        className="grid h-14 w-14 place-items-center rounded-xl border border-line bg-panel-2 text-2xl transition hover:border-accent/70"
+      >
+        {value || "✦"}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full z-50 mt-2 grid w-[296px] grid-cols-8 gap-1 rounded-xl border border-line bg-bg p-2 shadow-2xl">
+            {EMOJIS.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => {
+                  onChange(e);
+                  setOpen(false);
+                }}
+                className={`grid h-8 w-8 place-items-center rounded-lg text-lg transition hover:bg-panel ${
+                  value === e ? "bg-accent/15 ring-1 ring-accent/50" : ""
+                }`}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
