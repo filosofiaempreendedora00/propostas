@@ -7,6 +7,7 @@ import type { BlockTemplate } from "@/lib/templates/types";
 import TemplateEditor from "./TemplateEditor";
 import SectionPreview from "./SectionPreview";
 import ResizableSplit from "./ResizableSplit";
+import ResizableSidebar from "./ResizableSidebar";
 import KronosLoader from "./KronosLoader";
 
 // Lista completa dos 8 blocos da proposta (editáveis + não-editáveis em cinza).
@@ -141,9 +142,13 @@ export default function TemplatesWorkspace() {
   };
 
   return (
-    <div className="cream flex h-full">
-      {/* Menu de blocos */}
-      <aside className="w-[264px] shrink-0 form-scroll overflow-y-auto border-r border-line p-3">
+    <ResizableSidebar
+      className="cream"
+      storageKey="propostas.templates.sidebar"
+      defaultWidth={264}
+    >
+      {/* Menu de blocos (largura arrastável pela alça) */}
+      <aside className="form-scroll h-full w-full overflow-y-auto p-3">
         <div className="px-2 pb-3 pt-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-mute">
           Blocos da proposta
         </div>
@@ -261,6 +266,6 @@ export default function TemplatesWorkspace() {
         empty="Abra uma variação para ver o preview da seção."
         />
       </ResizableSplit>
-    </div>
+    </ResizableSidebar>
   );
 }
