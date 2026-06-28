@@ -90,7 +90,18 @@ export function useCatalog() {
     void deleteSolution(id);
   }, []);
 
-  return { items, ready, add, update, remove };
+  // Recarrega do servidor (ex.: após a geração por IA substituir o catálogo).
+  const reload = useCallback(async () => {
+    try {
+      const rows = await listSolutions();
+      setItems(rows);
+      setReady(true);
+    } catch {
+      /* mantém o estado atual */
+    }
+  }, []);
+
+  return { items, ready, add, update, remove, reload };
 }
 
 // ===================== CONSULTORES =====================
@@ -162,5 +173,15 @@ export function useConsultants() {
     void deleteConsultant(id);
   }, []);
 
-  return { items, ready, add, update, remove };
+  const reload = useCallback(async () => {
+    try {
+      const rows = await listConsultants();
+      setItems(rows);
+      setReady(true);
+    } catch {
+      /* mantém o estado atual */
+    }
+  }, []);
+
+  return { items, ready, add, update, remove, reload };
 }
