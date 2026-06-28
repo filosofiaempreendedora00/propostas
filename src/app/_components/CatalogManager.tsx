@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCatalog, blankSolutionPlan } from "@/lib/catalog/store";
-import type { SolutionPlan, Billing } from "@/lib/catalog/types";
+import type {
+  CatalogSolution,
+  SolutionPlan,
+  Billing,
+} from "@/lib/catalog/types";
+import type { EditMsg } from "@/lib/proposal/edit";
 import type { ProposalData } from "@/lib/proposal/types";
 import type { PreviewBlock } from "@/lib/proposal/render";
 import { toRenderSolution, planToTier } from "@/lib/proposal/fromCatalog";
@@ -38,6 +43,55 @@ export default function CatalogManager() {
   }, [ready, items, selectedId]);
 
   const selected = items.find((s) => s.id === selectedId) ?? null;
+
+  // Edição inline vinda do preview → reflete nos campos da solução selecionada.
+  // Campos: sol.0.<campo> (texto) ou sol.0.<deliverable|highlight|requirement>.<i>;
+  // planos: plan.<j>.<name|price|description> ou plan.<j>.feature.<i>.
+  const handlePreviewEdit = useCallback(
+    (m: EditMsg) => {
+      if (!selected || typeof m.field !== "string") return;
+      const value = String(m.value ?? "");
+      const p = m.field.split(".");
+
+      if (p[0] === "sol") {
+        const key = p[2];
+        if (
+          key === "deliverable" ||
+          key === "highlight" ||
+          key === "requirement"
+        ) {
+          const arrKey =
+            key === "deliverable"
+              ? "deliverables"
+              : key === "highlight"
+                ? "highlights"
+                : "requirements";
+          const idx = Number(p[3]);
+          const arr = selected[arrKey].map((x, j) => (j === idx ? value : x));
+          update(selected.id, { [arrKey]: arr } as Partial<CatalogSolution>);
+        } else {
+          // name | timeline | problemSolved | howItWorks | expectedBenefit
+          update(selected.id, { [key]: value } as Partial<CatalogSolution>);
+        }
+      } else if (p[0] === "plan") {
+        const pIdx = Number(p[1]);
+        const key = p[2];
+        const plans = selected.plans.map((pl, j) => {
+          if (j !== pIdx) return pl;
+          if (key === "feature") {
+            const fi = Number(p[3]);
+            return {
+              ...pl,
+              features: pl.features.map((x, k) => (k === fi ? value : x)),
+            };
+          }
+          return { ...pl, [key]: value }; // name | price | description
+        });
+        update(selected.id, { plans });
+      }
+    },
+    [selected, update],
+  );
 
   const handleAdd = () => {
     const id = add();
@@ -294,6 +348,9 @@ export default function CatalogManager() {
       <SectionPreview
         block={previewBlock}
         payload={previewPayload}
+        editable
+        editableCatalog
+        onEdit={handlePreviewEdit}
         title={tab === "planos" ? "Preview · Investimento" : "Preview · Soluções"}
         subtitle={
           tab === "planos"
