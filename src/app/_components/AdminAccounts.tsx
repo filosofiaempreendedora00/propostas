@@ -27,6 +27,8 @@ const TEMP: Record<Temperature, { label: string; icon: string; cls: string }> = 
   },
 };
 
+const TZ = "America/Sao_Paulo"; // horário de Brasília
+
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   try {
@@ -34,9 +36,37 @@ function fmtDate(iso: string | null): string {
       day: "2-digit",
       month: "short",
       year: "numeric",
+      timeZone: TZ,
     });
   } catch {
     return "—";
+  }
+}
+
+// Data + hora em Brasília (mostrada na linha do lead, sem expandir).
+function fmtDateTimeBR(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: TZ,
+    });
+  } catch {
+    return "—";
+  }
+}
+
+// Chave AAAA-MM-DD em Brasília — pra comparar com os inputs de data do filtro.
+function brDateKey(iso: string | null): string {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString("en-CA", { timeZone: TZ });
+  } catch {
+    return "";
   }
 }
 
@@ -65,6 +95,25 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
   const [details, setDetails] = useState<
     Record<string, AccountDetail | "loading" | "error">
   >({});
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  const filtered = accounts.filter((o) => {
+    const k = brDateKey(o.createdAt);
+    if (from && (!k || k < from)) return false;
+    if (to && (!k || k > to)) return false;
+    return true;
+  });
+
+  const setPreset = (days: number | null) => {
+    if (days === null) {
+      setFrom("");
+      setTo("");
+      return;
+    }
+    setTo(brDateKey(new Date().toISOString()));
+    setFrom(brDateKey(new Date(Date.now() - days * 86400000).toISOString()));
+  };
 
   const toggle = async (id: string) => {
     if (open === id) {
@@ -92,8 +141,67 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-line">
-      {accounts.map((o) => {
+    <>
+      {/* Filtro por data de cadastro (horário de Brasília) */}
+      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-panel/40 px-3 py-2.5">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-ink-mute">
+          Cadastro
+        </span>
+        <div className="inline-flex rounded-lg border border-line p-0.5 text-xs">
+          {[
+            { l: "Tudo", d: null },
+            { l: "7 dias", d: 6 },
+            { l: "30 dias", d: 29 },
+          ].map((b) => (
+            <button
+              key={b.l}
+              type="button"
+              onClick={() => setPreset(b.d)}
+              className="rounded-md px-2.5 py-1 font-medium text-ink-mute transition hover:text-ink"
+            >
+              {b.l}
+            </button>
+          ))}
+        </div>
+        <label className="flex items-center gap-1 text-xs text-ink-mute">
+          De
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="rounded-md border border-line bg-panel-2 px-2 py-1 text-ink [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex items-center gap-1 text-xs text-ink-mute">
+          Até
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="rounded-md border border-line bg-panel-2 px-2 py-1 text-ink [color-scheme:dark]"
+          />
+        </label>
+        {(from || to) && (
+          <button
+            type="button"
+            onClick={() => setPreset(null)}
+            className="text-xs text-accent hover:underline"
+          >
+            limpar
+          </button>
+        )}
+        <span className="ml-auto text-xs text-ink-mute">
+          {filtered.length} de {accounts.length}
+        </span>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-line">
+        {filtered.length === 0 && (
+          <div className="p-8 text-center text-sm text-ink-mute">
+            Nenhum lead nesse período.
+          </div>
+        )}
+        {filtered.map((o) => {
         const t = TEMP[o.temperature];
         const d = details[o.id];
         const expanded = open === o.id;
@@ -118,6 +226,9 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
                 <div className="truncate text-xs text-ink-mute">
                   {o.ownerEmail ?? "—"}
                 </div>
+              </div>
+              <div className="hidden shrink-0 whitespace-nowrap text-right text-[11px] text-ink-mute sm:block">
+                {fmtDateTimeBR(o.createdAt)}
               </div>
               <div className="hidden flex-wrap items-center justify-end gap-1 sm:flex">
                 <Signal on={o.hasLogo}>logo</Signal>
@@ -272,7 +383,8 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
           </div>
         );
       })}
-    </div>
+      </div>
+    </>
   );
 }
 
