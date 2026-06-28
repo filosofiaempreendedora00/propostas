@@ -7,7 +7,8 @@
 export const GADS_CONVERSIONS = {
   // Conversão de CADASTRO (mesmo ponto do CompleteRegistration da Meta).
   cadastro: "AW-730378227/S8kDCK-qisccEPPfotwC",
-  // primeiraProposta: "AW-730378227/XXXXXXXXXXXXXXXX", // (em breve — outro label)
+  // ATIVAÇÃO: 1ª proposta baixada com sucesso (mesmo ponto do BaixouPrimeiraProposta).
+  primeiraProposta: "AW-730378227/lEi_CILMocccEPPfotwC",
 } as const;
 
 type Gtag = (...args: unknown[]) => void;
