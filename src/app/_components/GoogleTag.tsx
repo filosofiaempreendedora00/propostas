@@ -1,27 +1,29 @@
 import Script from "next/script";
 
-// IDs públicos do Google tag (gtag.js) — não são segredo. Os dois rodam no
-// MESMO gtag.js: GA4 (Analytics) + Google Ads (conversões, mesmo ID da landing).
-const TAG_IDS = ["AW-730378227", "G-NW70BBHDMF"] as const;
-const PRIMARY = TAG_IDS[0]; // id usado no src (carrega a lib uma vez só)
+// UM ÚNICO Google tag (gtag.js) para o app inteiro — o tag do GA4 (G-NW70BBHDMF).
+// O Google Ads (AW-730378227) está LINKADO a ele na conta Google, então carrega
+// junto AUTOMATICAMENTE ("um Google tag por conta"). Por isso NÃO configuramos
+// o AW separado aqui — senão ele inicializa em dobro e duplica TODOS os hits
+// (page_view, remarketing, dados do usuário, conversões) no Tag Assistant.
+// As conversões disparam normalmente via send_to "AW-730378227/<label>"
+// (ver src/lib/analytics/google.ts) — o AW está presente pelo link do GA4.
+const GA_ID = "G-NW70BBHDMF";
 
-// Google tag (gtag.js) — Analytics + Google Ads (conversões).
 // Carrega depois da página (afterInteractive — recomendado p/ tag managers) e
-// SÓ em produção (build da Vercel) — no dev local não roda, pra não poluir os
-// dados. As conversões são disparadas em src/lib/analytics/google.ts.
+// SÓ em produção (build da Vercel); no dev local não roda, pra não poluir dados.
 export default function GoogleTag() {
   if (process.env.NODE_ENV !== "production") return null;
   return (
     <>
       <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${PRIMARY}`}
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
         strategy="afterInteractive"
       />
       <Script id="gtag-init" strategy="afterInteractive">
         {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-${TAG_IDS.map((id) => `gtag('config', '${id}');`).join("\n")}`}
+gtag('config', '${GA_ID}');`}
       </Script>
     </>
   );
