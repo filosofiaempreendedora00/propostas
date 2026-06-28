@@ -6,6 +6,7 @@ import { organizations, memberships, invitations } from "@/lib/db/schema";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { applyEntitlementToOrg } from "@/lib/billing/entitlement";
 import { FREE_DOWNLOADS } from "@/lib/limits";
+import { addLeadToBrevo } from "@/lib/integrations/brevo";
 
 // Usuário autenticado (valida o JWT no Supabase). Lança se não houver sessão.
 // Toda Server Action deve passar por aqui (defesa além do proxy).
@@ -99,6 +100,27 @@ export async function requireOrgId(): Promise<string> {
       await applyEntitlementToOrg(result.orgId, user.email);
     } catch {
       /* sem assinatura ainda */
+    }
+    // Cadastro novo → entra na lista do Brevo (dispara as boas-vindas).
+    // Cobre e-mail e Google; fire-and-forget (não bloqueia/quebra o acesso).
+    if (user.email) {
+      const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+      const str = (...keys: string[]) => {
+        for (const k of keys) {
+          const v = meta[k];
+          if (typeof v === "string" && v.trim()) return v.trim();
+        }
+        return null;
+      };
+      const full = str("full_name", "name");
+      void addLeadToBrevo({
+        email: user.email,
+        firstName: str("first_name", "given_name") ?? full?.split(" ")[0] ?? null,
+        lastName:
+          str("last_name", "family_name") ??
+          full?.split(" ").slice(1).join(" ") ??
+          null,
+      });
     }
   }
   return result.orgId;
