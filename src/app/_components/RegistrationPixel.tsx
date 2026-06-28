@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { trackGoogleConversion, GADS_CONVERSIONS } from "@/lib/analytics/google";
 
 // Dispara o evento CompleteRegistration do Meta Pixel UMA ÚNICA VEZ, no sucesso
 // de um cadastro novo. O sinal é o parâmetro ?novo=1 na URL — colocado APÓS a
@@ -41,6 +42,9 @@ export default function RegistrationPixel() {
       }
     };
     fire();
+
+    // Google Ads — conversão de cadastro, no MESMO ponto. (no-op em dev/sem tag)
+    trackGoogleConversion(GADS_CONVERSIONS.cadastro);
   }, []);
 
   return null;
