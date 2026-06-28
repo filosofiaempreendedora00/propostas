@@ -14,6 +14,24 @@ export function adminEmails(): string[] {
     .filter(Boolean);
 }
 
+// Contas internas/teste (minhas + demo) — NÃO entram como lead/cliente real
+// nas KPIs do topo nem na temperatura. Extensível por INTERNAL_EMAILS (csv) no env.
+function internalEmails(): Set<string> {
+  const extra = (process.env.INTERNAL_EMAILS || "")
+    .toLowerCase()
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return new Set([
+    ...adminEmails(),
+    "demo@kronos.dev",
+    "filosofia.empreendedora00@gmail.com",
+    "roberto_fpj1@hotmail.com",
+    "robertofachetti2@gmail.com",
+    ...extra,
+  ]);
+}
+
 // O usuário logado é admin master?
 export async function isCurrentUserAdmin(): Promise<boolean> {
   try {
@@ -183,9 +201,9 @@ export async function getAdminOverview(): Promise<AdminOverview> {
   const toIso = (d: Date | string | null) =>
     d == null ? null : d instanceof Date ? d.toISOString() : String(d);
 
-  // Contas internas (admin master + demo "Vórtice") sempre entram como "frio",
-  // pra não enviesar a temperatura/contagem de leads reais.
-  const internal = new Set([...adminEmails(), "demo@kronos.dev"]);
+  // Contas internas/teste não enviesam temperatura nem KPIs.
+  const internal = internalEmails();
+  const isInt = (e: string | null) => internal.has((e ?? "").toLowerCase());
 
   const orgs: AdminOrg[] = orgsRaw.map((o) => {
     const base = {
@@ -207,24 +225,26 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       createdAt: toIso(o.created_at),
       firstDownloadAt: toIso(o.first_download_at),
       ...base,
-      temperature: internal.has((o.owner_email ?? "").toLowerCase())
+      temperature: isInt(o.owner_email)
         ? "frio"
         : temperatureOf({ status: o.status, ...base }),
     };
   });
 
+  // KPIs sobre contas REAIS (sem as internas/teste).
+  const real = orgs.filter((o) => !isInt(o.ownerEmail));
   const totals = {
     orgs: orgs.length,
-    active: orgs.filter((o) => o.status === "active").length,
-    inactive: orgs.filter((o) => o.status === "inactive").length,
-    canceled: orgs.filter((o) => o.status === "canceled").length,
+    active: real.filter((o) => o.status === "active").length,
+    inactive: real.filter((o) => o.status === "inactive").length,
+    canceled: real.filter((o) => o.status === "canceled").length,
     users: Number(users) || 0,
-    individual: orgs.filter((o) => o.plan === "individual").length,
-    time: orgs.filter((o) => o.plan === "time").length,
-    exhausted: orgs.filter(
+    individual: real.filter((o) => o.plan === "individual").length,
+    time: real.filter((o) => o.plan === "time").length,
+    exhausted: real.filter(
       (o) => o.status !== "active" && o.downloadsUsed >= FREE_DOWNLOADS,
     ).length,
-    hot: orgs.filter((o) => o.temperature === "quente").length,
+    hot: real.filter((o) => o.temperature === "quente").length,
   };
 
   const events: AdminEvent[] = eventsRaw.map((e) => ({
