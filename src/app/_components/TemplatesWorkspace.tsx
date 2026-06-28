@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTemplates } from "@/lib/templates/store";
 import { BLOCKS, NON_EDITABLE_BLOCKS, type BlockKey } from "@/lib/templates/types";
 import type { BlockTemplate } from "@/lib/templates/types";
+import { applyProposalEdit, type EditMsg } from "@/lib/proposal/edit";
+import type { ProposalData } from "@/lib/proposal/types";
 import TemplateEditor from "./TemplateEditor";
 import SectionPreview from "./SectionPreview";
 import ResizableSplit from "./ResizableSplit";
@@ -124,6 +126,22 @@ export default function TemplatesWorkspace() {
   // null = todas minimizadas (preview mostra aviso). Sem fallback automático,
   // pra dar pra fechar tudo.
   const selected = blockItems.find((t) => t.id === selectedId) ?? null;
+
+  // Edição inline vinda do preview → reflete no payload da variação (campos do
+  // meio da tela). Reusa o mesmo mapeamento do Gerador (pillar/step/reason/etc.).
+  const handleTemplateEdit = useCallback(
+    (m: EditMsg) => {
+      if (!selected) return;
+      const next = applyProposalEdit(
+        selected.payload as unknown as Partial<ProposalData>,
+        m,
+      );
+      update(selected.id, {
+        payload: next as unknown as BlockTemplate["payload"],
+      });
+    },
+    [selected, update],
+  );
 
   // Ao ENTRAR num bloco, abre a primeira variação (uma vez por bloco). Depois
   // o usuário pode fechar/abrir à vontade — inclusive deixar todas fechadas.
@@ -261,6 +279,8 @@ export default function TemplatesWorkspace() {
       <SectionPreview
         block={block}
         payload={selected ? selected.payload : null}
+        editable
+        onEdit={handleTemplateEdit}
         title="Preview da seção"
         subtitle="Como esta variação fica na proposta gerada."
         empty="Abra uma variação para ver o preview da seção."

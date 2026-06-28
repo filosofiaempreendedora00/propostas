@@ -52,62 +52,70 @@ function solList(
   kicker: string,
   items: string[] | undefined,
   variant: string,
+  editPrefix = "",
 ): string {
   return items && items.length
     ? `<div class="sol2-deliver ${variant}"><div class="sol2-k">${kicker}</div><ul>${items
-        .map((d) => `<li>${esc(d)}</li>`)
+        .map(
+          (d, i) =>
+            `<li${editPrefix ? ` data-edit="${editPrefix}.${i}"` : ""}>${esc(d)}</li>`,
+        )
         .join("")}</ul></div>`
     : "";
 }
 
-function solutionsHtml(solutions: Solution[]): string {
+// `ed` liga a edição inline dos CARDS de solução (Sua Empresa). No Gerador fica
+// desligado (lá só os textos da proposta são editáveis).
+function solutionsHtml(solutions: Solution[], ed = false): string {
+  const de = (f: string) => (ed ? ` data-edit="${f}"` : "");
   return solutions
     .map(
       (s, i) => `
       <div class="sol2">
-        <div class="sol2-head"><span class="sol2-num">${n2(i)}</span><h3>${esc(s.name)}</h3>${
+        <div class="sol2-head"><span class="sol2-num">${n2(i)}</span><h3${de(`sol.${i}.name`)}>${esc(s.name)}</h3>${
           s.timeline && s.timeline.trim()
-            ? `<span class="sol2-time">Prazo · ${esc(s.timeline)}</span>`
+            ? `<span class="sol2-time">Prazo · <span${de(`sol.${i}.timeline`)}>${esc(s.timeline)}</span></span>`
             : ""
         }</div>
         <div class="sol2-grid">
-          <div class="sol2-cell"><div class="sol2-k">O problema que resolve</div><p>${esc(s.problemSolved)}</p></div>
-          <div class="sol2-cell"><div class="sol2-k">Como funciona</div><p>${esc(s.howItWorks)}</p></div>
-          <div class="sol2-cell"><div class="sol2-k">Benefício esperado</div><p>${esc(s.expectedBenefit)}</p></div>
+          <div class="sol2-cell"><div class="sol2-k">O problema que resolve</div><p${de(`sol.${i}.problemSolved`)}>${esc(s.problemSolved)}</p></div>
+          <div class="sol2-cell"><div class="sol2-k">Como funciona</div><p${de(`sol.${i}.howItWorks`)}>${esc(s.howItWorks)}</p></div>
+          <div class="sol2-cell"><div class="sol2-k">Benefício esperado</div><p${de(`sol.${i}.expectedBenefit`)}>${esc(s.expectedBenefit)}</p></div>
         </div>
-        ${solList("Entregáveis", s.deliverables, "deliver")}
-        ${solList("Destaques", s.highlights, "high")}
-        ${solList("Precisamos de você", s.requirements, "req")}
+        ${solList("Entregáveis", s.deliverables, "deliver", ed ? `sol.${i}.deliverable` : "")}
+        ${solList("Destaques", s.highlights, "high", ed ? `sol.${i}.highlight` : "")}
+        ${solList("Precisamos de você", s.requirements, "req", ed ? `sol.${i}.requirement` : "")}
       </div>`,
     )
     .join("");
 }
 
-function tiersHtml(tiers: Tier[]): string {
+function tiersHtml(tiers: Tier[], ed = false): string {
+  const de = (f: string) => (ed ? ` data-edit="${f}"` : "");
   return tiers
     .map(
-      (t) => `
+      (t, j) => `
       <div class="tier${t.featured ? " featured" : ""}">
         <div class="tier-head">
-          <div class="tname">${esc(t.name)}</div>
+          <div class="tname"${de(`plan.${j}.name`)}>${esc(t.name)}</div>
           <span class="bill-tag">${t.billing === "recorrente" ? "Recorrente" : "Pagamento único"}</span>
         </div>
-        <div class="price">${esc(t.price)}<small>${esc(t.priceSuffix)}</small></div>
-        <div class="billing">${esc(t.description)}</div>
-        <ul>${t.features.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>
+        <div class="price"><span${de(`plan.${j}.price`)}>${esc(t.price)}</span><small>${esc(t.priceSuffix)}</small></div>
+        <div class="billing"${de(`plan.${j}.description`)}>${esc(t.description)}</div>
+        <ul>${t.features.map((f, i) => `<li${de(`plan.${j}.feature.${i}`)}>${esc(f)}</li>`).join("")}</ul>
       </div>`,
     )
     .join("");
 }
 
-function investmentGroupsHtml(groups: InvestmentGroup[]): string {
+function investmentGroupsHtml(groups: InvestmentGroup[], ed = false): string {
   return groups
     .filter((g) => g.plans.length > 0)
     .map(
       (g) => `
       <div class="invest-group">
         <div class="invest-group-name">${esc(g.solution)}</div>
-        <div class="tiers">${tiersHtml(g.plans)}</div>
+        <div class="tiers">${tiersHtml(g.plans, ed)}</div>
       </div>`,
     )
     .join("");
@@ -157,12 +165,20 @@ const SHOW_FLAG: Record<PreviewBlock, keyof ProposalData> = {
 
 export function renderProposalHTML(
   d: ProposalData,
-  opts: { editable?: boolean; onlyBlock?: PreviewBlock } = {},
+  opts: {
+    editable?: boolean;
+    onlyBlock?: PreviewBlock;
+    editableCatalog?: boolean;
+  } = {},
 ): string {
   // Edição inline (hover + contenteditable) só no preview do app.
   // No HTML baixado (editable:false) nada disso vai junto.
   const only = opts.onlyBlock;
-  const editable = only ? false : opts.editable ?? true;
+  // Preview de bloco TAMBÉM pode ser editável (Sua Empresa / Templates):
+  // respeita opts.editable; só fica desligado por padrão.
+  const editable = only ? opts.editable ?? false : opts.editable ?? true;
+  // Edição dos CARDS de solução/plano (Sua Empresa) — desligada no Gerador.
+  const editableCatalog = !!opts.editableCatalog;
 
   // Preview de seção: liga só o bloco pedido, desliga o resto (capa/rodapé via CSS).
   if (only) {
@@ -476,9 +492,9 @@ ${
     ? `<section class="pad solutions">
   <div class="wrap">
     <span class="eyebrow">Soluções recomendadas</span>
-    <h2 class="display h2" data-edit="solutionsHeading">${esc(d.solutionsHeading)}</h2>
-    <p class="lead" style="margin-top:14px" data-edit="solutionsNote">${esc(d.solutionsNote)}</p>
-    <div style="margin-top:44px">${solutionsHtml(d.solutions)}</div>
+    <h2 class="display h2"${editableCatalog ? "" : ` data-edit="solutionsHeading"`}>${esc(d.solutionsHeading)}</h2>
+    <p class="lead" style="margin-top:14px"${editableCatalog ? "" : ` data-edit="solutionsNote"`}>${esc(d.solutionsNote)}</p>
+    <div style="margin-top:44px">${solutionsHtml(d.solutions, editableCatalog)}</div>
   </div>
 </section>`
     : ""
@@ -490,8 +506,8 @@ ${
     ? `<section class="invest pad">
   <div class="wrap">
     <span class="eyebrow">Investimento</span>
-    <h2 class="display h2" data-edit="investHeading">${esc(d.investHeading)}</h2>
-    ${investmentGroupsHtml(d.investmentGroups)}
+    <h2 class="display h2"${editableCatalog ? "" : ` data-edit="investHeading"`}>${esc(d.investHeading)}</h2>
+    ${investmentGroupsHtml(d.investmentGroups, editableCatalog)}
     ${
       d.recommendationReason
         ? `<div class="rec-reason"><span class="badge">★</span><div><div class="rk">Por que o plano em destaque</div><p data-edit="recommendationReason">${esc(d.recommendationReason)}</p></div></div>`
@@ -596,9 +612,14 @@ ${
 export function renderBlockPreviewHTML(
   block: PreviewBlock,
   payload: Partial<ProposalData>,
+  opts: { editable?: boolean; editableCatalog?: boolean } = {},
 ): string {
   return renderProposalHTML(
     { ...DEFAULT_PROPOSAL, ...payload },
-    { onlyBlock: block },
+    {
+      onlyBlock: block,
+      editable: opts.editable,
+      editableCatalog: opts.editableCatalog,
+    },
   );
 }
