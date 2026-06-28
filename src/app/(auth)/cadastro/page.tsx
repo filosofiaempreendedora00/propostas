@@ -109,7 +109,9 @@ export default function CadastroPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Crie uma senha"
-            autoComplete="new-password"
+            // "off" evita o Chrome gerar/pré-preencher uma "senha forte" que
+            // gruda no campo e fica difícil de apagar — o usuário digita a sua.
+            autoComplete="off"
             className={`${fieldCls} pr-12`}
           />
           <button
