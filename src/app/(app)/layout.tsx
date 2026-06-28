@@ -28,8 +28,8 @@ export default async function AppLayout({
     <div className="flex h-screen flex-col">
       {/* Dispara CompleteRegistration no 1º acesso após um cadastro novo (?novo=1) */}
       <RegistrationPixel />
-      {/* Faixa de teste gratuito — só para quem ainda não assinou */}
-      {!paid && (
+      {/* Faixa de teste gratuito — só para quem ainda não assinou (admin não vê) */}
+      {!paid && !isAdmin && (
         <TrialBar remaining={access.remaining} limit={access.limit} />
       )}
       <div className="flex min-h-0 flex-1">
