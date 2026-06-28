@@ -10,13 +10,20 @@ import { Label, TextInput, TextArea, ItemList, MiniBtn } from "./fields";
 import SectionPreview from "./SectionPreview";
 import ResizableSplit from "./ResizableSplit";
 import KronosLoader from "./KronosLoader";
+import AiCatalogGenerator from "./AiCatalogGenerator";
 
 type EditorTab = "detalhes" | "planos";
 
 export default function CatalogManager() {
-  const { items, ready, add, update, remove } = useCatalog();
+  const { items, ready, add, update, remove, reload } = useCatalog();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<EditorTab>("detalhes");
+
+  // IA gerou e substituiu o catálogo → recarrega e reseleciona a 1ª solução.
+  const handleGenerated = () => {
+    setSelectedId(null);
+    void reload();
+  };
 
   // Seleciona o primeiro item assim que o catálogo carrega.
   useEffect(() => {
@@ -59,21 +66,24 @@ export default function CatalogManager() {
     <div className="flex h-full">
       {/* Lista */}
       <aside className="w-[260px] shrink-0 form-scroll overflow-y-auto border-r border-line">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/95 px-4 py-4 backdrop-blur">
-          <div>
-            <div className="font-display text-3xl font-semibold tracking-tight text-ink">
-              Soluções
+        <div className="sticky top-0 z-10 flex flex-col gap-3 border-b border-line bg-bg/95 px-4 py-4 backdrop-blur">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-display text-3xl font-semibold tracking-tight text-ink">
+                Soluções
+              </div>
+              <div className="text-[11px] text-ink-mute">
+                {items.length} cadastrada(s)
+              </div>
             </div>
-            <div className="text-[11px] text-ink-mute">
-              {items.length} cadastrada(s)
-            </div>
+            <button
+              onClick={handleAdd}
+              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-bg transition hover:opacity-90"
+            >
+              + Nova
+            </button>
           </div>
-          <button
-            onClick={handleAdd}
-            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-bg transition hover:opacity-90"
-          >
-            + Nova
-          </button>
+          <AiCatalogGenerator onGenerated={handleGenerated} />
         </div>
 
         <ul className="p-2">

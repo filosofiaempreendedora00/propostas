@@ -8,6 +8,7 @@ import { requireOrgId } from "@/lib/auth/org";
 import { LIMITS, LimitError } from "@/lib/limits";
 import type { CatalogSolution, CatalogConsultant, Billing } from "./types";
 import { SEED_SOLUTIONS, SEED_CONSULTANTS } from "./seed";
+import { generateCatalogFromBrief } from "./ai";
 
 // IDs do seed são fixos; ao semear para uma org nova, geramos IDs frescos
 // (o ID é PK global — reaproveitar causaria colisão entre orgs).
@@ -256,4 +257,38 @@ export async function deleteConsultant(id: string): Promise<void> {
   await db
     .delete(consultants)
     .where(and(eq(consultants.id, id), eq(consultants.orgId, orgId)));
+}
+
+// ---------------- Geração por IA ----------------
+
+// Gera o catálogo (soluções + planos + 1 consultor) a partir de uma descrição
+// curta do negócio e SUBSTITUI o catálogo atual da organização pelo gerado.
+// Tudo escopado por orgId — multi-tenant preservado. O usuário revisa/edita
+// depois nos campos normais antes de gerar a proposta.
+export async function generateAndReplaceCatalog(
+  brief: string,
+): Promise<{ solutions: number }> {
+  const orgId = await requireOrgId();
+  const { solutions: generated, consultant } =
+    await generateCatalogFromBrief(brief);
+
+  // Substitui o catálogo: apaga soluções (cascata nos planos) e consultores
+  // antigos desta org, depois grava o que a IA gerou.
+  await db.delete(solutions).where(eq(solutions.orgId, orgId));
+  await db.delete(consultants).where(eq(consultants.orgId, orgId));
+
+  for (let i = 0; i < generated.length; i++) {
+    await writeSolution(orgId, generated[i], i);
+  }
+  await db.insert(consultants).values({
+    id: randomUUID(),
+    orgId,
+    name: consultant.name,
+    role: consultant.role,
+    email: "", // contato real é preenchido pelo usuário (IA não inventa)
+    phone: "",
+    sortOrder: 0,
+  });
+
+  return { solutions: generated.length };
 }
