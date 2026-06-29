@@ -594,11 +594,6 @@ export default function ClientBuilder() {
           <SectionTitle n={1} onJump={() => scrollPreviewTo(".cover")}>
             Identificação
           </SectionTitle>
-          <p className="mb-3 rounded-lg border border-line bg-panel/60 px-3 py-2 text-[11px] leading-relaxed text-ink-soft">
-            👤 Dados de <strong className="text-ink">quem vai receber a proposta</strong>{" "}
-            (a empresa/cliente do prospect) — <strong className="text-ink">não</strong>{" "}
-            a sua empresa.
-          </p>
           <label className="block">
             <Label>
               Empresa do cliente (capa){" "}
