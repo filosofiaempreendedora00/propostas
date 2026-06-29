@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import {
   solutions,
@@ -270,6 +270,26 @@ export async function deleteConsultant(id: string): Promise<void> {
 // curta do negócio e SUBSTITUI o catálogo atual da organização pelo gerado.
 // Tudo escopado por orgId — multi-tenant preservado. O usuário revisa/edita
 // depois nos campos normais antes de gerar a proposta.
+// Conta nova? = não tem nenhuma solução REAL (só vazio ou o seed de exemplo).
+// Usado na /inicio pra liderar com o onboarding por IA.
+export async function hasRealCatalog(): Promise<boolean> {
+  const orgId = await requireOrgId();
+  try {
+    const rows = (await db.execute(sql`
+      select 1 from solutions s
+      where s.org_id = ${orgId}
+        and (s.name !~ '^Solução [0-9]+$'
+          or (s.tagline <> '' and s.tagline not in (
+            'Resumo de uma linha do que esta solução entrega.',
+            'Outra frente de trabalho, totalmente preenchível.')))
+      limit 1
+    `)) as unknown as unknown[];
+    return rows.length > 0;
+  } catch {
+    return false; // na dúvida, trata como conta nova (mostra a IA)
+  }
+}
+
 // Quantas gerações por IA a org ainda tem (mostra "X de 3" no modal).
 export async function getAiGenerationsLeft(): Promise<{
   used: number;
