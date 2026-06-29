@@ -250,9 +250,16 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
         const expanded = open === o.id;
         return (
           <div key={o.id} className="border-t border-line first:border-t-0">
-            <button
-              type="button"
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => toggle(o.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggle(o.id);
+                }
+              }}
               className={`flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition hover:bg-panel/50 ${
                 expanded ? "bg-panel/50" : ""
               }`}
@@ -266,7 +273,12 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
                 <div className="truncate text-sm font-medium text-ink">
                   {o.name}
                 </div>
-                <div className="truncate text-xs text-ink-mute">
+                <div
+                  className="cursor-text select-text truncate text-xs text-ink-mute"
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  title="Selecione e copie"
+                >
                   {o.ownerEmail ?? "—"}
                 </div>
               </div>
@@ -297,7 +309,7 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
               >
                 <path d="M6 9l6 6 6-6" />
               </svg>
-            </button>
+            </div>
 
             {expanded && (
               <div className="border-t border-line bg-panel/30 px-4 py-4 text-sm">
