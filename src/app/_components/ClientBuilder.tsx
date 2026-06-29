@@ -368,6 +368,23 @@ export default function ClientBuilder() {
       ...f,
       consultantRecReasons: f.consultantRecReasons.filter((_, j) => j !== i),
     }));
+  const setPillar = (i: number, patch: Partial<{ title: string; description: string }>) =>
+    setForm((f) => ({
+      ...f,
+      pillars: f.pillars.map((p, j) => (j === i ? { ...p, ...patch } : p)),
+    }));
+  const setStep = (i: number, patch: Partial<{ title: string; description: string }>) =>
+    setForm((f) => ({
+      ...f,
+      steps: f.steps.map((s, j) => (j === i ? { ...s, ...patch } : s)),
+    }));
+  const setReason = (i: number, value: string) =>
+    setForm((f) => ({
+      ...f,
+      consultantRecReasons: f.consultantRecReasons.map((r, j) =>
+        j === i ? value : r,
+      ),
+    }));
 
   // ----- preview (debounced; pulado em edição inline) -----
   const [previewHtml, setPreviewHtml] = useState<string>(() =>
@@ -729,8 +746,9 @@ export default function ClientBuilder() {
             onSave={() => saveVariation("strategy")}
           />
           <div className={form.showStrategy ? "" : "opacity-40"}>
-            <ListControl
-              items={form.pillars.map((p) => p.title)}
+            <TitleDescEditor
+              items={form.pillars}
+              onItem={setPillar}
               onAdd={addPillar}
               onRemove={removePillar}
               addLabel="+ adicionar pilar"
@@ -996,12 +1014,12 @@ export default function ClientBuilder() {
               onField={(f, v) => set(f as keyof ClientForm, v)}
             />
             <div className="mt-2">
-              <ListControl
+              <StringListEditor
                 items={form.consultantRecReasons}
+                onItem={setReason}
                 onAdd={addReason}
                 onRemove={removeReason}
                 addLabel="+ adicionar motivo"
-                numbered={false}
               />
             </div>
           </div>
@@ -1031,8 +1049,9 @@ export default function ClientBuilder() {
               onField={(f, v) => set(f as keyof ClientForm, v)}
             />
             <div className="mt-2">
-              <ListControl
-                items={form.steps.map((s) => s.title)}
+              <TitleDescEditor
+                items={form.steps}
+                onItem={setStep}
                 onAdd={addStep}
                 onRemove={removeStep}
                 addLabel="+ adicionar passo"
@@ -1728,37 +1747,117 @@ function EyeToggle({ on, onClick }: { on: boolean; onClick: () => void }) {
   );
 }
 
-function ListControl({
+// Editor de lista título+descrição (passos/pilares): clica no item → abre os
+// campos pra editar. Edita no menu da esquerda; salva em cima da variação.
+function TitleDescEditor({
   items,
+  onItem,
   onAdd,
   onRemove,
   addLabel,
-  numbered = true,
 }: {
-  items: string[];
+  items: { title: string; description: string }[];
+  onItem: (
+    i: number,
+    patch: Partial<{ title: string; description: string }>,
+  ) => void;
   onAdd: () => void;
   onRemove: (i: number) => void;
   addLabel: string;
-  numbered?: boolean;
+}) {
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <div className="space-y-2">
+      {items.map((it, i) => {
+        const isOpen = open === i;
+        return (
+          <div
+            key={i}
+            className="overflow-hidden rounded-lg border border-line bg-panel"
+          >
+            <div className="flex items-center gap-2 px-3 py-2">
+              <button
+                type="button"
+                onClick={() => setOpen(isOpen ? null : i)}
+                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`h-3.5 w-3.5 shrink-0 text-ink-mute transition-transform ${isOpen ? "rotate-90" : ""}`}
+                >
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+                <span className="shrink-0 text-[11px] text-ink-mute">
+                  {String(i + 1).padStart(2, "0")} ·
+                </span>
+                <span className="min-w-0 truncate text-sm text-ink">
+                  {it.title || "Sem título"}
+                </span>
+              </button>
+              <MiniBtn danger onClick={() => onRemove(i)}>
+                remover
+              </MiniBtn>
+            </div>
+            {isOpen && (
+              <div className="space-y-2 border-t border-line px-3 py-3">
+                <label className="block">
+                  <Label>Título</Label>
+                  <TextInput
+                    value={it.title}
+                    onChange={(v) => onItem(i, { title: v })}
+                  />
+                </label>
+                <label className="block">
+                  <Label>Descrição</Label>
+                  <TextArea
+                    value={it.description}
+                    onChange={(v) => onItem(i, { description: v })}
+                    rows={2}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <MiniBtn onClick={onAdd}>{addLabel}</MiniBtn>
+    </div>
+  );
+}
+
+// Lista simples de strings editáveis (ex.: motivos da recomendação).
+function StringListEditor({
+  items,
+  onItem,
+  onAdd,
+  onRemove,
+  addLabel,
+}: {
+  items: string[];
+  onItem: (i: number, value: string) => void;
+  onAdd: () => void;
+  onRemove: (i: number) => void;
+  addLabel: string;
 }) {
   return (
     <div className="space-y-2">
-      <p className="mb-1 text-xs text-ink-mute">
-        Adicione/remova itens. O texto edita-se no preview.
-      </p>
       {items.map((t, i) => (
         <div
           key={i}
-          className="flex items-center justify-between gap-2 rounded-lg border border-line bg-panel px-3 py-2"
+          className="flex items-center gap-2 rounded-lg border border-line bg-panel px-3 py-2"
         >
-          <span className="min-w-0 truncate text-sm">
-            {numbered && (
-              <span className="text-ink-mute">
-                {String(i + 1).padStart(2, "0")} ·{" "}
-              </span>
-            )}
-            {t || "Sem título"}
-          </span>
+          <span className="shrink-0 text-[11px] text-ink-mute">{i + 1}</span>
+          <input
+            value={t}
+            onChange={(e) => onItem(i, e.target.value)}
+            placeholder="Motivo"
+            className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-mute"
+          />
           <MiniBtn danger onClick={() => onRemove(i)}>
             remover
           </MiniBtn>
