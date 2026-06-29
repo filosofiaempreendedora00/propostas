@@ -185,16 +185,17 @@ export function ItemList({
 }
 
 // Cor própria por bloco (chamada) — dá contraste e divisão clara entre eles.
-// Paleta harmônica e suave; troque por suas cores de marca quando quiser.
+// Rampa quente da MARCA Kronos (areia → caramelo → terra → sépia), só tons da
+// paleta da casa, claros o suficiente pra contrastar no fundo ônix.
 const BLOCK_COLORS = [
-  "#E0A458", // âmbar
-  "#6BBF8A", // verde-sálvia
-  "#5BA7C9", // azul-céu
-  "#B98AD1", // lavanda
-  "#E08A7B", // terracota
-  "#5FC2B5", // teal
-  "#D98AAE", // rosé
-  "#8A9BD1", // periwinkle
+  "#e7d6b8", // areia clara
+  "#d9bd8f", // areia dourada
+  "#c9a06a", // caramelo
+  "#bf8f63", // terra
+  "#a89070", // areia média (o accent da marca)
+  "#c4b08a", // greige quente
+  "#b58a5e", // terra tostada
+  "#9c886a", // sépia clara
 ];
 
 export function SectionTitle({
@@ -217,7 +218,7 @@ export function SectionTitle({
       {n != null && (
         <span
           className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-xs font-bold"
-          style={{ backgroundColor: color, color: "#0A0B0D" }}
+          style={{ backgroundColor: color, color: "#150c06" }}
         >
           {n}
         </span>
