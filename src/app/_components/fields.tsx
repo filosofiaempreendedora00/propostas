@@ -184,15 +184,11 @@ export function ItemList({
   );
 }
 
-// Cor própria por bloco (chamada) — dá contraste e divisão clara entre eles.
-// SOMENTE hexes que já existem na paleta da Kronos (globals.css). Alternam
-// claro/médio pra distinguir blocos vizinhos; repetem em ciclo (sem problema).
+// Cor da chamada por bloco — apenas DUAS cores da paleta Kronos, intercaladas
+// bloco a bloco (limpo, sem "espalhar"). Ambos hexes existem no globals.css.
 const BLOCK_COLORS = [
-  "#cdb99a", // Areia clara (--color-ink-soft)
-  "#9c886a", // Sépia clara (--color-field-mute)
-  "#f5efe6", // Creme (--color-field)
   "#a89070", // Areia média (--color-accent)
-  "#dacfbe", // Areia (--color-field-line)
+  "#cdb99a", // Areia clara (--color-ink-soft)
 ];
 
 export function SectionTitle({
