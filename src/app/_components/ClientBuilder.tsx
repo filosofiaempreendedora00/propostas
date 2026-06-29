@@ -990,13 +990,20 @@ export default function ClientBuilder() {
             onSave={() => saveVariation("consultantRec")}
           />
           <div className={form.showConsultantRec ? "" : "opacity-40"}>
-            <ListControl
-              items={form.consultantRecReasons}
-              onAdd={addReason}
-              onRemove={removeReason}
-              addLabel="+ adicionar motivo"
-              numbered={false}
+            <BlockFieldsEditor
+              block="consultantRec"
+              form={form}
+              onField={(f, v) => set(f as keyof ClientForm, v)}
             />
+            <div className="mt-2">
+              <ListControl
+                items={form.consultantRecReasons}
+                onAdd={addReason}
+                onRemove={removeReason}
+                addLabel="+ adicionar motivo"
+                numbered={false}
+              />
+            </div>
           </div>
 
           <SectionTitle
@@ -1018,12 +1025,19 @@ export default function ClientBuilder() {
             onSave={() => saveVariation("nextSteps")}
           />
           <div className={form.showNextSteps ? "" : "opacity-40"}>
-            <ListControl
-              items={form.steps.map((s) => s.title)}
-              onAdd={addStep}
-              onRemove={removeStep}
-              addLabel="+ adicionar passo"
+            <BlockFieldsEditor
+              block="nextSteps"
+              form={form}
+              onField={(f, v) => set(f as keyof ClientForm, v)}
             />
+            <div className="mt-2">
+              <ListControl
+                items={form.steps.map((s) => s.title)}
+                onAdd={addStep}
+                onRemove={removeStep}
+                addLabel="+ adicionar passo"
+              />
+            </div>
           </div>
 
           <SectionTitle>Responsável e validade</SectionTitle>
@@ -1519,6 +1533,9 @@ const FIELD_META: Partial<
   costFinancial: { label: "Financeiro", area: true },
   costStrategicLabel: { label: "Rótulo · Estratégico" },
   costStrategic: { label: "Estratégico", area: true },
+  consultantRecHeading: { label: "Título do bloco" },
+  consultantRecText: { label: "Texto da recomendação", area: true },
+  nextStepsHeading: { label: "Título do bloco" },
 };
 
 // Acordeão dos campos de um bloco: clique no título → abre o texto p/ editar.
