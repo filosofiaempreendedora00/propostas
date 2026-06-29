@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import AiOnboarding from "./AiOnboarding";
 
 function IconEmpresa() {
   return (
@@ -95,42 +96,50 @@ const STEPS: Step[] = [
   },
 ];
 
-export default function HomeWorkspace() {
+export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
   return (
     <div className="cream form-scroll h-full overflow-y-auto">
       <div className="mx-auto max-w-4xl px-10 py-12">
-        {/* Hero */}
-        <div className="mb-12">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-panel px-3 py-1.5">
-            <Image
-              src="/kronos-icone-areia.png"
-              alt=""
-              width={16}
-              height={16}
-              unoptimized
-              className="h-4 w-4"
-            />
-            <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-ink-mute">
-              Bem-vindo ao Kronos
-            </span>
+        {isNew ? (
+          // Conta nova: a IA lidera (primeira e mais óbvia ação).
+          <AiOnboarding />
+        ) : (
+          // Conta já configurada: boas-vindas + os 3 passos.
+          <div className="mb-12">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-panel px-3 py-1.5">
+              <Image
+                src="/kronos-icone-areia.png"
+                alt=""
+                width={16}
+                height={16}
+                unoptimized
+                className="h-4 w-4"
+              />
+              <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-ink-mute">
+                Bem-vindo ao Kronos
+              </span>
+            </div>
+            <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
+              Crie propostas sob medida
+              <br />
+              em <span className="italic text-accent">60 segundos</span>.
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-ink-soft">
+              Configure sua operação{" "}
+              <strong className="font-semibold text-ink">uma única vez</strong> e,
+              a partir daí, monte infinitas propostas impecáveis em segundos.
+            </p>
           </div>
-          <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
-            Crie propostas sob medida
-            <br />
-            em <span className="italic text-accent">60 segundos</span>.
-          </h1>
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-ink-soft">
-            Configure sua operação{" "}
-            <strong className="font-semibold text-ink">uma única vez</strong> e, a
-            partir daí, monte infinitas propostas impecáveis em segundos.
-          </p>
-        </div>
+        )}
 
-        {/* Como funciona */}
-        <div className="mb-4 text-[11px] font-medium uppercase tracking-[0.16em] text-ink-mute">
-          Como funciona — 3 passos
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
+        {/* Como funciona — secundário para quem está começando pela IA */}
+        <div className={isNew ? "mt-16 border-t border-line pt-10" : ""}>
+          <div className="mb-4 text-[11px] font-medium uppercase tracking-[0.16em] text-ink-mute">
+            {isNew
+              ? "Prefere montar manualmente? Veja como funciona"
+              : "Como funciona — 3 passos"}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
           {STEPS.map((s) => (
             <Link
               key={s.href}
@@ -176,18 +185,21 @@ export default function HomeWorkspace() {
           </p>
         </div>
 
-        {/* CTA */}
-        <div className="mt-10">
-          <Link
-            href="/empresa"
-            className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:opacity-90"
-          >
-            Começar pela Sua Empresa
-            <span aria-hidden>→</span>
-          </Link>
-          <p className="mt-3 text-xs text-ink-mute">
-            Leva poucos minutos pra deixar tudo pronto. Depois é só colher.
-          </p>
+          {/* CTA — só p/ quem já configurou (conta nova usa o hero da IA) */}
+          {!isNew && (
+            <div className="mt-10">
+              <Link
+                href="/empresa"
+                className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:opacity-90"
+              >
+                Começar pela Sua Empresa
+                <span aria-hidden>→</span>
+              </Link>
+              <p className="mt-3 text-xs text-ink-mute">
+                Leva poucos minutos pra deixar tudo pronto. Depois é só colher.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
