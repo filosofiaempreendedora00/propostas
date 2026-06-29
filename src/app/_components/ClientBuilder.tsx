@@ -8,7 +8,7 @@ import { renderProposalHTML, slugify } from "@/lib/proposal/render";
 import type { ProposalData, InvestmentGroup } from "@/lib/proposal/types";
 import { toRenderSolution, planToTier } from "@/lib/proposal/fromCatalog";
 import { useCatalog, useConsultants } from "@/lib/catalog/store";
-import type { CatalogSolution } from "@/lib/catalog/types";
+import type { CatalogSolution, Billing } from "@/lib/catalog/types";
 import { useCompany } from "@/lib/company/store";
 import { useTemplates } from "@/lib/templates/store";
 import { BLOCK_FIELDS, type BlockKey } from "@/lib/templates/types";
@@ -89,6 +89,9 @@ export default function ClientBuilder() {
   // Override do plano "recomendado" por solução (solId → planId; "" = nenhum).
   // Sem entrada → usa o que estiver marcado como destaque no catálogo.
   const [recById, setRecById] = useState<Record<string, string>>({});
+  // Override da cobrança por proposta (planId → recorrente/pontual). Sem
+  // entrada → usa a do catálogo. Deixa trocar mensal/único fácil no Gerador.
+  const [billingById, setBillingById] = useState<Record<string, Billing>>({});
   const [consultantId, setConsultantId] = useState<string | null>(null);
   const seededCons = useRef(false);
   const [dragOver, setDragOver] = useState(false);
@@ -164,6 +167,12 @@ export default function ClientBuilder() {
       [solId]: prev[solId] === planId ? "" : planId,
     }));
 
+  // Cobrança vigente do plano (override por proposta, ou o do catálogo).
+  const billingFor = (planId: string, fallback: Billing): Billing =>
+    planId in billingById ? billingById[planId] : fallback;
+  const setBilling = (planId: string, value: Billing) =>
+    setBillingById((prev) => ({ ...prev, [planId]: value }));
+
   const consultant = consultants.find((c) => c.id === consultantId) ?? null;
 
   const data: ProposalData = useMemo(() => {
@@ -178,7 +187,13 @@ export default function ClientBuilder() {
           solution: s.name,
           plans: s.plans
             .filter((p) => selPlans.has(p.id))
-            .map((p) => ({ ...planToTier(p), featured: p.id === recId })),
+            .map((p) => {
+              const bill = p.id in billingById ? billingById[p.id] : p.billing;
+              return {
+                ...planToTier({ ...p, billing: bill }),
+                featured: p.id === recId,
+              };
+            }),
         };
       })
       .filter((g) => g.plans.length > 0);
@@ -204,6 +219,7 @@ export default function ClientBuilder() {
     selSolutions,
     selPlans,
     recById,
+    billingById,
     consultant,
     companyLogo,
     companyLogoDark,
@@ -797,75 +813,110 @@ export default function ClientBuilder() {
                                 {s.plans.map((p) => {
                                   const checked = selPlans.has(p.id);
                                   const rec = recId === p.id;
+                                  const bill = billingFor(p.id, p.billing);
                                   return (
                                     <div
                                       key={p.id}
-                                      className={`flex items-center gap-2.5 rounded-lg border px-2.5 py-2 transition ${
+                                      className={`rounded-lg border px-2.5 py-2 transition ${
                                         checked
                                           ? "border-accent/40 bg-panel"
                                           : "border-line bg-panel/40"
                                       }`}
                                     >
-                                      {/* Checkbox grande */}
-                                      <button
-                                        type="button"
-                                        onClick={() => togglePlan(p.id)}
-                                        aria-label={
-                                          checked
-                                            ? "Não exibir este plano"
-                                            : "Exibir este plano"
-                                        }
-                                        className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 transition ${
-                                          checked
-                                            ? "border-accent bg-accent text-bg"
-                                            : "border-ink-mute/50 text-transparent hover:border-accent/60"
-                                        }`}
-                                      >
-                                        <svg
-                                          viewBox="0 0 24 24"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          strokeWidth="3"
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          className="h-3.5 w-3.5"
+                                      <div className="flex items-center gap-2.5">
+                                        {/* Checkbox grande */}
+                                        <button
+                                          type="button"
+                                          onClick={() => togglePlan(p.id)}
+                                          aria-label={
+                                            checked
+                                              ? "Não exibir este plano"
+                                              : "Exibir este plano"
+                                          }
+                                          className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 transition ${
+                                            checked
+                                              ? "border-accent bg-accent text-bg"
+                                              : "border-ink-mute/50 text-transparent hover:border-accent/60"
+                                          }`}
                                         >
-                                          <path d="M5 13l4 4L19 7" />
-                                        </svg>
-                                      </button>
-                                      {/* Nome + preço (clicável) */}
-                                      <button
-                                        type="button"
-                                        onClick={() => togglePlan(p.id)}
-                                        className="min-w-0 flex-1 text-left"
-                                      >
-                                        <span className="block truncate text-[13px] font-medium text-ink">
-                                          {p.name}
-                                        </span>
-                                        <span className="block text-xs text-ink-mute">
-                                          {p.price}
-                                          {p.billing === "recorrente"
-                                            ? "/mês"
-                                            : ""}
-                                        </span>
-                                      </button>
-                                      {/* Recomendado (clique) */}
-                                      <button
-                                        type="button"
-                                        onClick={() => pickRecommended(s.id, p.id)}
-                                        title={
-                                          rec
-                                            ? "Plano recomendado (clique para remover)"
-                                            : "Marcar como recomendado"
-                                        }
-                                        className={`shrink-0 rounded-md px-2 py-1.5 text-[11px] font-semibold transition ${
-                                          rec
-                                            ? "bg-accent/15 text-accent"
-                                            : "text-ink-mute hover:bg-panel-2 hover:text-accent"
-                                        }`}
-                                      >
-                                        {rec ? "★ recomendado" : "☆"}
-                                      </button>
+                                          <svg
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="3"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="h-3.5 w-3.5"
+                                          >
+                                            <path d="M5 13l4 4L19 7" />
+                                          </svg>
+                                        </button>
+                                        {/* Nome + preço (clicável) */}
+                                        <button
+                                          type="button"
+                                          onClick={() => togglePlan(p.id)}
+                                          className="min-w-0 flex-1 text-left"
+                                        >
+                                          <span className="block truncate text-[13px] font-medium text-ink">
+                                            {p.name}
+                                          </span>
+                                          <span className="block text-xs text-ink-mute">
+                                            {p.price}
+                                            {bill === "recorrente" ? "/mês" : ""}
+                                          </span>
+                                        </button>
+                                        {/* Recomendado (clique) */}
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            pickRecommended(s.id, p.id)
+                                          }
+                                          title={
+                                            rec
+                                              ? "Plano recomendado (clique para remover)"
+                                              : "Marcar como recomendado"
+                                          }
+                                          className={`shrink-0 rounded-md px-2 py-1.5 text-[11px] font-semibold transition ${
+                                            rec
+                                              ? "bg-accent/15 text-accent"
+                                              : "text-ink-mute hover:bg-panel-2 hover:text-accent"
+                                          }`}
+                                        >
+                                          {rec ? "★ recomendado" : "☆"}
+                                        </button>
+                                      </div>
+
+                                      {/* Cobrança: mensal x único — fácil de trocar */}
+                                      {checked && (
+                                        <div className="mt-2 flex items-center gap-2 pl-[34px]">
+                                          <span className="text-[10px] uppercase tracking-wide text-ink-mute">
+                                            Cobrança
+                                          </span>
+                                          <div className="inline-flex rounded-md border border-line p-0.5 text-[10px] font-medium">
+                                            {(
+                                              [
+                                                ["recorrente", "Mensal"],
+                                                ["pontual", "Único"],
+                                              ] as const
+                                            ).map(([val, label]) => (
+                                              <button
+                                                key={val}
+                                                type="button"
+                                                onClick={() =>
+                                                  setBilling(p.id, val)
+                                                }
+                                                className={`rounded px-2 py-0.5 transition ${
+                                                  bill === val
+                                                    ? "bg-accent text-bg"
+                                                    : "text-ink-mute hover:text-ink"
+                                                }`}
+                                              >
+                                                {label}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 })}
