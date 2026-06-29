@@ -184,6 +184,19 @@ export function ItemList({
   );
 }
 
+// Cor própria por bloco (chamada) — dá contraste e divisão clara entre eles.
+// Paleta harmônica e suave; troque por suas cores de marca quando quiser.
+const BLOCK_COLORS = [
+  "#E0A458", // âmbar
+  "#6BBF8A", // verde-sálvia
+  "#5BA7C9", // azul-céu
+  "#B98AD1", // lavanda
+  "#E08A7B", // terracota
+  "#5FC2B5", // teal
+  "#D98AAE", // rosé
+  "#8A9BD1", // periwinkle
+];
+
 export function SectionTitle({
   n,
   right,
@@ -196,46 +209,68 @@ export function SectionTitle({
   /** Se passado, o título vira um botão que leva o preview até esta seção. */
   onJump?: () => void;
 }) {
+  const color =
+    n != null ? BLOCK_COLORS[(n - 1) % BLOCK_COLORS.length] : "var(--color-accent)";
+
   const inner = (
     <>
       {n != null && (
-        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-accent/50 text-[10px] font-semibold">
+        <span
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-xs font-bold"
+          style={{ backgroundColor: color, color: "#0A0B0D" }}
+        >
           {n}
         </span>
       )}
-      <span>{children}</span>
-      {onJump && (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-          className="h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-100"
-        >
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-        </svg>
-      )}
+      <span className="flex min-w-0 flex-col gap-0.5 leading-none">
+        {n != null && (
+          <span
+            className="text-[9px] font-bold uppercase tracking-[0.22em]"
+            style={{ color }}
+          >
+            Bloco {n}
+          </span>
+        )}
+        <span className="flex items-center gap-1.5 text-[13px] font-semibold tracking-tight text-ink">
+          {children}
+          {onJump && (
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+              className="h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-100"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+            </svg>
+          )}
+        </span>
+      </span>
     </>
   );
+
   return (
-    <div className="mb-4 mt-9 flex items-center justify-between gap-2 border-b border-line pb-2 first:mt-0">
+    <div
+      className="mb-4 mt-9 flex items-center justify-between gap-2 border-b-2 pb-2.5 first:mt-0"
+      style={{
+        borderColor: `color-mix(in srgb, ${color} 45%, transparent)`,
+      }}
+    >
       {onJump ? (
         <button
           type="button"
           onClick={onJump}
           title="Ver esta seção no preview"
-          className="group flex items-center gap-2 text-left text-sm font-semibold uppercase tracking-[0.16em] text-accent transition hover:opacity-80"
+          className="group flex min-w-0 items-center gap-2.5 text-left transition hover:opacity-80"
         >
           {inner}
         </button>
       ) : (
-        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-accent">
-          {inner}
-        </h2>
+        <h2 className="flex min-w-0 items-center gap-2.5">{inner}</h2>
       )}
       {right}
     </div>
