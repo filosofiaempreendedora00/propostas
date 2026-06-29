@@ -321,7 +321,7 @@ export function renderProposalHTML(
   .invest-group-name{font-family:'Fraunces',serif;font-size:22px;color:var(--ink);margin-bottom:18px;display:flex;align-items:center;gap:12px}
   .invest-group-name::before{content:"";width:20px;height:1px;background:var(--accent)}
   .invest-group .tiers{margin-top:0}
-  .tier-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+  .tier-head{display:flex;align-items:center;justify-content:space-between;gap:6px 8px;margin-bottom:14px;flex-wrap:wrap}
   .tier-head .tname{margin-bottom:0}
   .bill-tag{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mute);border:1px solid var(--line-2);border-radius:999px;padding:3px 8px;white-space:nowrap}
   .rec-reason{margin-top:32px;display:flex;gap:14px;align-items:flex-start;background:var(--panel);border:1px solid var(--line-2);border-radius:14px;padding:20px 24px;max-width:760px}
