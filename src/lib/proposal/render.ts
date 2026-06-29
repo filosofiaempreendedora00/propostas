@@ -180,6 +180,15 @@ export function renderProposalHTML(
   // Edição dos CARDS de solução/plano (Sua Empresa) — desligada no Gerador.
   const editableCatalog = !!opts.editableCatalog;
 
+  // Olhinho de ocultar seção, NO PREVIEW (só na proposta completa do Gerador —
+  // não nos previews de bloco nem no HTML exportado).
+  const showSectionEye = editable && !only;
+  const eyeBtn = (key: string) =>
+    `<button type="button" class="sec-eye" data-toggle="${key}" title="Ocultar esta seção da proposta" aria-label="Ocultar seção"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>`;
+  // Devolve os atributos+olho de uma seção togglável (e fecha a tag `<section>`).
+  const secEye = (key: string) =>
+    showSectionEye ? ` data-sec>${eyeBtn(key)}` : `>`;
+
   // Preview de seção: liga só o bloco pedido, desliga o resto (capa/rodapé via CSS).
   if (only) {
     d = {
@@ -352,7 +361,14 @@ export function renderProposalHTML(
   [data-edit]:focus{outline:1px dashed var(--accent);outline-offset:4px}
   [data-edit]:empty::before{content:attr(data-placeholder);color:var(--ink-mute);opacity:.65}
   [data-logo]{cursor:pointer;outline:1px dashed transparent;outline-offset:6px;border-radius:6px;transition:outline-color .12s ease}
-  [data-logo]:hover{outline-color:color-mix(in srgb, var(--accent) 60%, transparent)}`
+  [data-logo]:hover{outline-color:color-mix(in srgb, var(--accent) 60%, transparent)}
+  section[data-sec]{position:relative}
+  section[data-sec]::after{content:"";position:absolute;inset:0;background:color-mix(in srgb, var(--accent) 8%, transparent);opacity:0;transition:opacity .15s ease;pointer-events:none;z-index:1}
+  section[data-sec]:hover::after{opacity:1}
+  .sec-eye{position:absolute;top:18px;right:18px;z-index:6;display:grid;place-items:center;width:34px;height:34px;border-radius:9px;border:1px solid var(--line-2);background:var(--panel);color:var(--ink-mute);cursor:pointer;opacity:0;transition:opacity .15s ease,background .15s ease,color .15s ease,border-color .15s ease}
+  .sec-eye svg{width:18px;height:18px}
+  section[data-sec]:hover .sec-eye{opacity:1}
+  .sec-eye:hover{background:var(--accent);border-color:var(--accent);color:#fff}`
       : ""
   }
 
@@ -440,7 +456,7 @@ ${only ? `<style>.cover,footer{display:none!important}section{border-top:none!im
 <!-- 2. O QUE ENTENDEMOS -->
 ${
   d.showUnderstanding
-    ? `<section class="pad understand">
+    ? `<section class="pad understand"${secEye("showUnderstanding")}
   <div class="wrap">
     <span class="eyebrow">O que entendemos</span>
     <h2 class="display h2" data-edit="understandingHeading">${esc(d.understandingHeading)}</h2>
@@ -458,7 +474,7 @@ ${
 <!-- 3. O CUSTO DE CONTINUAR IGUAL -->
 ${
   d.showCost
-    ? `<section class="pad cost">
+    ? `<section class="pad cost"${secEye("showCost")}
   <div class="wrap">
     <span class="eyebrow">O custo de continuar igual</span>
     <h2 class="display h2" data-edit="costQuestion">${esc(d.costQuestion)}</h2>
@@ -475,7 +491,7 @@ ${
 <!-- 4. ESTRATÉGIA RECOMENDADA -->
 ${
   d.showStrategy
-    ? `<section class="pad strategy">
+    ? `<section class="pad strategy"${secEye("showStrategy")}
   <div class="wrap">
     <span class="eyebrow" data-edit="strategyEyebrow">${esc(d.strategyEyebrow || "Estratégia recomendada")}</span>
     <h2 class="display h2" data-edit="strategyHeading">${esc(d.strategyHeading)}</h2>
@@ -489,7 +505,7 @@ ${
 <!-- 5. SOLUÇÕES RECOMENDADAS -->
 ${
   d.showSolutions
-    ? `<section class="pad solutions">
+    ? `<section class="pad solutions"${secEye("showSolutions")}
   <div class="wrap">
     <span class="eyebrow">Soluções recomendadas</span>
     <h2 class="display h2"${editableCatalog ? "" : ` data-edit="solutionsHeading"`}>${esc(d.solutionsHeading)}</h2>
@@ -503,7 +519,7 @@ ${
 <!-- 6. INVESTIMENTO -->
 ${
   d.showInvestment
-    ? `<section class="invest pad">
+    ? `<section class="invest pad"${secEye("showInvestment")}
   <div class="wrap">
     <span class="eyebrow">Investimento</span>
     <h2 class="display h2"${editableCatalog ? "" : ` data-edit="investHeading"`}>${esc(d.investHeading)}</h2>
@@ -521,7 +537,7 @@ ${
 <!-- 7. RECOMENDAÇÃO DO CONSULTOR -->
 ${
   d.showConsultantRec
-    ? `<section class="pad consultant-rec">
+    ? `<section class="pad consultant-rec"${secEye("showConsultantRec")}
   <div class="wrap">
     <span class="eyebrow">Recomendação do ${esc((d.consultantTerm ?? "Consultor").toLowerCase())}</span>
     <div class="rec-card">
@@ -537,7 +553,7 @@ ${
 <!-- 8. PRÓXIMOS PASSOS -->
 ${
   d.showNextSteps
-    ? `<section class="pad nextsteps">
+    ? `<section class="pad nextsteps"${secEye("showNextSteps")}
   <div class="wrap">
     <span class="eyebrow">Próximos passos</span>
     <h2 class="display h2" data-edit="nextStepsHeading">${esc(d.nextStepsHeading)}</h2>
@@ -570,6 +586,10 @@ ${
     document.querySelectorAll('[data-edit="'+f+'"]').forEach(function(o){ if(o!==el){ o.textContent=val; } });
   }
   document.addEventListener('click',function(e){
+    var tog=e.target.closest?e.target.closest('[data-toggle]'):null;
+    if(tog){ e.preventDefault(); e.stopPropagation();
+      try{ parent.postMessage({source:'proposal-edit',toggle:tog.getAttribute('data-toggle')},'*'); }catch(e){}
+      return; }
     var btn=e.target.closest?e.target.closest('[data-action]'):null;
     if(btn){ e.preventDefault();
       try{ parent.postMessage({source:'proposal-edit',action:btn.getAttribute('data-action'),index:Number(btn.getAttribute('data-index'))},'*'); }catch(e){}
