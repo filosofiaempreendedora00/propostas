@@ -203,10 +203,11 @@ export async function getAdminOverview(): Promise<AdminOverview> {
   const internal = internalEmails();
   const isInt = (e: string | null) => internal.has((e ?? "").toLowerCase());
 
-  // Volume de usuários EXCLUI as internas (não inflar).
+  // Volume de usuários EXCLUI as internas (não inflar). O drizzle expande o
+  // array como tupla ($1,…,$n), então usamos NOT IN (não all(...::text[])).
   const [{ n: users }] = (await db.execute(
     sql`select count(*)::int as n from auth.users
-        where coalesce(lower(email), '') <> all(${[...internal]}::text[])`,
+        where coalesce(lower(email), '') not in ${[...internal]}`,
   )) as unknown as Array<{ n: number }>;
 
   const eventsRaw = (await db.execute(sql`
