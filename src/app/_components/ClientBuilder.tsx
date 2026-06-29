@@ -214,6 +214,18 @@ export default function ClientBuilder() {
     function onMsg(e: MessageEvent) {
       const m = e.data;
       if (!m || m.source !== "proposal-edit") return;
+      // Olhinho no preview: oculta/mostra a seção (mesmo show* do menu).
+      if (typeof m.toggle === "string") {
+        const key = m.toggle;
+        setForm(
+          (f) =>
+            ({
+              ...f,
+              [key]: !(f as Record<string, unknown>)[key],
+            }) as ClientForm,
+        );
+        return;
+      }
       // Ações estruturais vindas do preview (add/remover pilar) — re-renderiza.
       if (m.action === "addPillar") {
         setForm((f) => ({
