@@ -199,8 +199,14 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     custom_plan: boolean;
   }>;
 
+  // Contas internas/minhas (e a demo) — NUNCA contabilizam em métrica nenhuma.
+  const internal = internalEmails();
+  const isInt = (e: string | null) => internal.has((e ?? "").toLowerCase());
+
+  // Volume de usuários EXCLUI as internas (não inflar).
   const [{ n: users }] = (await db.execute(
-    sql`select count(*)::int as n from auth.users`,
+    sql`select count(*)::int as n from auth.users
+        where coalesce(lower(email), '') <> all(${[...internal]}::text[])`,
   )) as unknown as Array<{ n: number }>;
 
   const eventsRaw = (await db.execute(sql`
@@ -220,11 +226,9 @@ export async function getAdminOverview(): Promise<AdminOverview> {
   const toIso = (d: Date | string | null) =>
     d == null ? null : d instanceof Date ? d.toISOString() : String(d);
 
-  // Contas internas/teste não enviesam temperatura nem KPIs.
-  const internal = internalEmails();
-  const isInt = (e: string | null) => internal.has((e ?? "").toLowerCase());
-
-  const orgs: AdminOrg[] = orgsRaw.map((o) => {
+  const orgs: AdminOrg[] = orgsRaw
+    .filter((o) => !isInt(o.owner_email))
+    .map((o) => {
     const base = {
       downloadsUsed: Number(o.downloads_used) || 0,
       hasLogo: !!o.has_logo,
@@ -244,36 +248,35 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       createdAt: toIso(o.created_at),
       firstDownloadAt: toIso(o.first_download_at),
       ...base,
-      temperature: isInt(o.owner_email)
-        ? "frio"
-        : temperatureOf({ status: o.status, ...base }),
+      temperature: temperatureOf({ status: o.status, ...base }),
     };
   });
 
-  // KPIs sobre contas REAIS (sem as internas/teste).
-  const real = orgs.filter((o) => !isInt(o.ownerEmail));
+  // As internas já foram filtradas de `orgs` — todas as métricas são reais.
   const totals = {
     orgs: orgs.length,
-    active: real.filter((o) => o.status === "active").length,
-    inactive: real.filter((o) => o.status === "inactive").length,
-    canceled: real.filter((o) => o.status === "canceled").length,
+    active: orgs.filter((o) => o.status === "active").length,
+    inactive: orgs.filter((o) => o.status === "inactive").length,
+    canceled: orgs.filter((o) => o.status === "canceled").length,
     users: Number(users) || 0,
-    individual: real.filter((o) => o.plan === "individual").length,
-    time: real.filter((o) => o.plan === "time").length,
-    exhausted: real.filter(
+    individual: orgs.filter((o) => o.plan === "individual").length,
+    time: orgs.filter((o) => o.plan === "time").length,
+    exhausted: orgs.filter(
       (o) => o.status !== "active" && o.downloadsUsed >= FREE_DOWNLOADS,
     ).length,
-    hot: real.filter((o) => o.temperature === "quente").length,
+    hot: orgs.filter((o) => o.temperature === "quente").length,
   };
 
-  const events: AdminEvent[] = eventsRaw.map((e) => ({
-    email: e.email,
-    plan: e.plan,
-    status: e.status,
-    provider: e.provider,
-    productId: e.product_id,
-    updatedAt: toIso(e.updated_at),
-  }));
+  const events: AdminEvent[] = eventsRaw
+    .filter((e) => !isInt(e.email))
+    .map((e) => ({
+      email: e.email,
+      plan: e.plan,
+      status: e.status,
+      provider: e.provider,
+      productId: e.product_id,
+      updatedAt: toIso(e.updated_at),
+    }));
 
   // Custo de IA por geração (try/catch: a tabela pode não existir ainda).
   let aiUsage: AdminAiUsage = { totalUsd: 0, count: 0, generations: [] };
