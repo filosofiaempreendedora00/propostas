@@ -594,15 +594,24 @@ export default function ClientBuilder() {
           <SectionTitle n={1} onJump={() => scrollPreviewTo(".cover")}>
             Identificação
           </SectionTitle>
+          <p className="mb-3 rounded-lg border border-line bg-panel/60 px-3 py-2 text-[11px] leading-relaxed text-ink-soft">
+            👤 Dados de <strong className="text-ink">quem vai receber a proposta</strong>{" "}
+            (a empresa/cliente do prospect) — <strong className="text-ink">não</strong>{" "}
+            a sua empresa.
+          </p>
           <label className="block">
             <Label>
-              Nome da empresa (capa) <span className="text-amber-400">*</span>
+              Empresa do cliente (capa){" "}
+              <span className="text-amber-400">*</span>
             </Label>
             <TextInput
               value={form.clientName}
               onChange={(v) => set("clientName", v)}
               placeholder="Ex: Magazine Luiza"
             />
+            <span className="mt-1 block text-[11px] text-ink-mute">
+              A empresa para quem você está fazendo a proposta.
+            </span>
           </label>
           <label className="mt-3 block">
             <Label>
@@ -615,14 +624,14 @@ export default function ClientBuilder() {
             />
           </label>
           <label className="mt-3 block">
-            <Label>Frase da capa (antes do nome da empresa)</Label>
+            <Label>Frase da capa (antes da empresa do cliente)</Label>
             <TextInput
               value={form.coverHeadline}
               onChange={(v) => set("coverHeadline", v)}
               placeholder="Ex: Uma proposta para impulsionar a"
             />
             <span className="mt-1 block text-[11px] text-ink-mute">
-              Na capa: “{form.coverHeadline || "…"} {form.clientName || "[nome da empresa]"}.”
+              Na capa: “{form.coverHeadline || "…"} {form.clientName || "[empresa do cliente]"}.”
             </span>
           </label>
           <SectionTitle
