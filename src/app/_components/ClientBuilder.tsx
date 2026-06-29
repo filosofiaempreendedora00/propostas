@@ -13,7 +13,7 @@ import { useCompany } from "@/lib/company/store";
 import { useTemplates } from "@/lib/templates/store";
 import { BLOCK_FIELDS, type BlockKey } from "@/lib/templates/types";
 import type { BlockTemplate } from "@/lib/templates/types";
-import { Label, TextInput, SectionTitle, MiniBtn } from "./fields";
+import { Label, TextInput, TextArea, SectionTitle, MiniBtn } from "./fields";
 import { recordDownload, getUsage, type Usage } from "@/lib/billing/usage";
 import { trackGoogleConversion, GADS_CONVERSIONS } from "@/lib/analytics/google";
 import { FREE_DOWNLOADS } from "@/lib/limits";
@@ -329,6 +329,19 @@ export default function ClientBuilder() {
     setSelectedVar((s) => ({ ...s, [saveBlock]: id }));
     setSaveBlock(null);
   };
+
+  // "Salva em cima": qualquer edição num bloco com variação selecionada grava
+  // o conteúdo atual sobre aquela variação (reflete no preview e na aba
+  // Templates). Para preservar a original, use "Salvar novo" (cria outra).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      (Object.keys(selectedVar) as BlockKey[]).forEach((block) => {
+        const id = selectedVar[block];
+        if (id) updateTemplate(id, { payload: extractPayload(block, form) });
+      });
+    }, 700);
+    return () => clearTimeout(t);
+  }, [form, selectedVar, updateTemplate]);
 
   // ----- estrutura (listas) -----
   const addPillar = () =>
@@ -665,12 +678,12 @@ export default function ClientBuilder() {
             onLoad={(id, payload) => loadVar("understanding", id, payload)}
             onSave={() => saveVariation("understanding")}
           />
-          <p
-            className={`text-xs text-ink-mute ${form.showUnderstanding ? "" : "opacity-40"}`}
-          >
-            Diagnóstico — situação, gargalo, oportunidade e objetivo. Edite no
-            preview.
-          </p>
+          <BlockFieldsEditor
+            block="understanding"
+            form={form}
+            onField={(f, v) => set(f as keyof ClientForm, v)}
+            disabled={!form.showUnderstanding}
+          />
 
           <SectionTitle
             n={3}
@@ -690,12 +703,12 @@ export default function ClientBuilder() {
             onLoad={(id, payload) => loadVar("cost", id, payload)}
             onSave={() => saveVariation("cost")}
           />
-          <p
-            className={`text-xs text-ink-mute ${form.showCost ? "" : "opacity-40"}`}
-          >
-            Urgência — consequência operacional, financeira e estratégica.
-            Edite no preview.
-          </p>
+          <BlockFieldsEditor
+            block="cost"
+            form={form}
+            onField={(f, v) => set(f as keyof ClientForm, v)}
+            disabled={!form.showCost}
+          />
 
           <SectionTitle
             n={4}
@@ -1486,6 +1499,105 @@ function DownloadActions({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// Rótulo + tipo de cada campo dos blocos de texto (acordeão no Gerador).
+const FIELD_META: Partial<
+  Record<keyof ProposalData, { label: string; area?: boolean }>
+> = {
+  understandingHeading: { label: "Título do bloco" },
+  currentSituation: { label: "Situação atual", area: true },
+  mainBottleneck: { label: "Gargalo principal", area: true },
+  opportunity: { label: "Oportunidade", area: true },
+  objective: { label: "Objetivo", area: true },
+  costQuestion: { label: "Título do bloco" },
+  costOperationalLabel: { label: "Rótulo · Operacional" },
+  costOperational: { label: "Operacional", area: true },
+  costFinancialLabel: { label: "Rótulo · Financeiro" },
+  costFinancial: { label: "Financeiro", area: true },
+  costStrategicLabel: { label: "Rótulo · Estratégico" },
+  costStrategic: { label: "Estratégico", area: true },
+};
+
+// Acordeão dos campos de um bloco: clique no título → abre o texto p/ editar.
+// Editar aqui altera o form (→ preview) e, se houver variação selecionada,
+// salva em cima dela (ver auto-save no ClientBuilder).
+function BlockFieldsEditor({
+  block,
+  form,
+  onField,
+  disabled,
+}: {
+  block: BlockKey;
+  form: ClientForm;
+  onField: (field: keyof ProposalData, value: string) => void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const toggle = (f: string) =>
+    setOpen((prev) => {
+      const n = new Set(prev);
+      if (n.has(f)) n.delete(f);
+      else n.add(f);
+      return n;
+    });
+  const fields = BLOCK_FIELDS[block].filter((f) => FIELD_META[f]);
+  return (
+    <div
+      className={`space-y-1.5 ${disabled ? "pointer-events-none opacity-40" : ""}`}
+    >
+      {fields.map((f) => {
+        const meta = FIELD_META[f]!;
+        const isOpen = open.has(f as string);
+        const value = String((form as Record<string, unknown>)[f] ?? "");
+        return (
+          <div
+            key={f as string}
+            className="overflow-hidden rounded-lg border border-line bg-panel/40"
+          >
+            <button
+              type="button"
+              onClick={() => toggle(f as string)}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`h-3.5 w-3.5 shrink-0 text-ink-mute transition-transform ${isOpen ? "rotate-90" : ""}`}
+              >
+                <path d="M9 6l6 6-6 6" />
+              </svg>
+              <span className="shrink-0 text-xs font-medium text-ink">
+                {meta.label}
+              </span>
+              {!isOpen && (
+                <span className="ml-auto min-w-0 truncate text-[11px] text-ink-mute">
+                  {value || "vazio"}
+                </span>
+              )}
+            </button>
+            {isOpen && (
+              <div className="px-3 pb-3">
+                {meta.area ? (
+                  <TextArea
+                    value={value}
+                    onChange={(v) => onField(f, v)}
+                    rows={3}
+                  />
+                ) : (
+                  <TextInput value={value} onChange={(v) => onField(f, v)} />
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
