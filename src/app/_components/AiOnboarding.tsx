@@ -80,7 +80,7 @@ export default function AiOnboarding() {
           className="h-4 w-4"
         />
         <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-accent">
-          ✨ Comece pela IA
+          Comece pela IA
         </span>
       </div>
 
@@ -138,10 +138,16 @@ export default function AiOnboarding() {
               <span>
                 {tooShort
                   ? "O que vende, para quem, serviços e faixa de preço."
-                  : "Pronto — quanto mais detalhes, melhor."}
+                  : "Pronto para gerar."}
               </span>
               <span>{brief.length}/2000</span>
             </div>
+
+            <p className="mt-2.5 rounded-lg border border-accent/25 bg-accent/[0.06] px-3 py-2 text-[12px] leading-relaxed text-ink-soft">
+              💡 Quanto mais detalhes você der (serviços, público-alvo, faixa de
+              preço, diferenciais),{" "}
+              <strong className="text-ink">melhor o resultado</strong>.
+            </p>
 
             {error && (
               <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-[13px] text-red-600">
