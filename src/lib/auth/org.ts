@@ -7,6 +7,23 @@ import { createSupabaseServer } from "@/lib/supabase/server";
 import { applyEntitlementToOrg } from "@/lib/billing/entitlement";
 import { FREE_DOWNLOADS } from "@/lib/limits";
 import { addLeadToBrevo } from "@/lib/integrations/brevo";
+import { cookies } from "next/headers";
+
+// Origem do lead (facebook | google) a partir dos cookies de atribuição:
+// kronos_src (first-touch, setado no client) ou _fbc/_gcl_aw (clique em anúncio).
+async function detectSource(): Promise<string | null> {
+  try {
+    const c = await cookies();
+    const explicit = (c.get("kronos_src")?.value || "").toLowerCase();
+    if (/face|meta|insta|^fb$/.test(explicit)) return "facebook";
+    if (/goog|adwords|gads/.test(explicit)) return "google";
+    if (c.get("_fbc")?.value) return "facebook"; // clique em anúncio do Facebook/Meta
+    if (c.get("_gcl_aw")?.value) return "google"; // clique em anúncio do Google Ads
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 // Usuário autenticado (valida o JWT no Supabase). Lança se não houver sessão.
 // Toda Server Action deve passar por aqui (defesa além do proxy).
@@ -34,6 +51,7 @@ export async function requireOrgId(): Promise<string> {
   if (found.length) return found[0].id;
 
   const email = user.email?.toLowerCase() ?? null;
+  const source = await detectSource(); // origem do anúncio (fb/google), se houver
 
   // Serializado por usuário (lock) pra não duplicar org/aceitar convite 2x.
   const result = await db.transaction(async (tx) => {
@@ -86,6 +104,7 @@ export async function requireOrgId(): Promise<string> {
         plan: "individual",
         seatLimit: 1,
         status: "free", // freemium: entra com cota grátis; assina p/ liberar ilimitado
+        source, // facebook | google | null
       })
       .returning({ id: organizations.id });
     await tx

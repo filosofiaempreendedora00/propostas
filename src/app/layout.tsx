@@ -4,6 +4,7 @@ import "./globals.css";
 import Clarity from "./_components/Clarity";
 import MetaPixel from "./_components/MetaPixel";
 import GoogleTag from "./_components/GoogleTag";
+import AttributionCapture from "./_components/AttributionCapture";
 
 // Corpo / interface
 const instrumentSans = Instrument_Sans({
@@ -39,6 +40,7 @@ export default function RootLayout({
         <Clarity />
         <MetaPixel />
         <GoogleTag />
+        <AttributionCapture />
       </body>
     </html>
   );
