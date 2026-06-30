@@ -26,6 +26,7 @@ export const organizations = pgTable("organizations", {
   firstDownloadAt: timestamp("first_download_at", { withTimezone: true }), // 1º download da conta (evento de conversão, uma vez só)
   billingProvider: text("billing_provider"), // ex: kiwify
   billingRef: text("billing_ref"), // id da assinatura no provedor
+  source: text("source"), // origem do lead: facebook | google | null (no cadastro)
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

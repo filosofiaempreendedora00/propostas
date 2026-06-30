@@ -56,6 +56,7 @@ export type AdminOrg = {
   members: number;
   pending: number;
   ownerEmail: string | null;
+  source: string | null; // origem do lead: facebook | google | null
   createdAt: string | null;
   downloadsUsed: number; // propostas baixadas na cota grátis (0..FREE_DOWNLOADS)
   firstDownloadAt: string | null;
@@ -154,6 +155,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       o.downloads_used                      as downloads_used,
       o.first_download_at                   as first_download_at,
       o.created_at                          as created_at,
+      o.source                              as source,
       (select u.email from auth.users u where u.id = o.owner_id) as owner_email,
       (select count(*)::int from memberships m where m.org_id = o.id) as members,
       (select count(*)::int from invitations i
@@ -190,6 +192,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     downloads_used: number;
     first_download_at: Date | string | null;
     created_at: Date | string | null;
+    source: string | null;
     owner_email: string | null;
     members: number;
     pending: number;
@@ -246,6 +249,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       members: o.members,
       pending: o.pending,
       ownerEmail: o.owner_email,
+      source: o.source,
       createdAt: toIso(o.created_at),
       firstDownloadAt: toIso(o.first_download_at),
       ...base,

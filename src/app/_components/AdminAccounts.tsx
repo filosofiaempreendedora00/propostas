@@ -27,6 +27,18 @@ const TEMP: Record<Temperature, { label: string; icon: string; cls: string }> = 
   },
 };
 
+// Origem do lead (anúncio) — tag visual no painel.
+const SRC: Record<string, { label: string; cls: string }> = {
+  facebook: {
+    label: "Facebook",
+    cls: "border-blue-500/40 bg-blue-500/10 text-blue-300",
+  },
+  google: {
+    label: "Google",
+    cls: "border-violet-500/40 bg-violet-500/10 text-violet-300",
+  },
+};
+
 const TZ = "America/Sao_Paulo"; // horário de Brasília
 
 function fmtDate(iso: string | null): string {
@@ -269,6 +281,14 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
               >
                 {t.icon} {t.label}
               </span>
+              {o.source && SRC[o.source] && (
+                <span
+                  className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${SRC[o.source].cls}`}
+                  title="Origem do lead"
+                >
+                  {SRC[o.source].label}
+                </span>
+              )}
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-ink">
                   {o.name}
