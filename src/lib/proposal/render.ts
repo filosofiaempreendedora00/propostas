@@ -450,12 +450,28 @@ export function renderProposalHTML(
     .cover{min-height:100vh;justify-content:space-between;padding:9vh 0;break-after:page}
     .cover-mid{padding-block:0}
 
+    /* CAUSA RAIZ das quebras ruins: a página A4 do print tem ~794px, o que
+       dispara o layout mobile (@media max-width:860px) e empilha os grids em
+       1 COLUNA — deixando as seções altíssimas, que então estouram a página e
+       quebram no meio (com tudo grudado na borda). Aqui forçamos os grids de
+       volta a MULTICOLUNA: seções curtas cabem na página → .sec-keep segura →
+       nada quebra no meio nem cola na borda. */
+    .g2{grid-template-columns:repeat(2,1fr)}
+    .g3{grid-template-columns:repeat(3,1fr)}
+    .steps{grid-template-columns:repeat(3,1fr)}
+    .sol2-grid{grid-template-columns:repeat(3,1fr)}
+    .wrap{padding-inline:48px}
+
     /* Seções em fluxo contínuo — preenche as páginas. Respiro vertical (E):
        padding folgado + margem embaixo dos átomos p/ nada encostar no corte. */
-    .pad{padding:60px 0}
+    .pad{padding:64px 0}
     .gblocks{margin-top:30px}
     .pillars,.tiers,.steps{margin-top:30px}
     section:not(.cover){break-inside:auto}
+    /* Cards que podem cair no topo de uma página nova mantêm respiro próprio
+       (padding interno) — margin no topo da página é descartada pelo motor. */
+    .invest-group{margin-top:0;padding-top:40px}
+    .invest-group:first-of-type{padding-top:0}
 
     /* ===== Paginação à prova de corte =====
        O Chromium IGNORA break-before/after:avoid — só break-inside:avoid vale.
@@ -619,12 +635,14 @@ ${
   d.showConsultantRec
     ? `<section class="pad consultant-rec"${secEye("showConsultantRec")}
   <div class="wrap">
+   <div class="sec-keep">
     <div class="sec-head"><span class="eyebrow">Recomendação do ${esc((d.consultantTerm ?? "Consultor").toLowerCase())}</span></div>
     <div class="rec-card">
       <h2 class="display" data-edit="consultantRecHeading">${esc(d.consultantRecHeading)}</h2>
       <p class="lead" data-edit="consultantRecText">${esc(d.consultantRecText)}</p>
       <ul class="rec-reasons">${reasonsHtml(d.consultantRecReasons)}</ul>
     </div>
+   </div>
   </div>
 </section>`
     : ""
