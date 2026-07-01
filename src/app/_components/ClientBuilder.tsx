@@ -11,11 +11,15 @@ import { useCatalog, useConsultants } from "@/lib/catalog/store";
 import type { CatalogSolution, Billing } from "@/lib/catalog/types";
 import { useCompany } from "@/lib/company/store";
 import { useTemplates } from "@/lib/templates/store";
-import { BLOCK_FIELDS, type BlockKey } from "@/lib/templates/types";
+import { BLOCK_FIELDS, BLOCKS, type BlockKey } from "@/lib/templates/types";
 import type { BlockTemplate } from "@/lib/templates/types";
 import { Label, TextInput, TextArea, SectionTitle, MiniBtn } from "./fields";
 import { recordDownload, getUsage, type Usage } from "@/lib/billing/usage";
-import { trackGoogleConversion, GADS_CONVERSIONS } from "@/lib/analytics/google";
+import {
+  trackGoogleConversion,
+  trackFunnel,
+  GADS_CONVERSIONS,
+} from "@/lib/analytics/google";
 import { FREE_DOWNLOADS } from "@/lib/limits";
 
 function extractPayload(
@@ -66,6 +70,7 @@ export default function ClientBuilder() {
   const { items: consultants, ready: consReady } = useConsultants();
   const {
     items: templates,
+    ready: templatesReady,
     add: addTemplate,
     update: updateTemplate,
   } = useTemplates();
@@ -333,7 +338,14 @@ export default function ClientBuilder() {
   // "Salva em cima": qualquer edição num bloco com variação selecionada grava
   // o conteúdo atual sobre aquela variação (reflete no preview e na aba
   // Templates). Para preservar a original, use "Salvar novo" (cria outra).
+  // Suprime UM ciclo de save logo após o auto-seed das variações (senão
+  // regravaria os 6 blocos, idênticos, em todo carregamento do gerador).
+  const skipSeedSave = useRef(false);
   useEffect(() => {
+    if (skipSeedSave.current) {
+      skipSeedSave.current = false;
+      return;
+    }
     const t = setTimeout(() => {
       (Object.keys(selectedVar) as BlockKey[]).forEach((block) => {
         const id = selectedVar[block];
@@ -342,6 +354,52 @@ export default function ClientBuilder() {
     }, 700);
     return () => clearTimeout(t);
   }, [form, selectedVar, updateTemplate]);
+
+  // ----- onboarding guiado (emenda da geração por IA: /cliente?bemvindo=1) -----
+  const [onboarding, setOnboarding] = useState(false);
+  const [onbDismissed, setOnbDismissed] = useState(false);
+  useEffect(() => {
+    let onb = false;
+    try {
+      onb =
+        new URLSearchParams(window.location.search).get("bemvindo") === "1";
+    } catch {
+      /* ignora */
+    }
+    setOnboarding(onb);
+    trackFunnel("chegou_ao_gerador", onb ? { via: "ia" } : {});
+  }, []);
+
+  // Aplica a variação PADRÃO (a 1ª de cada bloco) no 1º carregamento — assim a
+  // proposta já nasce com o conteúdo real da org (o que a IA escreveu, ou o
+  // texto de exemplo), em vez dos defaults soltos.
+  const seededVars = useRef(false);
+  useEffect(() => {
+    if (seededVars.current || !templatesReady || templates.length === 0) return;
+    seededVars.current = true;
+    const picks: Partial<Record<BlockKey, string>> = {};
+    const patch: Record<string, unknown> = {};
+    for (const b of BLOCKS) {
+      const first = templates.find((t) => t.block === b.key);
+      if (!first) continue;
+      picks[b.key] = first.id;
+      Object.assign(patch, first.payload);
+    }
+    skipSeedSave.current = true; // não regravar o que acabou de ser aplicado
+    setSelectedVar((s) => ({ ...picks, ...s })); // não sobrescreve escolha manual
+    setForm((f) => ({ ...f, ...patch }) as ClientForm);
+  }, [templatesReady, templates]);
+
+  // Onboarding: seleciona TODAS as soluções e seus planos → o preview nasce
+  // cheio, a proposta inteira já montada. (No uso normal nada vem marcado.)
+  const seededOnb = useRef(false);
+  useEffect(() => {
+    if (!onboarding || seededOnb.current || !solReady || solutions.length === 0)
+      return;
+    seededOnb.current = true;
+    setSelSolutions(new Set(solutions.map((s) => s.id)));
+    setSelPlans(new Set(solutions.flatMap((s) => s.plans.map((p) => p.id))));
+  }, [onboarding, solReady, solutions]);
 
   // ----- estrutura (listas) -----
   const addPillar = () =>
@@ -622,6 +680,49 @@ export default function ClientBuilder() {
         </div>
         <a ref={exportRef} className="hidden" />
       </div>
+
+      {/* Onboarding: enquadra a revisão como CONTROLE + dá momentum (passos). */}
+      {onboarding && !onbDismissed && (
+        <div className="border-b border-accent/30 bg-accent/[0.07] px-6 py-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm leading-relaxed text-ink-soft">
+                <span className="font-semibold text-ink">
+                  ✨ A IA escreveu sua proposta inteira.
+                </span>{" "}
+                Confira e ajuste o que não ficou com a sua cara — leva ~2 min.
+                Para baixar, é só pôr o{" "}
+                <strong className="text-ink">nome do cliente</strong> aqui do
+                lado.
+              </p>
+              <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium">
+                <span className="inline-flex items-center gap-1 rounded-full bg-accent/20 px-2 py-0.5 text-ink">
+                  <span aria-hidden>✓</span> 1 · Descreva
+                </span>
+                <span aria-hidden className="text-ink-mute">
+                  →
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-accent/50 bg-accent px-2 py-0.5 font-semibold text-bg">
+                  2 · Revise
+                </span>
+                <span aria-hidden className="text-ink-mute">
+                  →
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-0.5 text-ink-mute">
+                  3 · Baixe
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOnbDismissed(true)}
+              className="shrink-0 cursor-pointer rounded-lg border border-line px-2.5 py-1 text-[11px] text-ink-mute transition hover:text-ink"
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(320px,380px)_1fr]">
         {/* Painel — controles. Os textos editam-se no preview. */}
@@ -1148,6 +1249,12 @@ export default function ClientBuilder() {
           </label>
 
           <SectionTitle>Baixar proposta</SectionTitle>
+          {onboarding && (
+            <p className="mb-2.5 rounded-lg border border-accent/30 bg-accent/[0.07] px-3 py-2 text-[12px] leading-relaxed text-ink-soft">
+              🎉 Está pronta! Baixe agora — sua{" "}
+              <strong className="text-ink">primeira proposta é grátis</strong>.
+            </p>
+          )}
           {clientMissing && (
             <p className="mb-2.5 text-[11px] text-amber-400/90">
               ⚠ Preencha nome da empresa e do cliente para baixar.

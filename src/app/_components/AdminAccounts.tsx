@@ -27,10 +27,11 @@ const TEMP: Record<Temperature, { label: string; icon: string; cls: string }> = 
   },
 };
 
-// Origem do lead (anúncio) — tag visual no painel.
+// Origem do lead (acquisition_source: google | meta) — tag visual no painel.
+// 'direct' não ganha tag (nada a mostrar).
 const SRC: Record<string, { label: string; cls: string }> = {
-  facebook: {
-    label: "Facebook",
+  meta: {
+    label: "Meta",
     cls: "border-blue-500/40 bg-blue-500/10 text-blue-300",
   },
   google: {
@@ -281,12 +282,20 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
               >
                 {t.icon} {t.label}
               </span>
-              {o.source && SRC[o.source] && (
+              {o.acquisitionSource && SRC[o.acquisitionSource] && (
                 <span
-                  className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${SRC[o.source].cls}`}
-                  title="Origem do lead"
+                  className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${SRC[o.acquisitionSource].cls}`}
+                  title={
+                    o.acquisitionGclid
+                      ? `Origem do lead · gclid: ${o.acquisitionGclid}`
+                      : o.acquisitionFbclid
+                        ? `Origem do lead · fbclid: ${o.acquisitionFbclid}`
+                        : o.acquisitionFirstUrl
+                          ? `Origem do lead · ${o.acquisitionFirstUrl}`
+                          : "Origem do lead"
+                  }
                 >
-                  {SRC[o.source].label}
+                  {SRC[o.acquisitionSource].label}
                 </span>
               )}
               <div className="min-w-0 flex-1">
