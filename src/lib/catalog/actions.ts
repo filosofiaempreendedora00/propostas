@@ -8,11 +8,15 @@ import {
   solutionPlans,
   consultants,
   aiGenerations,
+  blockTemplates,
 } from "@/lib/db/schema";
 import { requireOrgId, requireUser } from "@/lib/auth/org";
 import { LIMITS, LimitError, FREE_AI_GENERATIONS } from "@/lib/limits";
+import type { ProposalData } from "@/lib/proposal/types";
 import type { CatalogSolution, CatalogConsultant, Billing } from "./types";
 import { SEED_SOLUTIONS, SEED_CONSULTANTS } from "./seed";
+import { BLOCKS, BLOCK_FIELDS } from "@/lib/templates/types";
+import { SEED_TEMPLATES, pickDefault } from "@/lib/templates/seed";
 import { generateCatalogFromBrief } from "./ai";
 
 // IDs do seed são fixos; ao semear para uma org nova, geramos IDs frescos
@@ -314,6 +318,59 @@ export async function getAiGenerationsLeft(): Promise<{
   };
 }
 
+// Grava os blocos narrativos gerados pela IA como a variação PADRÃO (a 1ª de
+// cada bloco, que o gerador aplica por default) — assim a proposta já nasce
+// com todos os blocos preenchidos, não com o texto de exemplo. Semeia os
+// templates se ainda não existirem (mesma lógica lazy do listTemplates).
+async function writeGeneratedBlocks(
+  orgId: string,
+  blocks: Partial<ProposalData>,
+) {
+  let rows = await db
+    .select()
+    .from(blockTemplates)
+    .where(eq(blockTemplates.orgId, orgId))
+    .orderBy(asc(blockTemplates.sortOrder), asc(blockTemplates.createdAt));
+  if (rows.length === 0) {
+    await db.insert(blockTemplates).values(
+      SEED_TEMPLATES.map((t, i) => ({
+        id: randomUUID(),
+        orgId,
+        block: t.block,
+        name: t.name,
+        payload: (t.payload ?? {}) as Record<string, unknown>,
+        sortOrder: i,
+      })),
+    );
+    rows = await db
+      .select()
+      .from(blockTemplates)
+      .where(eq(blockTemplates.orgId, orgId))
+      .orderBy(asc(blockTemplates.sortOrder), asc(blockTemplates.createdAt));
+  }
+  for (const b of BLOCKS) {
+    // Só os campos que a IA preencheu neste bloco (understanding/cost/strategy/
+    // consultantRec/nextSteps; o bloco "solutions" não tem narrativa gerada).
+    const gen: Record<string, unknown> = {};
+    for (const f of BLOCK_FIELDS[b.key]) {
+      if (f in blocks) gen[f] = (blocks as Record<string, unknown>)[f];
+    }
+    if (Object.keys(gen).length === 0) continue;
+    const first = rows.find((r) => r.block === b.key); // a variação padrão
+    if (!first) continue;
+    const payload = { ...pickDefault(b.key), ...gen };
+    await db
+      .update(blockTemplates)
+      .set({ payload: payload as Record<string, unknown> })
+      .where(
+        and(
+          eq(blockTemplates.id, first.id),
+          eq(blockTemplates.orgId, orgId),
+        ),
+      );
+  }
+}
+
 export async function generateAndReplaceCatalog(
   brief: string,
 ): Promise<{ solutions: number }> {
@@ -335,7 +392,7 @@ export async function generateAndReplaceCatalog(
     // erro de contagem (ex.: tabela ausente) → não bloqueia a geração
   }
 
-  const { solutions: generated, consultant, usage } =
+  const { solutions: generated, consultant, blocks, usage } =
     await generateCatalogFromBrief(brief);
 
   // Substitui o catálogo: apaga soluções (cascata nos planos) e consultores
@@ -345,6 +402,14 @@ export async function generateAndReplaceCatalog(
 
   for (let i = 0; i < generated.length; i++) {
     await writeSolution(orgId, generated[i], i);
+  }
+
+  // Blocos narrativos (diagnóstico, custo, estratégia, recomendação, passos)
+  // viram a variação padrão de cada bloco → a proposta nasce COMPLETA.
+  try {
+    await writeGeneratedBlocks(orgId, blocks);
+  } catch (e) {
+    console.error("[ai] falha ao gravar blocos narrativos:", e);
   }
   await db.insert(consultants).values({
     id: randomUUID(),

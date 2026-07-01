@@ -8,6 +8,7 @@ import {
   generateAndReplaceCatalog,
   getAiGenerationsLeft,
 } from "@/lib/catalog/actions";
+import { trackFunnel } from "@/lib/analytics/google";
 import KronosLoader from "./KronosLoader";
 
 const EXAMPLE =
@@ -51,12 +52,15 @@ export default function AiOnboarding() {
       setProgress(Math.min(94, (1 - Math.exp(-s / 26)) * 100));
     }, 150);
     try {
-      await generateAndReplaceCatalog(brief);
+      const res = await generateAndReplaceCatalog(brief);
       if (timer.current) clearInterval(timer.current);
+      trackFunnel("gerou_com_ia", { solutions: res.solutions });
       setProgress(100);
       await new Promise((r) => setTimeout(r, 350));
-      // WOW: vai direto ver o catálogo gerado em Sua Empresa.
-      router.push("/empresa");
+      // WOW: emenda direto no GERADOR com a proposta COMPLETA já montada
+      // (?bemvindo=1 → seleciona tudo, mostra o preview pronto e enquadra a
+      // revisão). Fecha o furo /empresa→/cliente.
+      router.push("/cliente?bemvindo=1");
     } catch (e) {
       if (timer.current) clearInterval(timer.current);
       setError(
@@ -85,16 +89,14 @@ export default function AiOnboarding() {
       </div>
 
       <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
-        Seu catálogo pronto
+        Sua proposta pronta
         <br />
         em <span className="italic text-accent">~1 minuto</span>.
       </h1>
       <p className="mt-5 max-w-2xl text-base leading-relaxed text-ink-soft">
-        Descreva seu negócio em um parágrafo e a IA cria suas{" "}
-        <strong className="font-semibold text-ink">
-          soluções, planos e consultor
-        </strong>{" "}
-        — prontos pra você gerar a primeira proposta.{" "}
+        Descreva seu negócio em um parágrafo e a IA escreve sua{" "}
+        <strong className="font-semibold text-ink">proposta inteira</strong> —
+        soluções, planos, diagnóstico, estratégia e próximos passos.{" "}
         <strong className="font-semibold text-ink">
           Sem preencher nada à mão.
         </strong>
@@ -103,7 +105,7 @@ export default function AiOnboarding() {
       <div className="mt-7 rounded-2xl border border-line bg-panel p-5 shadow-sm sm:p-6">
         {loading ? (
           <div className="py-6">
-            <KronosLoader label="Gerando seu catálogo…" />
+            <KronosLoader label="Escrevendo sua proposta…" />
             <div className="mx-auto mt-5 max-w-xs">
               <div className="h-2 overflow-hidden rounded-full bg-panel-2">
                 <div
@@ -116,8 +118,8 @@ export default function AiOnboarding() {
               </div>
             </div>
             <p className="mt-3 text-center text-xs text-ink-mute">
-              Escrevendo soluções, planos e diferenciais no tom do seu nicho —
-              leva alguns instantes.
+              Soluções, planos, diagnóstico, estratégia e próximos passos — no
+              tom do seu nicho. Leva alguns instantes.
             </p>
           </div>
         ) : (
@@ -171,7 +173,7 @@ export default function AiOnboarding() {
                 disabled={tooShort}
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3.5 text-sm font-semibold text-bg transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
               >
-                ✨ Gerar meu catálogo com IA
+                ✨ Gerar minha proposta com IA
               </button>
             )}
 

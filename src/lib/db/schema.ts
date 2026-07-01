@@ -26,7 +26,11 @@ export const organizations = pgTable("organizations", {
   firstDownloadAt: timestamp("first_download_at", { withTimezone: true }), // 1º download da conta (evento de conversão, uma vez só)
   billingProvider: text("billing_provider"), // ex: kiwify
   billingRef: text("billing_ref"), // id da assinatura no provedor
-  source: text("source"), // origem do lead: facebook | google | null (no cadastro)
+  source: text("source"), // legado — substituído por acquisitionSource (mantido p/ não quebrar dados antigos)
+  acquisitionSource: text("acquisition_source"), // origem derivada: google | meta | direct
+  acquisitionGclid: text("acquisition_gclid"), // gclid do Google Ads (import de conversão offline)
+  acquisitionFbclid: text("acquisition_fbclid"), // fbclid do Meta (CAPI / conversão offline)
+  acquisitionFirstUrl: text("acquisition_first_url"), // 1ª URL de entrada (com UTMs)
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
