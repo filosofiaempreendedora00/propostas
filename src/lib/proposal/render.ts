@@ -142,6 +142,33 @@ function reasonsHtml(reasons: string[]): string {
     .join("");
 }
 
+// Normaliza o telefone do consultor para o formato do wa.me (só dígitos, com
+// DDI). Nº local brasileiro (10-11 dígitos) recebe o 55 na frente; se já vier
+// com país (12-13), mantém. Sem telefone → "".
+function waDigits(phone: string): string {
+  let d = (phone || "").replace(/\D/g, "");
+  if (!d) return "";
+  if (d.length <= 11) d = "55" + d;
+  return d;
+}
+
+// Link de WhatsApp do consultor com uma mensagem pré-pronta, escrita da ótica
+// do CLIENTE que clicou (chega no zap do consultor já contextualizado). Sem
+// telefone válido → "#" (o botão continua existindo, mas inerte).
+function whatsappHref(d: ProposalData): string {
+  const digits = waDigits(d.phone);
+  if (!digits) return "#";
+  const first = (d.responsible || "").trim().split(/\s+/)[0];
+  const parts = [first ? `Olá ${first}!` : "Olá!"];
+  if (d.clientName && d.clientName.trim()) {
+    parts.push(`Sou da ${d.clientName.trim()}.`);
+  }
+  parts.push(
+    "Recebi a proposta e gostaria de avançar com a parceria. Podemos conversar?",
+  );
+  return `https://wa.me/${digits}?text=${encodeURIComponent(parts.join(" "))}`;
+}
+
 // ---------- documento completo (standalone) ----------
 // Blocos que admitem variações (preview por seção no Templates).
 export type PreviewBlock =
@@ -179,6 +206,12 @@ export function renderProposalHTML(
   const editable = only ? opts.editable ?? false : opts.editable ?? true;
   // Edição dos CARDS de solução/plano (Sua Empresa) — desligada no Gerador.
   const editableCatalog = !!opts.editableCatalog;
+
+  // CTA → WhatsApp do consultor só no HTML exportado (o que o cliente abre).
+  // No preview editável fica "#" pra não navegar ao clicar e não atrapalhar a
+  // edição do rótulo do botão.
+  const ctaHref = editable ? "#" : whatsappHref(d);
+  const ctaExternal = ctaHref !== "#";
 
   // Olhinho de ocultar seção, NO PREVIEW (só na proposta completa do Gerador —
   // não nos previews de bloco nem no HTML exportado).
@@ -417,27 +450,38 @@ export function renderProposalHTML(
     .cover{min-height:100vh;justify-content:space-between;padding:9vh 0;break-after:page}
     .cover-mid{padding-block:0}
 
-    /* Seções mais compactas e em fluxo contínuo — preenche as páginas. */
-    .pad{padding:52px 0}
+    /* Seções em fluxo contínuo — preenche as páginas. Respiro vertical (E):
+       padding folgado + margem embaixo dos átomos p/ nada encostar no corte. */
+    .pad{padding:60px 0}
     .gblocks{margin-top:30px}
     .pillars,.tiers,.steps{margin-top:30px}
     section:not(.cover){break-inside:auto}
 
-    /* Cabeçalho de seção fica junto: eyebrow → título → intro nunca órfãos. */
-    .eyebrow{break-after:avoid}
-    .h2,.display{break-after:avoid;break-before:avoid}
-    .lead{break-before:avoid}
-    .k,.sol2-k,.invest-group-name,.sol2-head,.sol2-num,.pnum,.snum,.tname,.tier-head{break-after:avoid}
-    p{orphans:3;widows:3}
-
     /* ===== Paginação à prova de corte =====
-       Toda unidade visual atômica é "indivisível": a quebra de página só pode
-       cair NOS VÃOS entre blocos, nunca atravessando um. Numa solução alta, ela
-       parte entre o cabeçalho, as células e os entregáveis — sem cortar texto. */
-    .block,.tier,.pillar,.step,.rec-card,.rec-reason,.sol2-cell,
-    .sol2-head,.sol2-deliver,.fact,.contact,.closing-cta,
-    .rec-reasons li,.tier li,.sol2-deliver li,.contact > div,
+       O Chromium IGNORA break-before/after:avoid — só break-inside:avoid vale.
+       Então TODA a lógica de "não fatiar" e "não orfanar" se apoia nele. */
+
+    /* A) Texto atômico nunca fatiado: título/rótulo desce inteiro se não couber. */
+    h1,.display,.h2,.eyebrow,.lead,.k,.sol2-k,.sol2-head,.invest-group-name,
+    .tname,.tier-head,.rec-card h2,h3{break-inside:avoid}
+
+    /* B) Cabeçalho da seção = UMA unidade (eyebrow + título + intro juntos). */
+    .sec-head{break-inside:avoid;margin-bottom:6px}
+
+    /* C) Cabeçalho colado ao conteúdo: nas seções curtas, cabeçalho + conteúdo
+       saem numa caixa indivisível (cabem numa página → sem órfão, sem corte).
+       Seções altas (soluções/investimento) NÃO se agrupam: quebram entre cards. */
+    .sec-keep{break-inside:avoid}
+
+    /* D) Unidades atômicas PEQUENAS — a quebra cai só nos vãos entre elas.
+       Contêineres ALTOS ficam de fora de propósito (.sol2, .rec-card,
+       .sol2-deliver, .invest-group): passam de uma página e precisam quebrar
+       entre os filhos, senão o conteúdo seria clipado. */
+    .block,.tier,.pillar,.step,.rec-reason,.sol2-cell,.fact,.contact,
+    .closing-cta,.rec-reasons li,.tier li,.sol2-deliver li,.contact > div,
     figure,img{break-inside:avoid}
+    .block,.tier,.pillar,.step,.rec-reason,.sol2{margin-bottom:6px}
+    p{orphans:3;widows:3}
   }
 </style>
 ${only ? `<style>.cover,footer{display:none!important}section{border-top:none!important}.pad{padding:40px 0}</style>` : ""}
@@ -478,14 +522,18 @@ ${
   d.showUnderstanding
     ? `<section class="pad understand"${secEye("showUnderstanding")}
   <div class="wrap">
-    <span class="eyebrow">O que entendemos</span>
-    <h2 class="display h2" data-edit="understandingHeading">${esc(d.understandingHeading)}</h2>
+   <div class="sec-keep">
+    <div class="sec-head">
+      <span class="eyebrow">O que entendemos</span>
+      <h2 class="display h2" data-edit="understandingHeading">${esc(d.understandingHeading)}</h2>
+    </div>
     <div class="gblocks g2">
       <div class="block"><div class="k">Situação atual</div><p data-edit="currentSituation">${esc(d.currentSituation)}</p></div>
       <div class="block"><div class="k">Gargalo principal</div><p data-edit="mainBottleneck">${esc(d.mainBottleneck)}</p></div>
       <div class="block"><div class="k">Oportunidade</div><p data-edit="opportunity">${esc(d.opportunity)}</p></div>
       <div class="block"><div class="k">Objetivo</div><p data-edit="objective">${esc(d.objective)}</p></div>
     </div>
+   </div>
   </div>
 </section>`
     : ""
@@ -496,13 +544,17 @@ ${
   d.showCost
     ? `<section class="pad cost"${secEye("showCost")}
   <div class="wrap">
-    <span class="eyebrow">O custo de continuar igual</span>
-    <h2 class="display h2" data-edit="costQuestion">${esc(d.costQuestion)}</h2>
+   <div class="sec-keep">
+    <div class="sec-head">
+      <span class="eyebrow">O custo de continuar igual</span>
+      <h2 class="display h2" data-edit="costQuestion">${esc(d.costQuestion)}</h2>
+    </div>
     <div class="gblocks g3">
       <div class="block"><div class="k" data-edit="costOperationalLabel">${esc(d.costOperationalLabel || "Operacional")}</div><p data-edit="costOperational">${esc(d.costOperational)}</p></div>
       <div class="block"><div class="k" data-edit="costFinancialLabel">${esc(d.costFinancialLabel || "Financeiro")}</div><p data-edit="costFinancial">${esc(d.costFinancial)}</p></div>
       <div class="block"><div class="k" data-edit="costStrategicLabel">${esc(d.costStrategicLabel || "Estratégico")}</div><p data-edit="costStrategic">${esc(d.costStrategic)}</p></div>
     </div>
+   </div>
   </div>
 </section>`
     : ""
@@ -513,10 +565,14 @@ ${
   d.showStrategy
     ? `<section class="pad strategy"${secEye("showStrategy")}
   <div class="wrap">
-    <span class="eyebrow" data-edit="strategyEyebrow">${esc(d.strategyEyebrow || "Estratégia recomendada")}</span>
-    <h2 class="display h2" data-edit="strategyHeading">${esc(d.strategyHeading)}</h2>
-    <p class="lead" style="margin-top:18px" data-edit="strategyIntro">${esc(d.strategyIntro)}</p>
+   <div class="sec-keep">
+    <div class="sec-head">
+      <span class="eyebrow" data-edit="strategyEyebrow">${esc(d.strategyEyebrow || "Estratégia recomendada")}</span>
+      <h2 class="display h2" data-edit="strategyHeading">${esc(d.strategyHeading)}</h2>
+      <p class="lead" style="margin-top:18px" data-edit="strategyIntro">${esc(d.strategyIntro)}</p>
+    </div>
     <div class="pillars">${pillarsHtml(d.pillars, editable)}</div>
+   </div>
   </div>
 </section>`
     : ""
@@ -527,9 +583,11 @@ ${
   d.showSolutions
     ? `<section class="pad solutions"${secEye("showSolutions")}
   <div class="wrap">
-    <span class="eyebrow">Soluções recomendadas</span>
-    <h2 class="display h2"${editableCatalog ? "" : ` data-edit="solutionsHeading"`}>${esc(d.solutionsHeading)}</h2>
-    <p class="lead" style="margin-top:14px"${editableCatalog ? "" : ` data-edit="solutionsNote"`}>${esc(d.solutionsNote)}</p>
+    <div class="sec-head">
+      <span class="eyebrow">Soluções recomendadas</span>
+      <h2 class="display h2"${editableCatalog ? "" : ` data-edit="solutionsHeading"`}>${esc(d.solutionsHeading)}</h2>
+      <p class="lead" style="margin-top:14px"${editableCatalog ? "" : ` data-edit="solutionsNote"`}>${esc(d.solutionsNote)}</p>
+    </div>
     <div style="margin-top:44px">${solutionsHtml(d.solutions, editableCatalog)}</div>
   </div>
 </section>`
@@ -541,8 +599,10 @@ ${
   d.showInvestment
     ? `<section class="invest pad"${secEye("showInvestment")}
   <div class="wrap">
-    <span class="eyebrow">Investimento</span>
-    <h2 class="display h2"${editableCatalog ? "" : ` data-edit="investHeading"`}>${esc(d.investHeading)}</h2>
+    <div class="sec-head">
+      <span class="eyebrow">Investimento</span>
+      <h2 class="display h2"${editableCatalog ? "" : ` data-edit="investHeading"`}>${esc(d.investHeading)}</h2>
+    </div>
     ${investmentGroupsHtml(d.investmentGroups, editableCatalog)}
     ${
       d.recommendationReason
@@ -559,7 +619,7 @@ ${
   d.showConsultantRec
     ? `<section class="pad consultant-rec"${secEye("showConsultantRec")}
   <div class="wrap">
-    <span class="eyebrow">Recomendação do ${esc((d.consultantTerm ?? "Consultor").toLowerCase())}</span>
+    <div class="sec-head"><span class="eyebrow">Recomendação do ${esc((d.consultantTerm ?? "Consultor").toLowerCase())}</span></div>
     <div class="rec-card">
       <h2 class="display" data-edit="consultantRecHeading">${esc(d.consultantRecHeading)}</h2>
       <p class="lead" data-edit="consultantRecText">${esc(d.consultantRecText)}</p>
@@ -575,11 +635,15 @@ ${
   d.showNextSteps
     ? `<section class="pad nextsteps"${secEye("showNextSteps")}
   <div class="wrap">
-    <span class="eyebrow">Próximos passos</span>
-    <h2 class="display h2" data-edit="nextStepsHeading">${esc(d.nextStepsHeading)}</h2>
+   <div class="sec-keep">
+    <div class="sec-head">
+      <span class="eyebrow">Próximos passos</span>
+      <h2 class="display h2" data-edit="nextStepsHeading">${esc(d.nextStepsHeading)}</h2>
+    </div>
     <div class="steps">${stepsHtml(d.steps)}</div>
+   </div>
     <div class="closing-cta">
-      <a href="#" class="cta"><span data-edit="ctaLabel">${esc(d.ctaLabel)}</span> &nbsp;→</a>
+      <a href="${ctaHref}"${ctaExternal ? ' target="_blank" rel="noopener"' : ""} class="cta"><span data-edit="ctaLabel">${esc(d.ctaLabel)}</span> &nbsp;→</a>
       <span class="validity">Proposta válida até ${esc(d.validUntilLabel)}</span>
     </div>
     <div class="contact">
