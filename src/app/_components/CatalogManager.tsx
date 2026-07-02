@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useCatalog, blankSolutionPlan } from "@/lib/catalog/store";
 import type {
   CatalogSolution,
@@ -127,10 +128,17 @@ export default function CatalogManager() {
               Soluções
             </div>
             <div className="text-[11px] text-ink-mute">
-              {items.length} cadastrada(s)
+              Aqui você define o catálogo. A proposta se monta no Gerador →
             </div>
           </div>
           <AiCatalogGenerator onGenerated={handleGenerated} />
+          {/* Próximo passo SEMPRE visível — /empresa não é beco sem saída. */}
+          <Link
+            href="/cliente"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-bg transition hover:opacity-90"
+          >
+            Gerar proposta →
+          </Link>
         </div>
 
         <ul className="p-2">

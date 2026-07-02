@@ -22,10 +22,11 @@ export default function EmpresaWorkspace() {
 
   useIsoLayoutEffect(() => {
     try {
-      // Veio do clique na logo do preview? Abre "Sua marca" e destaca o campo.
-      const marca = window.sessionStorage.getItem("kronos:marca");
+      // Veio do clique na logo do preview (?marca=clara|escura)? Abre "Sua
+      // marca" e destaca o campo. Ler da URL é idempotente sob StrictMode (não
+      // consumimos aqui) — a limpeza acontece só quando o usuário troca de aba.
+      const marca = new URLSearchParams(window.location.search).get("marca");
       if (marca === "clara" || marca === "escura") {
-        window.sessionStorage.removeItem("kronos:marca");
         setTab("marca");
         setHighlight(marca);
         return;
@@ -41,6 +42,10 @@ export default function EmpresaWorkspace() {
     setTab(t);
     try {
       window.localStorage.setItem(TAB_KEY, t);
+      // Interação manual → limpa o ?marca da URL (evita reabrir na atualização).
+      if (new URLSearchParams(window.location.search).has("marca")) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
     } catch {
       /* ignora */
     }

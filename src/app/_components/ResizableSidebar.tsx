@@ -27,22 +27,35 @@ export default function ResizableSidebar({
   const content = kids[1] ?? null;
 
   const ref = useRef<HTMLDivElement>(null);
-  const wRef = useRef(defaultWidth);
+  const wRef = useRef(defaultWidth); // largura EXIBIDA (clampada)
+  const intendedRef = useRef(defaultWidth); // largura DESEJADA
   const [w, setW] = useState(defaultWidth);
   const [drag, setDrag] = useState(false);
 
-  // largura salva (após montar, evita mismatch de hidratação)
+  const applyClamp = () => {
+    const el = ref.current;
+    const roomCap = el ? el.clientWidth - minContent : max;
+    const cap = Math.min(max, roomCap > min ? roomCap : min);
+    const nw = Math.max(min, Math.min(intendedRef.current, cap));
+    wRef.current = nw;
+    setW(nw);
+  };
+
+  // Largura salva + CLAMP ao espaço disponível (montagem + resize) — sem isso,
+  // em janelas menores a lista come o espaço do conteúdo (mesmo bug do preview).
   useEffect(() => {
     try {
       const v = Number(localStorage.getItem(storageKey));
-      if (v && v > 0) {
-        wRef.current = v;
-        setW(v);
-      }
+      if (v && v > 0) intendedRef.current = v;
     } catch {
       /* ignora */
     }
-  }, [storageKey]);
+    applyClamp();
+    const onResize = () => applyClamp();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey, min, max, minContent]);
 
   const startDrag = (e: React.PointerEvent) => {
     e.preventDefault();
@@ -55,6 +68,7 @@ export default function ResizableSidebar({
       nw = Math.max(min, Math.min(max, nw));
       nw = Math.min(nw, r.width - minContent); // garante espaço mínimo ao conteúdo
       wRef.current = nw;
+      intendedRef.current = nw;
       setW(nw);
     };
     const onUp = () => {
@@ -72,8 +86,8 @@ export default function ResizableSidebar({
   };
 
   const reset = () => {
-    wRef.current = defaultWidth;
-    setW(defaultWidth);
+    intendedRef.current = defaultWidth;
+    applyClamp();
     try {
       localStorage.setItem(storageKey, String(defaultWidth));
     } catch {

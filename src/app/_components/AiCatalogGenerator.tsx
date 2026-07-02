@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   generateAndReplaceCatalog,
   getAiGenerationsLeft,
 } from "@/lib/catalog/actions";
+import { trackFunnel } from "@/lib/analytics/google";
 import KronosLoader from "./KronosLoader";
 
 const EXAMPLE =
@@ -23,6 +25,7 @@ export default function AiCatalogGenerator({
   const [open, setOpen] = useState(false);
   const [brief, setBrief] = useState("");
   const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false); // sucesso → CTA pro Gerador
   const [error, setError] = useState<string | null>(null);
   const [left, setLeft] = useState<Left | null>(null);
   const [progress, setProgress] = useState(0);
@@ -47,12 +50,14 @@ export default function AiCatalogGenerator({
     if (loading) return;
     setOpen(false);
     setError(null);
+    setDone(false);
   };
 
   const generate = async () => {
     setLoading(true);
     setError(null);
     setProgress(0);
+    trackFunnel("business_described", { via: "empresa", chars: brief.trim().length });
 
     // Barra FIEL ao tempo real: curva assintótica calibrada para ~1 minuto (a
     // geração varia ~25-70s). Avança o tempo todo com base no tempo decorrido
@@ -66,13 +71,15 @@ export default function AiCatalogGenerator({
     }, 150);
 
     try {
-      await generateAndReplaceCatalog(brief);
+      const res = await generateAndReplaceCatalog(brief);
       if (timer.current) clearInterval(timer.current);
+      trackFunnel("catalog_generated", { via: "empresa", solutions: res.solutions });
       setProgress(100); // completa a barra visualmente
       await new Promise((r) => setTimeout(r, 350));
-      setOpen(false);
       setBrief("");
       onGenerated();
+      // NÃO fecha mudo: mostra o sucesso + CTA pro próximo passo (Gerador).
+      setDone(true);
     } catch (e) {
       if (timer.current) clearInterval(timer.current);
       setError(
@@ -107,7 +114,34 @@ export default function AiCatalogGenerator({
             className="cream w-full max-w-lg rounded-2xl border border-line bg-bg p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {loading ? (
+            {done ? (
+              /* Sucesso → próximo passo ÓBVIO: gerar a proposta (sem beco). */
+              <div className="py-4 text-center">
+                <div className="text-4xl" aria-hidden>
+                  ✅
+                </div>
+                <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-ink">
+                  Catálogo pronto!
+                </h2>
+                <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-ink-mute">
+                  Soluções, planos e textos escritos no tom do seu nicho. Agora
+                  é montar a proposta — ela já sai pronta pra baixar.
+                </p>
+                <Link
+                  href="/cliente?bemvindo=1"
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:opacity-90"
+                >
+                  Gerar minha proposta →
+                </Link>
+                <button
+                  type="button"
+                  onClick={close}
+                  className="mt-2 w-full cursor-pointer rounded-lg px-4 py-2 text-[13px] font-medium text-ink-mute transition hover:text-ink"
+                >
+                  Revisar o catálogo primeiro
+                </button>
+              </div>
+            ) : loading ? (
               <div className="py-6">
                 <KronosLoader label="Gerando seu catálogo…" />
 
