@@ -401,8 +401,9 @@ export default function ClientBuilder() {
 
   // Onboarding: seleciona TODAS as soluções e seus planos → o preview nasce
   // cheio, a proposta inteira já montada. (No uso normal nada vem marcado.)
-  // E PRÉ-PREENCHE o cliente com um exemplo utilizável: a proposta nasce
-  // BAIXÁVEL em 1 clique (aha primeiro; personalizar depois).
+  // NÃO pré-enche o cliente: baixar com nome falso queimaria um crédito numa
+  // proposta-lixo (o PDF não dá pra editar depois). O nome do cliente é pedido
+  // na frente, no banner, ANTES do download → a 1ª proposta já sai real.
   const seededOnb = useRef(false);
   useEffect(() => {
     if (!firstRun || seededOnb.current || !solReady || solutions.length === 0)
@@ -410,11 +411,6 @@ export default function ClientBuilder() {
     seededOnb.current = true;
     setSelSolutions(new Set(solutions.map((s) => s.id)));
     setSelPlans(new Set(solutions.flatMap((s) => s.plans.map((p) => p.id))));
-    setForm((f) =>
-      f.clientName.trim() || f.clientLegalName.trim()
-        ? f
-        : { ...f, clientName: "Empresa Exemplo", clientLegalName: "Cliente Exemplo" },
-    );
     trackFunnel("proposal_ready", { via: onboarding ? "ia" : "firstrun" });
   }, [firstRun, onboarding, solReady, solutions]);
 
@@ -725,56 +721,74 @@ export default function ClientBuilder() {
         <a ref={exportRef} className="hidden" />
       </div>
 
-      {/* Onboarding: enquadra a revisão como CONTROLE + dá momentum (passos). */}
-      {onboarding && !onbDismissed && (
+      {/* Onboarding: pede o nome do cliente NA FRENTE (não como gate tardio) →
+          a 1ª proposta já sai REAL, sem queimar crédito com exemplo. */}
+      {firstRun && !onbDismissed && (
         <div className="border-b border-accent/30 bg-accent/[0.07] px-6 py-3">
           <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm leading-relaxed text-ink-soft">
-                <span className="font-semibold text-ink">
-                  ✨ A IA escreveu sua proposta inteira — já dá pra baixar.
-                </span>{" "}
-                Preenchi com um cliente de exemplo: troque pelo{" "}
-                <strong className="text-ink">nome do seu cliente real</strong>{" "}
-                (ou baixe já e personalize depois). Ajuste o que não ficou com a
-                sua cara — leva ~2 min.
-              </p>
-              <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium">
-                <span className="inline-flex items-center gap-1 rounded-full bg-accent/20 px-2 py-0.5 text-ink">
-                  <span aria-hidden>✓</span> 1 · Descreva
-                </span>
-                <span aria-hidden className="text-ink-mute">
-                  →
-                </span>
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
-                    clientMissing
-                      ? "border border-accent/50 bg-accent font-semibold text-bg"
-                      : "bg-accent/20 text-ink"
-                  }`}
-                >
-                  {clientMissing ? "2 · Revise" : <><span aria-hidden>✓</span> 2 · Revise</>}
-                </span>
-                <span aria-hidden className="text-ink-mute">
-                  →
-                </span>
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
-                    clientMissing
-                      ? "border border-line text-ink-mute"
-                      : "border border-accent/50 bg-accent font-semibold text-bg"
-                  }`}
-                >
-                  3 · Baixe (grátis)
-                </span>
-              </div>
+            <div className="min-w-0 flex-1">
+              {clientMissing ? (
+                <>
+                  <p className="text-sm leading-relaxed text-ink-soft">
+                    <span className="font-semibold text-ink">
+                      {onboarding
+                        ? "✨ A IA escreveu sua proposta inteira."
+                        : "Sua proposta está pronta."}
+                    </span>{" "}
+                    Confira no preview e diga{" "}
+                    <strong className="text-ink">pra quem é</strong> pra baixar
+                    (grátis) — 10 segundos:
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <input
+                      value={form.clientName}
+                      onChange={(e) => set("clientName", e.target.value)}
+                      placeholder="Empresa do cliente (ex: Magazine Luiza)"
+                      className="w-56 rounded-lg border border-accent/50 bg-panel px-3 py-1.5 text-sm text-ink outline-none transition placeholder:text-ink-mute/70 focus:border-accent"
+                    />
+                    <input
+                      value={form.clientLegalName}
+                      onChange={(e) => set("clientLegalName", e.target.value)}
+                      placeholder="Nome do cliente (ex: João Silva)"
+                      className="w-52 rounded-lg border border-accent/50 bg-panel px-3 py-1.5 text-sm text-ink outline-none transition placeholder:text-ink-mute/70 focus:border-accent"
+                    />
+                    <span className="text-[11px] text-ink-mute">
+                      ↑ aparece na capa
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm leading-relaxed text-ink-soft">
+                    <span className="font-semibold text-ink">
+                      🎉 Proposta pronta para {form.clientName}.
+                    </span>{" "}
+                    Revise o que quiser e clique em{" "}
+                    <strong className="text-ink">Baixar</strong> — sua 1ª
+                    proposta é grátis.
+                  </p>
+                  <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/20 px-2 py-0.5 text-ink">
+                      <span aria-hidden>✓</span> 1 · Descreva
+                    </span>
+                    <span aria-hidden className="text-ink-mute">→</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/20 px-2 py-0.5 text-ink">
+                      <span aria-hidden>✓</span> 2 · Cliente
+                    </span>
+                    <span aria-hidden className="text-ink-mute">→</span>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/50 bg-accent px-2 py-0.5 font-semibold text-bg">
+                      3 · Baixe (grátis)
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
             <button
               type="button"
               onClick={() => setOnbDismissed(true)}
               className="shrink-0 cursor-pointer rounded-lg border border-line px-2.5 py-1 text-[11px] text-ink-mute transition hover:text-ink"
             >
-              Entendi
+              Fechar
             </button>
           </div>
         </div>
