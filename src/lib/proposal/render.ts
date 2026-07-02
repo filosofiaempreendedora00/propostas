@@ -72,6 +72,7 @@ function solutionsHtml(solutions: Solution[], ed = false): string {
     .map(
       (s, i) => `
       <div class="sol2">
+        <div class="sol2-keep">
         <div class="sol2-head"><span class="sol2-num">${n2(i)}</span><h3${de(`sol.${i}.name`)}>${esc(s.name)}</h3>${
           s.timeline && s.timeline.trim()
             ? `<span class="sol2-time">Prazo · <span${de(`sol.${i}.timeline`)}>${esc(s.timeline)}</span></span>`
@@ -81,6 +82,7 @@ function solutionsHtml(solutions: Solution[], ed = false): string {
           <div class="sol2-cell"><div class="sol2-k">O problema que resolve</div><p${de(`sol.${i}.problemSolved`)}>${esc(s.problemSolved)}</p></div>
           <div class="sol2-cell"><div class="sol2-k">Como funciona</div><p${de(`sol.${i}.howItWorks`)}>${esc(s.howItWorks)}</p></div>
           <div class="sol2-cell"><div class="sol2-k">Benefício esperado</div><p${de(`sol.${i}.expectedBenefit`)}>${esc(s.expectedBenefit)}</p></div>
+        </div>
         </div>
         ${solList("Entregáveis", s.deliverables, "deliver", ed ? `sol.${i}.deliverable` : "")}
         ${solList("Destaques", s.highlights, "high", ed ? `sol.${i}.highlight` : "")}
@@ -460,40 +462,54 @@ export function renderProposalHTML(
     .g3{grid-template-columns:repeat(3,1fr)}
     .steps{grid-template-columns:repeat(3,1fr)}
     .sol2-grid{grid-template-columns:repeat(3,1fr)}
+    /* Pilares em 2 colunas no PDF (o auto-fit dava 4 colunas estreitíssimas →
+       texto esmagado). 2 colunas = largura confortável de leitura. */
+    .pillars{grid-template-columns:repeat(2,1fr)}
     .wrap{padding-inline:48px}
 
-    /* Seções em fluxo contínuo — preenche as páginas. Respiro vertical (E):
-       padding folgado + margem embaixo dos átomos p/ nada encostar no corte. */
-    .pad{padding:64px 0}
-    .gblocks{margin-top:30px}
-    .pillars,.tiers,.steps{margin-top:30px}
+    /* Espaçamento ENXUTO no print → páginas bem aproveitadas (menos vazão),
+       mantendo respiro pra nada colar na borda. */
+    .pad{padding:34px 0}
+    .gblocks{margin-top:20px}
+    .pillars,.tiers,.steps{margin-top:20px}
+    .sol2{padding:22px 0}
+    .sol2-deliver{margin-top:14px;padding-top:12px}
+    .rec-card{padding:26px}
+    .rec-card h2{margin-bottom:10px}
+    .rec-reasons{margin-top:16px}
+    .rec-reason{margin-top:18px}
+    .closing-cta{margin-top:18px}
+    .contact{margin-top:14px;padding-top:14px}
+    footer{padding:16px 0}
     section:not(.cover){break-inside:auto}
-    /* Cards que podem cair no topo de uma página nova mantêm respiro próprio
-       (padding interno) — margin no topo da página é descartada pelo motor. */
-    .invest-group{margin-top:0;padding-top:40px}
-    .invest-group:first-of-type{padding-top:0}
 
     /* ===== Paginação à prova de corte =====
-       O Chromium IGNORA break-before/after:avoid — só break-inside:avoid vale.
-       Então TODA a lógica de "não fatiar" e "não orfanar" se apoia nele. */
+       O Chromium IGNORA break-before/after:avoid — só break-inside:avoid vale. */
 
     /* A) Texto atômico nunca fatiado: título/rótulo desce inteiro se não couber. */
-    h1,.display,.h2,.eyebrow,.lead,.k,.sol2-k,.sol2-head,.invest-group-name,
+    h1,.display,.h2,.eyebrow,.lead,.k,.sol2-k,.invest-group-name,
     .tname,.tier-head,.rec-card h2,h3{break-inside:avoid}
 
     /* B) Cabeçalho da seção = UMA unidade (eyebrow + título + intro juntos). */
-    .sec-head{break-inside:avoid;margin-bottom:6px}
+    .sec-head{break-inside:avoid;margin-bottom:4px}
 
-    /* C) Cabeçalho colado ao conteúdo: nas seções curtas, cabeçalho + conteúdo
-       saem numa caixa indivisível (cabem numa página → sem órfão, sem corte).
-       Seções altas (soluções/investimento) NÃO se agrupam: quebram entre cards. */
+    /* C) Regra de ouro contra retângulo preto e cabeçalho órfão:
+       - Seções de MÚLTIPLAS linhas (entendemos, estratégia) FLUEM: a quebra cai
+         entre as fileiras de blocos → páginas cheias, sem buraco.
+       - Seções de UMA linha só (custo, próximos passos) e cards boxed grudam o
+         cabeçalho ao conteúdo (.sec-keep) → header nunca fica sozinho no rodapé.
+       Cada bloco é indivisível de qualquer forma (lista D), então nada fatia. */
     .sec-keep{break-inside:avoid}
+    .sol2-keep{break-inside:avoid}
+    .invest-keep{break-inside:avoid}
+    .invest-group{break-inside:avoid;margin-top:0;padding-top:24px}
+    .invest-group:first-of-type{padding-top:0}
+    .rec-card{break-inside:avoid}
 
     /* D) Unidades atômicas PEQUENAS — a quebra cai só nos vãos entre elas.
-       Contêineres ALTOS ficam de fora de propósito (.sol2, .rec-card,
-       .sol2-deliver, .invest-group): passam de uma página e precisam quebrar
-       entre os filhos, senão o conteúdo seria clipado. */
-    .block,.tier,.pillar,.step,.rec-reason,.sol2-cell,.fact,.contact,
+       Contêineres ALTOS (.sol2, .rec-card, .sol2-deliver) ficam fora de
+       propósito: passam de uma página e quebram entre os filhos. */
+    .block,.tier,.pillar,.step,.rec-reason,.sol2-cell,.sol2-head,.fact,.contact,
     .closing-cta,.rec-reasons li,.tier li,.sol2-deliver li,.contact > div,
     figure,img{break-inside:avoid}
     .block,.tier,.pillar,.step,.rec-reason,.sol2{margin-bottom:6px}
@@ -538,7 +554,6 @@ ${
   d.showUnderstanding
     ? `<section class="pad understand"${secEye("showUnderstanding")}
   <div class="wrap">
-   <div class="sec-keep">
     <div class="sec-head">
       <span class="eyebrow">O que entendemos</span>
       <h2 class="display h2" data-edit="understandingHeading">${esc(d.understandingHeading)}</h2>
@@ -549,7 +564,6 @@ ${
       <div class="block"><div class="k">Oportunidade</div><p data-edit="opportunity">${esc(d.opportunity)}</p></div>
       <div class="block"><div class="k">Objetivo</div><p data-edit="objective">${esc(d.objective)}</p></div>
     </div>
-   </div>
   </div>
 </section>`
     : ""
@@ -581,14 +595,12 @@ ${
   d.showStrategy
     ? `<section class="pad strategy"${secEye("showStrategy")}
   <div class="wrap">
-   <div class="sec-keep">
     <div class="sec-head">
       <span class="eyebrow" data-edit="strategyEyebrow">${esc(d.strategyEyebrow || "Estratégia recomendada")}</span>
       <h2 class="display h2" data-edit="strategyHeading">${esc(d.strategyHeading)}</h2>
       <p class="lead" style="margin-top:18px" data-edit="strategyIntro">${esc(d.strategyIntro)}</p>
     </div>
     <div class="pillars">${pillarsHtml(d.pillars, editable)}</div>
-   </div>
   </div>
 </section>`
     : ""
@@ -615,11 +627,13 @@ ${
   d.showInvestment
     ? `<section class="invest pad"${secEye("showInvestment")}
   <div class="wrap">
-    <div class="sec-head">
-      <span class="eyebrow">Investimento</span>
-      <h2 class="display h2"${editableCatalog ? "" : ` data-edit="investHeading"`}>${esc(d.investHeading)}</h2>
+    <div class="invest-keep">
+      <div class="sec-head">
+        <span class="eyebrow">Investimento</span>
+        <h2 class="display h2"${editableCatalog ? "" : ` data-edit="investHeading"`}>${esc(d.investHeading)}</h2>
+      </div>
+      ${investmentGroupsHtml(d.investmentGroups, editableCatalog)}
     </div>
-    ${investmentGroupsHtml(d.investmentGroups, editableCatalog)}
     ${
       d.recommendationReason
         ? `<div class="rec-reason"><span class="badge">★</span><div><div class="rk">Por que o plano em destaque</div><p data-edit="recommendationReason">${esc(d.recommendationReason)}</p></div></div>`

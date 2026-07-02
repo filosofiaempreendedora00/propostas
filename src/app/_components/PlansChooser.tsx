@@ -202,9 +202,9 @@ export default function PlansChooser({ email, individual, time }: Props) {
           annual={annual}
           email={email}
           features={[
-            "1 usuário",
-            "Soluções e planos ilimitados",
             "Propostas ilimitadas",
+            "Soluções e planos ilimitados",
+            "1 usuário",
             "Geração em 60 segundos",
             "Suporte por e-mail e chat",
           ]}
