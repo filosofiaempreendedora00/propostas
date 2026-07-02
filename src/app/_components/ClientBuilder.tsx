@@ -65,6 +65,34 @@ function formatPtDate(iso: string): string {
   return `${d} de ${MONTHS_PT[m - 1]} de ${y}`;
 }
 
+// Máscara de moeda BRL para o campo de preço. Aceita o que a pessoa digita e
+// devolve "R$ 7.000". Digitar "7000" → "R$ 7.000"; "7000,5" → "R$ 7.000,5".
+// A finalização (no blur) garante as 2 casas → "R$ 7.000,00".
+function maskBRL(raw: string): string {
+  const s = raw.replace(/[R$\s.]/g, "").replace(/[^\d,]/g, "");
+  const ci = s.indexOf(",");
+  let intPart = ci === -1 ? s : s.slice(0, ci);
+  const decPart =
+    ci === -1 ? "" : s.slice(ci + 1).replace(/,/g, "").slice(0, 2);
+  intPart = intPart.replace(/^0+(?=\d)/, "");
+  if (!intPart && ci === -1) return "";
+  const intFmt = (intPart || "0").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return ci === -1 ? `R$ ${intFmt}` : `R$ ${intFmt},${decPart}`;
+}
+// No blur: completa as 2 casas decimais (7000 → R$ 7.000,00).
+function finalizeBRL(value: string): string {
+  const masked = maskBRL(value);
+  if (!masked) return "";
+  const ci = masked.indexOf(",");
+  if (ci === -1) return `${masked},00`;
+  return masked.slice(0, ci + 1) + (masked.slice(ci + 1) + "00").slice(0, 2);
+}
+// Preço para EXIBIR: numérico ganha as 2 casas (R$ 2.997 → R$ 2.997,00);
+// texto sem número (ex.: "Sob consulta") é preservado como está.
+function displayPrice(raw: string): string {
+  return maskBRL(raw) ? finalizeBRL(raw) : raw;
+}
+
 export default function ClientBuilder() {
   const { items: solutions, ready: solReady } = useCatalog();
   const { items: consultants, ready: consReady } = useConsultants();
@@ -97,6 +125,9 @@ export default function ClientBuilder() {
   // Override da cobrança por proposta (planId → recorrente/pontual). Sem
   // entrada → usa a do catálogo. Deixa trocar mensal/único fácil no Gerador.
   const [billingById, setBillingById] = useState<Record<string, Billing>>({});
+  // Override do preço por proposta (planId → "R$ X.XXX,XX"). Sem entrada → usa
+  // o preço do catálogo. Deixa a pessoa ajustar o valor antes de baixar.
+  const [priceById, setPriceById] = useState<Record<string, string>>({});
   const [consultantId, setConsultantId] = useState<string | null>(null);
   const seededCons = useRef(false);
   const [dragOver, setDragOver] = useState(false);
@@ -178,6 +209,12 @@ export default function ClientBuilder() {
   const setBilling = (planId: string, value: Billing) =>
     setBillingById((prev) => ({ ...prev, [planId]: value }));
 
+  // Preço vigente do plano (override por proposta, ou o do catálogo).
+  const priceFor = (planId: string, fallback: string): string =>
+    planId in priceById ? priceById[planId] : fallback;
+  const setPrice = (planId: string, value: string) =>
+    setPriceById((prev) => ({ ...prev, [planId]: value }));
+
   const consultant = consultants.find((c) => c.id === consultantId) ?? null;
 
   const data: ProposalData = useMemo(() => {
@@ -194,8 +231,9 @@ export default function ClientBuilder() {
             .filter((p) => selPlans.has(p.id))
             .map((p) => {
               const bill = p.id in billingById ? billingById[p.id] : p.billing;
+              const priceRaw = p.id in priceById ? priceById[p.id] : p.price;
               return {
-                ...planToTier({ ...p, billing: bill }),
+                ...planToTier({ ...p, billing: bill, price: displayPrice(priceRaw) }),
                 featured: p.id === recId,
               };
             }),
@@ -225,6 +263,7 @@ export default function ClientBuilder() {
     selPlans,
     recById,
     billingById,
+    priceById,
     consultant,
     companyLogo,
     companyLogoDark,
@@ -1008,8 +1047,16 @@ export default function ClientBuilder() {
                             </p>
                           ) : (
                             <>
-                              <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-mute">
+                              <p className="text-[10px] font-medium uppercase tracking-wide text-ink-mute">
                                 Planos exibidos ao cliente
+                              </p>
+                              <p className="mb-2 mt-0.5 text-[11px] leading-snug text-ink-mute">
+                                Ajuste o <strong className="text-ink">preço</strong>{" "}
+                                de cada plano. A{" "}
+                                <span className="text-accent">★ estrela</span>{" "}
+                                marca o plano que você{" "}
+                                <strong className="text-ink">recomenda</strong> —
+                                ele sai em destaque pro cliente.
                               </p>
                               <div className="space-y-1.5">
                                 {s.plans.map((p) => {
@@ -1062,12 +1109,14 @@ export default function ClientBuilder() {
                                           <span className="block truncate text-[13px] font-medium text-ink">
                                             {p.name}
                                           </span>
-                                          <span className="block text-xs text-ink-mute">
-                                            {p.price}
-                                            {bill === "recorrente" ? "/mês" : ""}
-                                          </span>
+                                          {!checked && (
+                                            <span className="block text-xs text-ink-mute">
+                                              {displayPrice(priceFor(p.id, p.price))}
+                                              {bill === "recorrente" ? "/mês" : ""}
+                                            </span>
+                                          )}
                                         </button>
-                                        {/* Recomendado (clique) */}
+                                        {/* Recomendado (clique) — rótulo explícito */}
                                         <button
                                           type="button"
                                           onClick={() =>
@@ -1075,25 +1124,56 @@ export default function ClientBuilder() {
                                           }
                                           title={
                                             rec
-                                              ? "Plano recomendado (clique para remover)"
-                                              : "Marcar como recomendado"
+                                              ? "Plano recomendado — clique para remover o destaque"
+                                              : "Marcar como o plano recomendado (destaque na proposta)"
                                           }
-                                          className={`shrink-0 rounded-md px-2 py-1.5 text-[11px] font-semibold transition ${
+                                          className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
                                             rec
-                                              ? "bg-accent/15 text-accent"
-                                              : "text-ink-mute hover:bg-panel-2 hover:text-accent"
+                                              ? "border-accent bg-accent text-bg"
+                                              : "border-line text-ink-mute hover:border-accent/60 hover:text-accent"
                                           }`}
                                         >
-                                          {rec ? "★ recomendado" : "☆"}
+                                          {rec ? "★ Recomendado" : "☆ Recomendar"}
                                         </button>
                                       </div>
 
-                                      {/* Cobrança: mensal x único — fácil de trocar */}
+                                      {/* Preço editável (grande) + cobrança */}
                                       {checked && (
-                                        <div className="mt-2 flex items-center gap-2 pl-[34px]">
-                                          <span className="text-[10px] uppercase tracking-wide text-ink-mute">
-                                            Cobrança
-                                          </span>
+                                        <div className="mt-2.5 space-y-2 pl-[34px]">
+                                          <label className="block">
+                                            <span className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-mute">
+                                              Preço{" "}
+                                              {bill === "recorrente"
+                                                ? "(por mês)"
+                                                : "(único)"}
+                                            </span>
+                                            <input
+                                              value={
+                                                p.id in priceById
+                                                  ? priceById[p.id]
+                                                  : displayPrice(p.price)
+                                              }
+                                              onChange={(e) =>
+                                                setPrice(
+                                                  p.id,
+                                                  maskBRL(e.target.value),
+                                                )
+                                              }
+                                              onBlur={(e) =>
+                                                setPrice(
+                                                  p.id,
+                                                  finalizeBRL(e.target.value),
+                                                )
+                                              }
+                                              inputMode="numeric"
+                                              placeholder="R$ 0,00"
+                                              className="w-full rounded-lg border border-line bg-panel-2 px-3 py-2 text-[17px] font-semibold tracking-tight text-ink outline-none transition placeholder:text-ink-mute/60 focus:border-accent/70"
+                                            />
+                                          </label>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[10px] uppercase tracking-wide text-ink-mute">
+                                              Investimento
+                                            </span>
                                           <div className="inline-flex rounded-md border border-line p-0.5 text-[10px] font-medium">
                                             {(
                                               [
@@ -1116,6 +1196,7 @@ export default function ClientBuilder() {
                                                 {label}
                                               </button>
                                             ))}
+                                          </div>
                                           </div>
                                         </div>
                                       )}
