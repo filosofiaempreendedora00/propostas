@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useTemplates } from "@/lib/templates/store";
 import { BLOCKS, NON_EDITABLE_BLOCKS, type BlockKey } from "@/lib/templates/types";
 import type { BlockTemplate } from "@/lib/templates/types";
@@ -167,6 +168,22 @@ export default function TemplatesWorkspace() {
     >
       {/* Menu de blocos (largura arrastável pela alça) */}
       <aside className="form-scroll h-full w-full overflow-y-auto p-3">
+        {/* Fora da trilha crítica: aqui é refinamento, não passo obrigatório. */}
+        <div className="mb-2 rounded-lg border border-line bg-panel/60 px-3 py-2.5">
+          <div className="text-[11px] font-semibold text-ink-soft">
+            Variações de texto —{" "}
+            <span className="text-ink-mute">opcional, pode pular</span>
+          </div>
+          <p className="mt-0.5 text-[10.5px] leading-snug text-ink-mute">
+            Sua proposta já sai pronta sem mexer aqui.
+          </p>
+          <Link
+            href="/cliente"
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-[11px] font-semibold text-bg transition hover:opacity-90"
+          >
+            → Ir para o Gerador
+          </Link>
+        </div>
         <div className="px-2 pb-3 pt-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-mute">
           Blocos da proposta
         </div>

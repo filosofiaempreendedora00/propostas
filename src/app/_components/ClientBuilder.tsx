@@ -355,18 +355,27 @@ export default function ClientBuilder() {
     return () => clearTimeout(t);
   }, [form, selectedVar, updateTemplate]);
 
-  // ----- onboarding guiado (emenda da geração por IA: /cliente?bemvindo=1) -----
+  // ----- onboarding guiado -----
+  // `onboarding` = veio da geração por IA (?bemvindo) → mostra o banner "a IA
+  // escreveu". `firstRun` = conta ainda NÃO baixou a 1ª proposta → o Gerador
+  // fica SEMPRE pronto/baixável (mesmo voltando pela navegação normal, sem o
+  // param), pra não recair no botão cinza / beco sem saída antes da ativação.
   const [onboarding, setOnboarding] = useState(false);
+  const [firstRun, setFirstRun] = useState(false);
   const [onbDismissed, setOnbDismissed] = useState(false);
   useEffect(() => {
     let onb = false;
+    let done = false;
     try {
       onb =
         new URLSearchParams(window.location.search).get("bemvindo") === "1";
+      done = localStorage.getItem("kronos:onb") === "done";
     } catch {
       /* ignora */
     }
     setOnboarding(onb);
+    setFirstRun(onb || !done);
+    if (done) setOnbDismissed(true); // já ativou → sem banner-guia
     trackFunnel("chegou_ao_gerador", onb ? { via: "ia" } : {});
   }, []);
 
@@ -392,14 +401,22 @@ export default function ClientBuilder() {
 
   // Onboarding: seleciona TODAS as soluções e seus planos → o preview nasce
   // cheio, a proposta inteira já montada. (No uso normal nada vem marcado.)
+  // E PRÉ-PREENCHE o cliente com um exemplo utilizável: a proposta nasce
+  // BAIXÁVEL em 1 clique (aha primeiro; personalizar depois).
   const seededOnb = useRef(false);
   useEffect(() => {
-    if (!onboarding || seededOnb.current || !solReady || solutions.length === 0)
+    if (!firstRun || seededOnb.current || !solReady || solutions.length === 0)
       return;
     seededOnb.current = true;
     setSelSolutions(new Set(solutions.map((s) => s.id)));
     setSelPlans(new Set(solutions.flatMap((s) => s.plans.map((p) => p.id))));
-  }, [onboarding, solReady, solutions]);
+    setForm((f) =>
+      f.clientName.trim() || f.clientLegalName.trim()
+        ? f
+        : { ...f, clientName: "Empresa Exemplo", clientLegalName: "Cliente Exemplo" },
+    );
+    trackFunnel("proposal_ready", { via: onboarding ? "ia" : "firstrun" });
+  }, [firstRun, onboarding, solReady, solutions]);
 
   // ----- estrutura (listas) -----
   const addPillar = () =>
@@ -489,20 +506,16 @@ export default function ClientBuilder() {
   // A contagem "X de 3 grátis" aparece na top-bar; aqui usamos só p/ a lógica.
   const router = useRouter();
 
-  // Clique na logo do preview → Sua Empresa, na logo do tema atual (clara/escura).
-  // Passa a intenção por sessionStorage (síncrono, antes do push) — evita corrida
-  // com a URL que às vezes não abria a aba "Sua marca" de primeira.
+  // Clique na logo do preview → Sua Empresa, na aba "Sua marca", já destacando
+  // a logo do tema atual (clara/escura). A intenção vai por QUERY PARAM (?marca=)
+  // — determinístico ao montar a página (não some sob StrictMode como o
+  // sessionStorage consumido, que abria a aba errada de primeira).
   useEffect(() => {
     function onLogoMsg(e: MessageEvent) {
       const m = e.data;
       if (!m || m.source !== "proposal-logo") return;
       const which = m.which === "escura" ? "escura" : "clara";
-      try {
-        sessionStorage.setItem("kronos:marca", which);
-      } catch {
-        /* ignora */
-      }
-      router.push("/empresa");
+      router.push(`/empresa?marca=${which}`);
     }
     window.addEventListener("message", onLogoMsg);
     return () => window.removeEventListener("message", onLogoMsg);
@@ -520,6 +533,10 @@ export default function ClientBuilder() {
     limit: number;
   } | null>(null);
 
+  // Celebração pós-1º download (WOW): confirma a conquista e faz a oferta
+  // suave atada ao desejo (ilimitadas/sem espera) — momento certo de assinar.
+  const [celebrate, setCelebrate] = useState(false);
+
   // Portão do download: assinante baixa; free consome 1 da cota;
   // esgotado → manda pra tela de planos (pricing padrão).
   const tryDownload = async (run: () => void) => {
@@ -529,6 +546,7 @@ export default function ClientBuilder() {
       setUsage(res);
       if (res.allowed) {
         run();
+        trackFunnel("download_success", { first: res.firstDownload });
         // Ativação: 1ª proposta baixada com sucesso pela conta (uma única vez).
         // firstDownload é decidido no servidor (atômico) → só dispara na 1ª.
         if (res.firstDownload) {
@@ -538,6 +556,15 @@ export default function ClientBuilder() {
             fbq("trackCustom", "BaixouPrimeiraProposta"); // Meta
           }
           trackGoogleConversion(GADS_CONVERSIONS.primeiraProposta); // Google Ads
+          // Onboarding concluído (persistido) + celebração com oferta suave.
+          try {
+            localStorage.setItem("kronos:onb", "done");
+          } catch {
+            /* ignora */
+          }
+          setOnbDismissed(true);
+          setCelebrate(true);
+          trackFunnel("upgrade_prompt_view", { at: "pos_1o_download" });
         }
         // Avisa a top-bar pra atualizar a contagem na hora (sem reload).
         if (!res.unlimited) {
@@ -548,6 +575,7 @@ export default function ClientBuilder() {
           );
         }
       } else {
+        trackFunnel("download_blocked", { reason: "cota_esgotada" });
         router.push("/planos");
       }
     } catch {
@@ -558,8 +586,11 @@ export default function ClientBuilder() {
 
   // Clique em "Baixar PDF/HTML": assinante baixa direto; free vê a confirmação
   // (pra não gastar crédito sem ter certeza do conteúdo/estética).
+  // EXCEÇÃO: o 1º download da conta NUNCA vê modal — aversão à perda antes de
+  // sentir o valor mata a ativação. Aha primeiro; economizar créditos depois.
   const requestDownload = async (run: () => void, format: string) => {
     if (clientMissing) return;
+    trackFunnel("download_attempt", { format });
     let u = usage;
     if (!u) {
       try {
@@ -569,12 +600,13 @@ export default function ClientBuilder() {
         /* sem dados → trata como grátis */
       }
     }
-    if (u?.unlimited) {
+    if (u?.unlimited || (u?.used ?? 0) === 0) {
       tryDownload(run);
       return;
     }
     // Já esgotou → vai direto pros planos (sem modal confuso de "0 de 3").
     if ((u?.remaining ?? 0) <= 0) {
+      trackFunnel("download_blocked", { reason: "cota_esgotada" });
       router.push("/planos");
       return;
     }
@@ -649,9 +681,21 @@ export default function ClientBuilder() {
       <div className="flex items-center justify-between border-b border-line px-6 py-2.5">
         <div className="text-[11px] text-ink-mute">
           {clientMissing ? (
-            <span className="text-amber-400/90">
-              ⚠ Preencha nome da empresa e do cliente para baixar
-            </span>
+            <button
+              type="button"
+              onClick={() => {
+                trackFunnel("download_blocked", { reason: "cliente_vazio" });
+                document
+                  .getElementById("baixar-sec")
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                document
+                  .querySelector<HTMLInputElement>("#baixar-sec + div input")
+                  ?.focus({ preventScroll: true });
+              }}
+              className="cursor-pointer text-amber-400/90 underline-offset-2 transition hover:underline"
+            >
+              ⚠ Falta o nome do cliente pra baixar — clique aqui
+            </button>
           ) : (
             <>
               {data.solutions.length} solução(ões) ·{" "}
@@ -688,12 +732,12 @@ export default function ClientBuilder() {
             <div className="min-w-0">
               <p className="text-sm leading-relaxed text-ink-soft">
                 <span className="font-semibold text-ink">
-                  ✨ A IA escreveu sua proposta inteira.
+                  ✨ A IA escreveu sua proposta inteira — já dá pra baixar.
                 </span>{" "}
-                Confira e ajuste o que não ficou com a sua cara — leva ~2 min.
-                Para baixar, é só pôr o{" "}
-                <strong className="text-ink">nome do cliente</strong> aqui do
-                lado.
+                Preenchi com um cliente de exemplo: troque pelo{" "}
+                <strong className="text-ink">nome do seu cliente real</strong>{" "}
+                (ou baixe já e personalize depois). Ajuste o que não ficou com a
+                sua cara — leva ~2 min.
               </p>
               <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium">
                 <span className="inline-flex items-center gap-1 rounded-full bg-accent/20 px-2 py-0.5 text-ink">
@@ -702,14 +746,26 @@ export default function ClientBuilder() {
                 <span aria-hidden className="text-ink-mute">
                   →
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-accent/50 bg-accent px-2 py-0.5 font-semibold text-bg">
-                  2 · Revise
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
+                    clientMissing
+                      ? "border border-accent/50 bg-accent font-semibold text-bg"
+                      : "bg-accent/20 text-ink"
+                  }`}
+                >
+                  {clientMissing ? "2 · Revise" : <><span aria-hidden>✓</span> 2 · Revise</>}
                 </span>
                 <span aria-hidden className="text-ink-mute">
                   →
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-0.5 text-ink-mute">
-                  3 · Baixe
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
+                    clientMissing
+                      ? "border border-line text-ink-mute"
+                      : "border border-accent/50 bg-accent font-semibold text-bg"
+                  }`}
+                >
+                  3 · Baixe (grátis)
                 </span>
               </div>
             </div>
@@ -1248,17 +1304,38 @@ export default function ClientBuilder() {
             </span>
           </label>
 
-          <SectionTitle>Baixar proposta</SectionTitle>
-          {onboarding && (
+          <div id="baixar-sec">
+            <SectionTitle>Baixar proposta</SectionTitle>
+          </div>
+          {firstRun && !clientMissing && (
             <p className="mb-2.5 rounded-lg border border-accent/30 bg-accent/[0.07] px-3 py-2 text-[12px] leading-relaxed text-ink-soft">
               🎉 Está pronta! Baixe agora — sua{" "}
               <strong className="text-ink">primeira proposta é grátis</strong>.
             </p>
           )}
           {clientMissing && (
-            <p className="mb-2.5 text-[11px] text-amber-400/90">
-              ⚠ Preencha nome da empresa e do cliente para baixar.
-            </p>
+            /* Passo alto e explícito COLADO no botão — nunca botão cinza mudo. */
+            <div className="mb-2.5 rounded-xl border border-amber-400/40 bg-amber-400/[0.08] p-3">
+              <p className="text-[12px] font-semibold text-amber-300">
+                Falta só isto pra baixar:
+              </p>
+              <label className="mt-2 block">
+                <Label>Empresa do cliente</Label>
+                <TextInput
+                  value={form.clientName}
+                  onChange={(v) => set("clientName", v)}
+                  placeholder="Ex: Magazine Luiza"
+                />
+              </label>
+              <label className="mt-2 block">
+                <Label>Nome do cliente</Label>
+                <TextInput
+                  value={form.clientLegalName}
+                  onChange={(v) => set("clientLegalName", v)}
+                  placeholder="Ex: João Silva"
+                />
+              </label>
+            </div>
           )}
           <DownloadActions
             layout="panel"
@@ -1301,6 +1378,50 @@ export default function ClientBuilder() {
           />
         </div>
       </div>
+
+      {/* Celebração do 1º download (WOW) + oferta suave — momento certo. */}
+      {celebrate && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => setCelebrate(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-accent/40 bg-panel p-7 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-4xl" aria-hidden>
+              🎉
+            </div>
+            <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-ink">
+              Primeira proposta baixada!
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+              É assim que se fecha venda. Faça quantas quiser — ajuste o
+              cliente, troque soluções, baixe de novo.
+            </p>
+            <div className="mt-4 rounded-xl border border-line bg-panel-2 p-4 text-left text-[13px] leading-relaxed text-ink-soft">
+              Quer <strong className="text-ink">propostas ilimitadas</strong>,
+              sem contar download? Assine e libere tudo — leva 1 minuto.
+            </div>
+            <div className="mt-5 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCelebrate(false)}
+                className="cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-ink-mute transition hover:text-ink"
+              >
+                Continuar criando
+              </button>
+              <Link
+                href="/planos"
+                onClick={() => trackFunnel("upgrade_prompt_click", { at: "pos_1o_download" })}
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-bg transition hover:opacity-90"
+              >
+                Ver planos →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmDl && (
         <div

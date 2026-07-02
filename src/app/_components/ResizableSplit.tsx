@@ -24,22 +24,40 @@ export default function ResizableSplit({
   const right = kids[1] ?? null;
 
   const ref = useRef<HTMLDivElement>(null);
-  const wRef = useRef(defaultRight);
+  const wRef = useRef(defaultRight); // largura EXIBIDA (já clampada)
+  const intendedRef = useRef(defaultRight); // largura DESEJADA (salva/arrastada)
   const [w, setW] = useState(defaultRight);
   const [drag, setDrag] = useState(false);
 
-  // largura salva (após montar, evita mismatch de hidratação)
+  const clampTo = (val: number) => {
+    const el = ref.current;
+    const max = el ? el.clientWidth - minLeft : val;
+    return Math.max(minRight, Math.min(val, max > minRight ? max : minRight));
+  };
+  const applyClamp = () => {
+    const nw = clampTo(intendedRef.current);
+    wRef.current = nw;
+    setW(nw);
+  };
+
+  // Largura salva + CLAMP ao espaço disponível (na montagem e em cada resize).
+  // Sem o clamp, uma largura salva numa janela maior estoura o container e,
+  // como o painel é shrink-0, o preview é cortado (bug no Mac / telas menores).
+  // Guardamos a largura DESEJADA (intendedRef) e só clampamos a EXIBIDA, então
+  // ao voltar a janela pro tamanho grande a largura original é restaurada.
   useEffect(() => {
     try {
       const v = Number(localStorage.getItem(storageKey));
-      if (v && v > 0) {
-        wRef.current = v;
-        setW(v);
-      }
+      if (v && v > 0) intendedRef.current = v;
     } catch {
       /* ignora */
     }
-  }, [storageKey]);
+    applyClamp();
+    const onResize = () => applyClamp();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey, minLeft, minRight]);
 
   // Anexa os listeners SINCRONAMENTE no pointerdown (sem esperar re-render),
   // pra não perder nenhum movimento — inclusive os primeiros do arraste.
@@ -54,6 +72,7 @@ export default function ResizableSplit({
       const maxRight = r.width - minLeft;
       nw = Math.max(minRight, Math.min(maxRight, nw));
       wRef.current = nw;
+      intendedRef.current = nw; // arraste explícito = nova intenção
       setW(nw);
     };
     const onUp = () => {
@@ -71,8 +90,8 @@ export default function ResizableSplit({
   };
 
   const reset = () => {
-    wRef.current = defaultRight;
-    setW(defaultRight);
+    intendedRef.current = defaultRight;
+    applyClamp();
     try {
       localStorage.setItem(storageKey, String(defaultRight));
     } catch {

@@ -29,6 +29,7 @@ export default function AiOnboarding() {
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    trackFunnel("onboarding_view");
     getAiGenerationsLeft()
       .then(setLeft)
       .catch(() => {});
@@ -46,6 +47,7 @@ export default function AiOnboarding() {
     setLoading(true);
     setError(null);
     setProgress(0);
+    trackFunnel("business_described", { chars: brief.trim().length });
     const start = performance.now();
     timer.current = setInterval(() => {
       const s = (performance.now() - start) / 1000;
@@ -54,7 +56,7 @@ export default function AiOnboarding() {
     try {
       const res = await generateAndReplaceCatalog(brief);
       if (timer.current) clearInterval(timer.current);
-      trackFunnel("gerou_com_ia", { solutions: res.solutions });
+      trackFunnel("catalog_generated", { via: "onboarding", solutions: res.solutions });
       setProgress(100);
       await new Promise((r) => setTimeout(r, 350));
       // WOW: emenda direto no GERADOR com a proposta COMPLETA já montada
