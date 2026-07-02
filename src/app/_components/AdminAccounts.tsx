@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getAccountDetail } from "@/lib/admin/actions";
 import type { AdminOrg, AccountDetail, Temperature } from "@/lib/admin/data";
 
@@ -111,9 +111,19 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [temps, setTemps] = useState<Set<Temperature>>(new Set());
+  const [srcs, setSrcs] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 25;
 
   const toggleTemp = (k: Temperature) =>
     setTemps((s) => {
+      const n = new Set(s);
+      if (n.has(k)) n.delete(k);
+      else n.add(k);
+      return n;
+    });
+  const toggleSrc = (k: string) =>
+    setSrcs((s) => {
       const n = new Set(s);
       if (n.has(k)) n.delete(k);
       else n.add(k);
@@ -125,8 +135,19 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
     if (from && (!k || k < from)) return false;
     if (to && (!k || k > to)) return false;
     if (temps.size > 0 && !temps.has(o.temperature)) return false;
+    if (srcs.size > 0 && !(o.acquisitionSource && srcs.has(o.acquisitionSource)))
+      return false;
     return true;
   });
+
+  // Paginação: 25 por página. Volta pra 1ª página quando o filtro muda.
+  useEffect(() => setPage(0), [from, to, temps, srcs]);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const paged = filtered.slice(
+    safePage * PAGE_SIZE,
+    safePage * PAGE_SIZE + PAGE_SIZE,
+  );
 
   const setPreset = (days: number | null) => {
     if (days === null) {
@@ -246,6 +267,37 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
             </button>
           )}
         </div>
+        <span className="mx-1 hidden h-4 w-px bg-line sm:block" />
+        <span className="text-[11px] font-medium uppercase tracking-wide text-ink-mute">
+          Origem
+        </span>
+        <div className="inline-flex flex-wrap gap-1">
+          {(["google", "meta"] as const).map((k) => {
+            const s = SRC[k];
+            const active = srcs.has(k);
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => toggleSrc(k)}
+                className={`cursor-pointer rounded-full border px-2 py-1 text-[11px] font-semibold transition ${
+                  active ? s.cls : "border-line text-ink-mute hover:text-ink"
+                }`}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+          {srcs.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setSrcs(new Set())}
+              className="cursor-pointer px-1 text-xs text-accent hover:underline"
+            >
+              limpar
+            </button>
+          )}
+        </div>
         <span className="ml-auto text-xs text-ink-mute">
           {filtered.length} de {accounts.length}
         </span>
@@ -257,7 +309,7 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
             Nenhum lead nesse período.
           </div>
         )}
-        {filtered.map((o) => {
+        {paged.map((o) => {
         const t = TEMP[o.temperature];
         const d = details[o.id];
         const expanded = open === o.id;
@@ -470,6 +522,32 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
         );
       })}
       </div>
+
+      {pageCount > 1 && (
+        <div className="mt-3 flex items-center justify-center gap-3 text-xs text-ink-mute">
+          <button
+            type="button"
+            disabled={safePage === 0}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            className="cursor-pointer rounded-lg border border-line px-3 py-1.5 font-medium text-ink-soft transition enabled:hover:border-accent/50 enabled:hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ← Anterior
+          </button>
+          <span className="tabular-nums">
+            {safePage * PAGE_SIZE + 1}–
+            {Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} de{" "}
+            {filtered.length} · pág. {safePage + 1}/{pageCount}
+          </span>
+          <button
+            type="button"
+            disabled={safePage >= pageCount - 1}
+            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+            className="cursor-pointer rounded-lg border border-line px-3 py-1.5 font-medium text-ink-soft transition enabled:hover:border-accent/50 enabled:hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Próxima →
+          </button>
+        </div>
+      )}
     </>
   );
 }
