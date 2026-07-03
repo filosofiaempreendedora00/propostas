@@ -1832,22 +1832,15 @@ function DownloadActions({
 
   return (
     <div ref={rootRef} className={`relative ${header ? "" : "w-full"}`}>
-      {/* Halo pulsante quando é a hora de baixar — guia o olho pro botão. */}
-      {cta && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 animate-ping rounded-full bg-accent/50"
-        />
-      )}
+      {/* Quando é a hora de baixar, o botão pulsa via box-shadow (kronos-btn-glow)
+          — NÃO usa transform:scale, que vazava da viewport e criava scroll. */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={disabled}
         aria-expanded={open}
         className={`relative flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-accent font-semibold text-bg shadow-sm transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 ${
-          cta
-            ? "shadow-[0_0_20px_-1px_var(--accent)] ring-2 ring-accent/60"
-            : ""
+          cta ? "kronos-btn-glow" : ""
         } ${header ? "px-5 py-2 text-sm" : "w-full px-4 py-2.5 text-sm"}`}
       >
         ⬇ Baixar
