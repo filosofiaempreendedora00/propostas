@@ -475,16 +475,33 @@ export function renderProposalHTML(
     .pillars{grid-template-columns:repeat(2,1fr)}
     .wrap{padding-inline:48px}
 
+    /* Fundo UNIFORME no print: o zebra (bg-soft do custo/investimento, radial
+       dos próximos passos) terminava no meio da página quando a seção acabava
+       antes dela → "retângulo" no rodapé. No papel, uma cor só. */
+    section:not(.cover){background:transparent!important}
+
     /* Espaçamento ENXUTO no print → páginas bem aproveitadas (menos vazão),
-       mantendo respiro pra nada colar na borda. */
-    .pad{padding:34px 0}
+       mantendo respiro pra nada colar na borda. Importante: respiro no TOPO
+       dos cards via PADDING (margens são descartadas na quebra de página —
+       era isso que deixava título/box grudado na aresta). */
+    .pad{padding:38px 0 34px}
     .gblocks{margin-top:20px}
     .pillars,.tiers,.steps{margin-top:20px}
     /* Preço do plano numa linha só (com ",00" o 38px quebrava "R$"/"valor"). */
     .tier .price{font-size:27px;white-space:nowrap}
     .tier .price small{font-size:13px}
-    .sol2{padding:22px 0}
-    .sol2-deliver{margin-top:14px;padding-top:12px}
+    .sol2{padding:34px 0 22px}
+    .sol2:first-of-type{padding-top:10px}
+    .sol2-deliver{margin-top:12px;padding-top:14px}
+    /* Entregáveis/destaques: UM item por linha no print — o flex-wrap criava
+       viúvas (item sozinho espremido ao lado de outro). Lista limpa. */
+    .sol2-deliver ul{display:block}
+    .sol2-deliver li{margin-bottom:8px}
+    .sol2-deliver li:last-child{margin-bottom:0}
+    /* Box "por que o plano em destaque": respiro por padding no wrapper
+       (se abrir uma página nova, não gruda a borda na aresta). */
+    .rec-wrap{break-inside:avoid;padding-top:16px}
+    .rec-wrap .rec-reason{margin-top:0}
     .rec-card{padding:26px}
     .rec-card h2{margin-bottom:10px}
     .rec-reasons{margin-top:16px}
@@ -531,7 +548,7 @@ export function renderProposalHTML(
     .sol2-keep{break-inside:avoid}
     .sol2-deliver{break-inside:avoid}
     .invest-keep{break-inside:avoid}
-    .invest-group{break-inside:avoid;margin-top:0;padding-top:24px}
+    .invest-group{break-inside:avoid;margin-top:0;padding-top:30px}
     .invest-keep .invest-group{padding-top:0}
     .rec-card{break-inside:avoid}
 
@@ -668,7 +685,7 @@ ${
     ${investGroups.slice(1).join("")}
     ${
       d.recommendationReason
-        ? `<div class="rec-reason"><span class="badge">★</span><div><div class="rk">Por que o plano em destaque</div><p data-edit="recommendationReason">${esc(d.recommendationReason)}</p></div></div>`
+        ? `<div class="rec-wrap"><div class="rec-reason"><span class="badge">★</span><div><div class="rk">Por que o plano em destaque</div><p data-edit="recommendationReason">${esc(d.recommendationReason)}</p></div></div></div>`
         : ""
     }
   </div>
