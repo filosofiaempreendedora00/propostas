@@ -236,39 +236,6 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
         )}
         <span className="mx-1 hidden h-4 w-px bg-line sm:block" />
         <span className="text-[11px] font-medium uppercase tracking-wide text-ink-mute">
-          Temperatura
-        </span>
-        <div className="inline-flex flex-wrap gap-1">
-          {(["quente", "morno", "frio", "cliente"] as Temperature[]).map((k) => {
-            const tt = TEMP[k];
-            const active = temps.has(k);
-            return (
-              <button
-                key={k}
-                type="button"
-                onClick={() => toggleTemp(k)}
-                className={`cursor-pointer rounded-full border px-2 py-1 text-[11px] font-medium transition ${
-                  active
-                    ? tt.cls
-                    : "border-line text-ink-mute hover:text-ink"
-                }`}
-              >
-                {tt.icon} {tt.label}
-              </button>
-            );
-          })}
-          {temps.size > 0 && (
-            <button
-              type="button"
-              onClick={() => setTemps(new Set())}
-              className="cursor-pointer px-1 text-xs text-accent hover:underline"
-            >
-              limpar
-            </button>
-          )}
-        </div>
-        <span className="mx-1 hidden h-4 w-px bg-line sm:block" />
-        <span className="text-[11px] font-medium uppercase tracking-wide text-ink-mute">
           Origem
         </span>
         <div className="inline-flex flex-wrap gap-1">
@@ -303,6 +270,47 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
         </span>
       </div>
 
+      {/* Filtro de temperatura — controle segmentado com contagem por faixa
+          (não "tagzinha"): mostra a distribuição real e filtra ao clicar. */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {(["quente", "morno", "frio", "cliente"] as Temperature[]).map((k) => {
+          const tt = TEMP[k];
+          const active = temps.has(k);
+          const n = accounts.filter((o) => o.temperature === k).length;
+          return (
+            <button
+              key={k}
+              type="button"
+              onClick={() => toggleTemp(k)}
+              className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                active
+                  ? `${tt.cls} ring-1 ring-inset ring-current`
+                  : "border-line text-ink-soft hover:border-ink-mute/50 hover:text-ink"
+              }`}
+            >
+              <span className="text-base leading-none">{tt.icon}</span>
+              {tt.label}
+              <span
+                className={`ml-0.5 min-w-[1.5rem] rounded-md px-1.5 py-0.5 text-center text-xs font-bold tabular-nums ${
+                  active ? "bg-black/25" : "bg-panel-2 text-ink-mute"
+                }`}
+              >
+                {n}
+              </span>
+            </button>
+          );
+        })}
+        {temps.size > 0 && (
+          <button
+            type="button"
+            onClick={() => setTemps(new Set())}
+            className="cursor-pointer px-2 text-xs text-accent hover:underline"
+          >
+            limpar filtro
+          </button>
+        )}
+      </div>
+
       <div className="overflow-hidden rounded-2xl border border-line">
         {filtered.length === 0 && (
           <div className="p-8 text-center text-sm text-ink-mute">
@@ -325,33 +333,36 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
                   toggle(o.id);
                 }
               }}
-              className={`flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition hover:bg-panel/50 ${
+              className={`flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left transition hover:bg-panel/50 ${
                 expanded ? "bg-panel/50" : ""
               }`}
             >
-              <span
-                className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${t.cls}`}
-              >
-                {t.icon} {t.label}
-              </span>
-              {o.acquisitionSource && SRC[o.acquisitionSource] && (
-                <span
-                  className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${SRC[o.acquisitionSource].cls}`}
-                  title={
-                    o.acquisitionGclid
-                      ? `Origem do lead · gclid: ${o.acquisitionGclid}`
-                      : o.acquisitionFbclid
-                        ? `Origem do lead · fbclid: ${o.acquisitionFbclid}`
-                        : o.acquisitionFirstUrl
-                          ? `Origem do lead · ${o.acquisitionFirstUrl}`
-                          : "Origem do lead"
-                  }
-                >
-                  {SRC[o.acquisitionSource].label}
-                </span>
-              )}
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-ink">
+                {/* Tags de temperatura + canal em cima; nome/email à esquerda embaixo. */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${t.cls}`}
+                  >
+                    {t.icon} {t.label}
+                  </span>
+                  {o.acquisitionSource && SRC[o.acquisitionSource] && (
+                    <span
+                      className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${SRC[o.acquisitionSource].cls}`}
+                      title={
+                        o.acquisitionGclid
+                          ? `Origem do lead · gclid: ${o.acquisitionGclid}`
+                          : o.acquisitionFbclid
+                            ? `Origem do lead · fbclid: ${o.acquisitionFbclid}`
+                            : o.acquisitionFirstUrl
+                              ? `Origem do lead · ${o.acquisitionFirstUrl}`
+                              : "Origem do lead"
+                      }
+                    >
+                      {SRC[o.acquisitionSource].label}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1.5 truncate text-sm font-medium text-ink">
                   {o.name}
                 </div>
                 <div
@@ -370,7 +381,7 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
                 <div className="flex flex-wrap items-center justify-end gap-1">
                   <Signal on={o.hasLogo}>logo</Signal>
                   <Signal on={o.customSolution}>solução</Signal>
-                  <Signal on={o.customConsultant}>consultor</Signal>
+                  <Signal on={o.consultantHasContact}>contato</Signal>
                   <Signal on={o.customPlan}>plano</Signal>
                   {o.downloadsUsed > 0 && (
                     <span className="rounded-full border border-line bg-panel-2 px-2 py-0.5 text-[10px] font-medium text-ink-soft">

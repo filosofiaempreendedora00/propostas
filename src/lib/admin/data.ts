@@ -65,7 +65,7 @@ export type AdminOrg = {
   firstDownloadAt: string | null;
   // sinais de engajamento (deixou de usar o padrão de exemplo):
   hasLogo: boolean;
-  customConsultant: boolean;
+  consultantHasContact: boolean; // email/telefone REAL (a IA deixa vazio)
   customSolution: boolean;
   customPlan: boolean;
   temperature: Temperature;
@@ -126,24 +126,26 @@ export type AdminOverview = {
   aiUsage: AdminAiUsage;
 };
 
-// Pontua o engajamento e devolve a temperatura.
+// Temperatura do lead — pé no chão. A IA preenche soluções + consultor num
+// clique, então "ter catálogo" NÃO é sinal de intenção: é só ter experimentado.
+// Só conta como QUENTE quem fez esforço REAL além do 1-clique da IA.
 function temperatureOf(o: {
   status: string;
   downloadsUsed: number;
   hasLogo: boolean;
-  customConsultant: boolean;
+  consultantHasContact: boolean;
   customSolution: boolean;
-  customPlan: boolean;
 }): Temperature {
   if (o.status === "active") return "cliente";
-  const score =
-    (o.hasLogo ? 2 : 0) +
-    (o.customConsultant ? 2 : 0) +
-    (o.customSolution ? 2 : 0) +
-    (o.customPlan ? 1 : 0) +
-    Math.min(o.downloadsUsed, 3);
-  if (score >= 4) return "quente";
-  if (score >= 1) return "morno";
+  // QUENTE: sinal forte de intenção/esforço — baixou uma proposta (ativou),
+  //   subiu a própria logo, ou preencheu contato real do consultor.
+  if (o.downloadsUsed >= 1 || o.hasLogo || o.consultantHasContact) {
+    return "quente";
+  }
+  // MORNO: experimentou (tem catálogo real, tipicamente gerado pela IA) mas
+  //   não personalizou nem baixou nada — engajou, não se comprometeu.
+  if (o.customSolution) return "morno";
+  // FRIO: cadastrou e parou (catálogo vazio / de exemplo).
   return "frio";
 }
 
@@ -173,8 +175,9 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       ) as has_logo,
       exists(
         select 1 from consultants c where c.org_id = o.id
-        and (c.name <> 'Nome do Consultor' or c.email <> 'consultor@suaempresa.com')
-      ) as custom_consultant,
+        and ((c.email ~ '@' and c.email <> 'consultor@suaempresa.com')
+          or (c.phone ~ '[1-9]' and c.phone not like '%00000%'))
+      ) as consultant_contact,
       exists(
         select 1 from solutions s where s.org_id = o.id
         and (s.name !~ '^Solução [0-9]+$'
@@ -206,7 +209,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     members: number;
     pending: number;
     has_logo: boolean;
-    custom_consultant: boolean;
+    consultant_contact: boolean;
     custom_solution: boolean;
     custom_plan: boolean;
   }>;
@@ -245,7 +248,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     const base = {
       downloadsUsed: Number(o.downloads_used) || 0,
       hasLogo: !!o.has_logo,
-      customConsultant: !!o.custom_consultant,
+      consultantHasContact: !!o.consultant_contact,
       customSolution: !!o.custom_solution,
       customPlan: !!o.custom_plan,
     };
