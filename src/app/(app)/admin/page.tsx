@@ -189,14 +189,9 @@ export default async function AdminPage() {
 
         {/* Contas & leads — temperatura à esquerda; clique pra abrir o raio-x */}
         <section className="mt-10">
-          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <h2 className="font-display text-2xl font-semibold tracking-tight text-ink">
-              Contas &amp; leads ({orgs.length})
-            </h2>
-            <span className="text-xs text-ink-mute">
-              🔥 quente · 🌡️ morno · ❄️ frio · ✅ cliente — clique para o raio-x
-            </span>
-          </div>
+          <h2 className="mb-3 font-display text-2xl font-semibold tracking-tight text-ink">
+            Contas &amp; leads ({orgs.length})
+          </h2>
           <AdminAccounts accounts={orgs} />
         </section>
 
