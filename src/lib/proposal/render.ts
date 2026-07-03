@@ -546,7 +546,7 @@ export function renderProposalHTML(
        - .rec-card inteiro. */
     .sec-keep{break-inside:avoid}
     .sol2-keep{break-inside:avoid}
-    .sol2-deliver{break-inside:avoid}
+    .sol2-deliver{break-inside:auto} /* lista longa quebra entre itens (cada li é avoid); nunca clipa */
     .invest-keep{break-inside:avoid}
     .invest-group{break-inside:avoid;margin-top:0;padding-top:30px}
     .invest-keep .invest-group{padding-top:0}

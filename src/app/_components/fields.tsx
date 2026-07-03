@@ -17,17 +17,23 @@ export function TextInput({
   value,
   onChange,
   placeholder,
+  highlight = false,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  highlight?: boolean;
 }) {
   return (
     <input
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg border border-field-line bg-field px-3 py-2 text-sm text-field-ink outline-none transition placeholder:text-field-mute focus:border-accent focus:ring-2 focus:ring-accent/30"
+      className={`w-full rounded-lg border bg-field px-3 py-2 text-sm text-field-ink outline-none transition placeholder:text-field-mute focus:border-accent focus:ring-2 focus:ring-accent/30 ${
+        highlight
+          ? "border-accent ring-2 ring-accent/40"
+          : "border-field-line"
+      }`}
     />
   );
 }
