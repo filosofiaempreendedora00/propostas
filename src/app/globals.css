@@ -125,8 +125,15 @@ body {
   border-color: var(--color-accent) !important;
   animation: kronos-pulse-ring 0.9s ease-out 3;
 }
+/* Glow pulsante contínuo pro botão (ex.: "Baixar" no onboarding). Usa
+   box-shadow (spread), que NÃO afeta o layout nem gera scroll horizontal —
+   ao contrário de animate-ping (transform:scale), que "vazava" da viewport. */
+.kronos-btn-glow {
+  animation: kronos-pulse-ring 1.5s ease-out infinite;
+}
 @media (prefers-reduced-motion: reduce) {
-  .kronos-pulse {
+  .kronos-pulse,
+  .kronos-btn-glow {
     animation: none;
   }
 }
