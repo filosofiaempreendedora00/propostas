@@ -110,7 +110,11 @@ function tiersHtml(tiers: Tier[], ed = false): string {
     .join("");
 }
 
-function investmentGroupsHtml(groups: InvestmentGroup[], ed = false): string {
+// Um card de grupo por solução. Devolve a LISTA (não a string única): no print,
+// o 1º grupo vai grudado ao cabeçalho da seção (.invest-keep) e os demais fluem
+// como irmãos — cada um indivisível. Grudar TODOS ao cabeçalho estourava a
+// página com 2+ soluções e o Chrome passava a cortar cards no meio.
+function investmentGroupsHtml(groups: InvestmentGroup[], ed = false): string[] {
   return groups
     .filter((g) => g.plans.length > 0)
     .map(
@@ -119,8 +123,7 @@ function investmentGroupsHtml(groups: InvestmentGroup[], ed = false): string {
         <div class="invest-group-name">${esc(g.solution)}</div>
         <div class="tiers">${tiersHtml(g.plans, ed)}</div>
       </div>`,
-    )
-    .join("");
+    );
 }
 
 function stepsHtml(steps: Step[]): string {
@@ -238,6 +241,10 @@ export function renderProposalHTML(
     };
     (d as unknown as Record<string, boolean>)[SHOW_FLAG[only]] = true;
   }
+
+  // Grupos de investimento pré-renderizados: o 1º gruda no cabeçalho da seção
+  // (.invest-keep) e os demais fluem — ver o CSS de paginação do print.
+  const investGroups = investmentGroupsHtml(d.investmentGroups, editableCatalog);
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -387,6 +394,7 @@ export function renderProposalHTML(
   .contact .cv{font-size:15px;font-weight:500}
 
   footer{border-top:1px solid var(--line);padding:34px 0;text-align:center;color:var(--ink-mute);font-size:12.5px;letter-spacing:.04em}
+  .print-footer{display:none} /* só existe no print (vira parte do contato) */
 
   ${
     editable
@@ -472,6 +480,9 @@ export function renderProposalHTML(
     .pad{padding:34px 0}
     .gblocks{margin-top:20px}
     .pillars,.tiers,.steps{margin-top:20px}
+    /* Preço do plano numa linha só (com ",00" o 38px quebrava "R$"/"valor"). */
+    .tier .price{font-size:27px;white-space:nowrap}
+    .tier .price small{font-size:13px}
     .sol2{padding:22px 0}
     .sol2-deliver{margin-top:14px;padding-top:12px}
     .rec-card{padding:26px}
@@ -480,7 +491,10 @@ export function renderProposalHTML(
     .rec-reason{margin-top:18px}
     .closing-cta{margin-top:18px}
     .contact{margin-top:14px;padding-top:14px}
-    footer{padding:16px 0}
+    /* Rodapé no print: entra DENTRO do bloco de contato (atômico) → nunca
+       sobra uma página só com a linha de confidencialidade. */
+    footer{display:none}
+    .print-footer{display:block;width:100%;border-top:1px solid var(--line);margin-top:16px;padding-top:12px;text-align:center;color:var(--ink-mute);font-size:11.5px;letter-spacing:.04em}
     section:not(.cover){break-inside:auto}
 
     /* ===== Paginação à prova de corte =====
@@ -493,22 +507,35 @@ export function renderProposalHTML(
     /* B) Cabeçalho da seção = UMA unidade (eyebrow + título + intro juntos). */
     .sec-head{break-inside:avoid;margin-bottom:4px}
 
-    /* C) Regra de ouro contra retângulo preto e cabeçalho órfão:
-       - Seções de MÚLTIPLAS linhas (entendemos, estratégia) FLUEM: a quebra cai
-         entre as fileiras de blocos → páginas cheias, sem buraco.
-       - Seções de UMA linha só (custo, próximos passos) e cards boxed grudam o
-         cabeçalho ao conteúdo (.sec-keep) → header nunca fica sozinho no rodapé.
-       Cada bloco é indivisível de qualquer forma (lista D), então nada fatia. */
+    /* B2) Capítulos: Soluções e Investimento SEMPRE abrem página nova
+       (break-before:page é respeitado pelo Chromium, ao contrário do avoid).
+       São as duas seções altas — começando no topo, o cabeçalho nunca fica
+       órfão no rodapé da página anterior e o 1º card vem logo abaixo dele. */
+    section.solutions,section.invest{break-before:page;border-top:none}
+
+    /* C) Regra de ouro: NENHUM grupo rotulado se separa do seu conteúdo e
+       NENHUM card é fatiado. Grupos pequenos e médios são indivisíveis; só os
+       contêineres realmente ALTOS (.sol2 inteiro, a seção de soluções, o
+       conjunto de grupos do investimento) fluem — e a quebra neles só pode
+       cair nos vãos entre unidades indivisíveis:
+       - .sec-keep: seções compactas inteiras (entendemos, custo, estratégia,
+         próximos passos) — no print multicoluna elas cabem numa página.
+       - .sol2-keep: header + grid de cada solução.
+       - .sol2-deliver: rótulo (ENTREGÁVEIS/DESTAQUES/PRECISAMOS) + bullets,
+         SEMPRE juntos — bullet nunca parte nem órfão de rótulo.
+       - .invest-keep: header do investimento + o 1º grupo de planos (os
+         grupos seguintes são irmãos, cada um indivisível) — com várias
+         soluções o bloco não passa da página, então nada de card cortado.
+       - .rec-card inteiro. */
     .sec-keep{break-inside:avoid}
     .sol2-keep{break-inside:avoid}
+    .sol2-deliver{break-inside:avoid}
     .invest-keep{break-inside:avoid}
     .invest-group{break-inside:avoid;margin-top:0;padding-top:24px}
-    .invest-group:first-of-type{padding-top:0}
+    .invest-keep .invest-group{padding-top:0}
     .rec-card{break-inside:avoid}
 
-    /* D) Unidades atômicas PEQUENAS — a quebra cai só nos vãos entre elas.
-       Contêineres ALTOS (.sol2, .rec-card, .sol2-deliver) ficam fora de
-       propósito: passam de uma página e quebram entre os filhos. */
+    /* D) Unidades atômicas PEQUENAS — a quebra cai só nos vãos entre elas. */
     .block,.tier,.pillar,.step,.rec-reason,.sol2-cell,.sol2-head,.fact,.contact,
     .closing-cta,.rec-reasons li,.tier li,.sol2-deliver li,.contact > div,
     figure,img{break-inside:avoid}
@@ -516,7 +543,7 @@ export function renderProposalHTML(
     p{orphans:3;widows:3}
   }
 </style>
-${only ? `<style>.cover,footer{display:none!important}section{border-top:none!important}.pad{padding:40px 0}</style>` : ""}
+${only ? `<style>.cover,footer{display:none!important}section{border-top:none!important;break-before:auto!important}.pad{padding:40px 0}</style>` : ""}
 </head>
 <body>
 
@@ -554,6 +581,7 @@ ${
   d.showUnderstanding
     ? `<section class="pad understand"${secEye("showUnderstanding")}
   <div class="wrap">
+   <div class="sec-keep">
     <div class="sec-head">
       <span class="eyebrow">O que entendemos</span>
       <h2 class="display h2" data-edit="understandingHeading">${esc(d.understandingHeading)}</h2>
@@ -564,6 +592,7 @@ ${
       <div class="block"><div class="k">Oportunidade</div><p data-edit="opportunity">${esc(d.opportunity)}</p></div>
       <div class="block"><div class="k">Objetivo</div><p data-edit="objective">${esc(d.objective)}</p></div>
     </div>
+   </div>
   </div>
 </section>`
     : ""
@@ -595,20 +624,22 @@ ${
   d.showStrategy
     ? `<section class="pad strategy"${secEye("showStrategy")}
   <div class="wrap">
+   <div class="sec-keep">
     <div class="sec-head">
       <span class="eyebrow" data-edit="strategyEyebrow">${esc(d.strategyEyebrow || "Estratégia recomendada")}</span>
       <h2 class="display h2" data-edit="strategyHeading">${esc(d.strategyHeading)}</h2>
       <p class="lead" style="margin-top:18px" data-edit="strategyIntro">${esc(d.strategyIntro)}</p>
     </div>
     <div class="pillars">${pillarsHtml(d.pillars, editable)}</div>
+   </div>
   </div>
 </section>`
     : ""
 }
 
-<!-- 5. SOLUÇÕES RECOMENDADAS -->
+<!-- 5. SOLUÇÕES RECOMENDADAS (some quando não há solução selecionada — sem casca vazia) -->
 ${
-  d.showSolutions
+  d.showSolutions && (only || d.solutions.length > 0)
     ? `<section class="pad solutions"${secEye("showSolutions")}
   <div class="wrap">
     <div class="sec-head">
@@ -622,9 +653,9 @@ ${
     : ""
 }
 
-<!-- 6. INVESTIMENTO -->
+<!-- 6. INVESTIMENTO (some quando não há plano selecionado — sem "Escolha o nível" órfão) -->
 ${
-  d.showInvestment
+  d.showInvestment && (only || investGroups.length > 0)
     ? `<section class="invest pad"${secEye("showInvestment")}
   <div class="wrap">
     <div class="invest-keep">
@@ -632,8 +663,9 @@ ${
         <span class="eyebrow">Investimento</span>
         <h2 class="display h2"${editableCatalog ? "" : ` data-edit="investHeading"`}>${esc(d.investHeading)}</h2>
       </div>
-      ${investmentGroupsHtml(d.investmentGroups, editableCatalog)}
+      ${investGroups[0] ?? ""}
     </div>
+    ${investGroups.slice(1).join("")}
     ${
       d.recommendationReason
         ? `<div class="rec-reason"><span class="badge">★</span><div><div class="rk">Por que o plano em destaque</div><p data-edit="recommendationReason">${esc(d.recommendationReason)}</p></div></div>`
@@ -650,7 +682,7 @@ ${
     ? `<section class="pad consultant-rec"${secEye("showConsultantRec")}
   <div class="wrap">
    <div class="sec-keep">
-    <div class="sec-head"><span class="eyebrow">Recomendação do ${esc((d.consultantTerm ?? "Consultor").toLowerCase())}</span></div>
+    <div class="sec-head"><span class="eyebrow">Recomendação ${/a(\s|$)/i.test((d.consultantTerm ?? "Consultor").trim().split(/\s+/)[0] ?? "") ? "da" : "do"} ${esc((d.consultantTerm ?? "Consultor").toLowerCase())}</span></div>
     <div class="rec-card">
       <h2 class="display" data-edit="consultantRecHeading">${esc(d.consultantRecHeading)}</h2>
       <p class="lead" data-edit="consultantRecText">${esc(d.consultantRecText)}</p>
@@ -682,6 +714,7 @@ ${
       <div><div class="ck">${esc(d.consultantTerm ?? "Consultor")}</div><div class="cv">${esc(d.responsible)}</div></div>
       <div><div class="ck">Telefone</div><div class="cv">${esc(d.phone)}</div></div>
       <div><div class="ck">E-mail</div><div class="cv">${esc(d.email)}</div></div>
+      <div class="print-footer">© ${esc(d.dateLabel.replace(/.*\b(\d{4})\b.*/, "$1") || "")} ${esc(d.companyName)} · Proposta confidencial preparada para ${esc(d.clientLegalName)}.</div>
     </div>
   </div>
 </section>`
