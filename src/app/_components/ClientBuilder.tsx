@@ -720,11 +720,10 @@ export default function ClientBuilder() {
               type="button"
               onClick={() => {
                 trackFunnel("download_blocked", { reason: "cliente_vazio" });
-                document
-                  .getElementById("baixar-sec")
-                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                document
-                  .querySelector<HTMLInputElement>("#baixar-sec + div input")
+                const el = document.getElementById("cliente-sec");
+                el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                el
+                  ?.querySelector<HTMLInputElement>("input")
                   ?.focus({ preventScroll: true });
               }}
               className="cursor-pointer text-amber-400/90 underline-offset-2 transition hover:underline"
@@ -753,6 +752,7 @@ export default function ClientBuilder() {
           <DownloadActions
             layout="header"
             disabled={clientMissing}
+            highlight={firstRun && !clientMissing && !onbDismissed}
             onPdf={() => requestDownload(handleExportPDF, "PDF")}
             onHtml={() => requestDownload(handleExport, "HTML")}
           />
@@ -763,61 +763,65 @@ export default function ClientBuilder() {
       {/* Onboarding: pede o nome do cliente NA FRENTE (não como gate tardio) →
           a 1ª proposta já sai REAL, sem queimar crédito com exemplo. */}
       {firstRun && !onbDismissed && (
-        <div className="border-b border-accent/30 bg-accent/[0.07] px-6 py-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
+        <div
+          className={`px-6 py-3.5 ${
+            clientMissing
+              ? "border-b-2 border-accent bg-accent/[0.13]"
+              : "border-b-2 border-accent/70 bg-accent/[0.11]"
+          }`}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
               {clientMissing ? (
                 <>
-                  <p className="text-sm leading-relaxed text-ink-soft">
+                  <span className="grid h-9 w-9 shrink-0 animate-bounce place-items-center rounded-full bg-accent text-lg font-bold text-bg">
+                    ↓
+                  </span>
+                  <p className="text-sm leading-snug text-ink-soft sm:text-[15px]">
                     <span className="font-semibold text-ink">
                       {onboarding
-                        ? "✨ A IA escreveu sua proposta inteira."
-                        : "Sua proposta está pronta."}
+                        ? "✨ A IA escreveu sua proposta inteira!"
+                        : "Sua proposta está pronta!"}
                     </span>{" "}
-                    Confira no preview e diga{" "}
-                    <strong className="text-ink">pra quem é</strong> pra baixar
-                    (grátis) — 10 segundos:
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <input
-                      value={form.clientName}
-                      onChange={(e) => set("clientName", e.target.value)}
-                      placeholder="Empresa do cliente (ex: Magazine Luiza)"
-                      className="w-56 rounded-lg border border-accent/50 bg-panel px-3 py-1.5 text-sm text-ink outline-none transition placeholder:text-ink-mute/70 focus:border-accent"
-                    />
-                    <input
-                      value={form.clientLegalName}
-                      onChange={(e) => set("clientLegalName", e.target.value)}
-                      placeholder="Nome do cliente (ex: João Silva)"
-                      className="w-52 rounded-lg border border-accent/50 bg-panel px-3 py-1.5 text-sm text-ink outline-none transition placeholder:text-ink-mute/70 focus:border-accent"
-                    />
-                    <span className="text-[11px] text-ink-mute">
-                      ↑ aparece na capa
+                    Falta <strong className="text-ink">1 passo</strong> pra
+                    baixar (grátis): diga{" "}
+                    <strong className="text-ink">pra quem é</strong> nos campos{" "}
+                    <span className="font-semibold text-accent">
+                      destacados abaixo
                     </span>
-                  </div>
+                    .
+                  </p>
                 </>
               ) : (
                 <>
-                  <p className="text-sm leading-relaxed text-ink-soft">
-                    <span className="font-semibold text-ink">
-                      🎉 Proposta pronta para {form.clientName}.
-                    </span>{" "}
-                    Revise o que quiser e clique em{" "}
-                    <strong className="text-ink">Baixar</strong> — sua 1ª
-                    proposta é grátis.
-                  </p>
-                  <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/20 px-2 py-0.5 text-ink">
-                      <span aria-hidden>✓</span> 1 · Descreva
-                    </span>
-                    <span aria-hidden className="text-ink-mute">→</span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/20 px-2 py-0.5 text-ink">
-                      <span aria-hidden>✓</span> 2 · Cliente
-                    </span>
-                    <span aria-hidden className="text-ink-mute">→</span>
-                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/50 bg-accent px-2 py-0.5 font-semibold text-bg">
-                      3 · Baixe (grátis)
-                    </span>
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent text-lg">
+                    🎉
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] leading-snug text-ink-soft sm:text-base">
+                      <span className="font-semibold text-ink">
+                        Tudo pronto para {form.clientName || "seu cliente"}!
+                      </span>{" "}
+                      Agora é só clicar em{" "}
+                      <strong className="text-ink">Baixar</strong>{" "}
+                      <span className="font-semibold text-accent">
+                        ali em cima ↗
+                      </span>{" "}
+                      — sua 1ª proposta é grátis.
+                    </p>
+                    <div className="mt-2 flex items-center gap-2 text-[13px] font-semibold">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-accent/25 px-2.5 py-1 text-ink">
+                        <span aria-hidden>✓</span> 1 · Descreva
+                      </span>
+                      <span aria-hidden className="text-ink-mute">→</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-accent/25 px-2.5 py-1 text-ink">
+                        <span aria-hidden>✓</span> 2 · Cliente
+                      </span>
+                      <span aria-hidden className="text-ink-mute">→</span>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-accent bg-accent px-2.5 py-1 font-bold text-bg">
+                        3 · Baixe (grátis)
+                      </span>
+                    </div>
                   </div>
                 </>
               )}
@@ -850,15 +854,22 @@ export default function ClientBuilder() {
           <SectionTitle n={1} onJump={() => scrollPreviewTo(".cover")}>
             Identificação
           </SectionTitle>
-          <label className="block">
+          <label className="block" id="cliente-sec">
             <Label>
               Empresa do cliente (capa){" "}
               <span className="text-amber-400">*</span>
+              {firstRun && !form.clientName.trim() && (
+                <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-accent px-1.5 py-[1px] align-middle text-[9px] font-bold tracking-wide text-bg">
+                  comece aqui
+                  <span className="inline-block animate-bounce">↓</span>
+                </span>
+              )}
             </Label>
             <TextInput
               value={form.clientName}
               onChange={(v) => set("clientName", v)}
               placeholder="Ex: Magazine Luiza"
+              highlight={firstRun && !form.clientName.trim()}
             />
             <span className="mt-1 block text-[11px] text-ink-mute">
               A empresa para quem você está fazendo a proposta.
@@ -867,11 +878,20 @@ export default function ClientBuilder() {
           <label className="mt-3 block">
             <Label>
               Nome do cliente <span className="text-amber-400">*</span>
+              {firstRun &&
+                form.clientName.trim() !== "" &&
+                !form.clientLegalName.trim() && (
+                  <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-accent px-1.5 py-[1px] align-middle text-[9px] font-bold tracking-wide text-bg">
+                    agora aqui
+                    <span className="inline-block animate-bounce">↓</span>
+                  </span>
+                )}
             </Label>
             <TextInput
               value={form.clientLegalName}
               onChange={(v) => set("clientLegalName", v)}
               placeholder="Ex: João Silva / razão social"
+              highlight={firstRun && !form.clientLegalName.trim()}
             />
           </label>
           <label className="mt-3 block">
@@ -1774,15 +1794,18 @@ function DownloadActions({
   onHtml,
   disabled,
   layout,
+  highlight = false,
 }: {
   onPdf: () => void;
   onHtml: () => void;
   disabled: boolean;
   layout: "header" | "panel";
+  highlight?: boolean;
 }) {
   const header = layout === "header";
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const cta = highlight && !disabled && !open;
   const choose = (fn: () => void) => {
     setOpen(false);
     fn();
@@ -1809,14 +1832,23 @@ function DownloadActions({
 
   return (
     <div ref={rootRef} className={`relative ${header ? "" : "w-full"}`}>
+      {/* Halo pulsante quando é a hora de baixar — guia o olho pro botão. */}
+      {cta && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 animate-ping rounded-full bg-accent/50"
+        />
+      )}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={disabled}
         aria-expanded={open}
-        className={`flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-accent font-semibold text-bg transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 ${
-          header ? "px-5 py-2 text-sm" : "w-full px-4 py-2.5 text-sm"
-        }`}
+        className={`relative flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-accent font-semibold text-bg shadow-sm transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 ${
+          cta
+            ? "shadow-[0_0_20px_-1px_var(--accent)] ring-2 ring-accent/60"
+            : ""
+        } ${header ? "px-5 py-2 text-sm" : "w-full px-4 py-2.5 text-sm"}`}
       >
         ⬇ Baixar
         <svg
