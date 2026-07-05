@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DEFAULT_PROPOSAL } from "@/lib/proposal/defaults";
@@ -63,6 +63,44 @@ function formatPtDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   if (!y || !m || !d) return "";
   return `${d} de ${MONTHS_PT[m - 1]} de ${y}`;
+}
+
+// Passos do onboarding 1 → 2 → 3, sempre visíveis. `current` = passo atual
+// (os anteriores viram ✓; o atual fica em destaque; os próximos, apagados).
+function Stepper({ current }: { current: 2 | 3 }) {
+  const steps = [
+    { n: 1, label: "Descreva" },
+    { n: 2, label: "Cliente" },
+    { n: 3, label: "Baixe (grátis)" },
+  ];
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5 text-sm font-semibold">
+      {steps.map((s, i) => {
+        const done = s.n < current;
+        const active = s.n === current;
+        return (
+          <Fragment key={s.n}>
+            {i > 0 && (
+              <span aria-hidden className="text-ink-mute">
+                →
+              </span>
+            )}
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 ${
+                active
+                  ? "border border-accent bg-accent text-bg"
+                  : done
+                    ? "bg-accent/25 text-ink"
+                    : "border border-line text-ink-mute"
+              }`}
+            >
+              {done && <span aria-hidden>✓</span>} {s.n} · {s.label}
+            </span>
+          </Fragment>
+        );
+      })}
+    </div>
+  );
 }
 
 // Máscara de moeda BRL para o campo de preço. Aceita o que a pessoa digita e
@@ -572,10 +610,32 @@ export default function ClientBuilder() {
   // suave atada ao desejo (ilimitadas/sem espera) — momento certo de assinar.
   const [celebrate, setCelebrate] = useState(false);
 
+  // Flash sutil, sem lib (o app não tem toast). Some sozinho.
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flash = (msg: string) => {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2600);
+  };
+
+  // Cliente vazio → em vez de o botão ficar mudo, GUIA: rola até o campo,
+  // foca o input e avisa. É o comportamento do aviso "clique aqui" reusado.
+  const focusClientField = () => {
+    trackFunnel("download_blocked", { reason: "cliente_vazio" });
+    const el = document.getElementById("cliente-sec");
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
+    flash("Diga pra quem é a proposta 👇");
+  };
+
   // Portão do download: assinante baixa; free consome 1 da cota;
   // esgotado → manda pra tela de planos (pricing padrão).
   const tryDownload = async (run: () => void) => {
-    if (clientMissing) return;
+    if (clientMissing) {
+      focusClientField();
+      return;
+    }
     try {
       const res = await recordDownload();
       setUsage(res);
@@ -624,7 +684,10 @@ export default function ClientBuilder() {
   // EXCEÇÃO: o 1º download da conta NUNCA vê modal — aversão à perda antes de
   // sentir o valor mata a ativação. Aha primeiro; economizar créditos depois.
   const requestDownload = async (run: () => void, format: string) => {
-    if (clientMissing) return;
+    if (clientMissing) {
+      focusClientField();
+      return;
+    }
     trackFunnel("download_attempt", { format });
     let u = usage;
     if (!u) {
@@ -712,20 +775,21 @@ export default function ClientBuilder() {
 
   return (
     <div className="flex h-full flex-col">
+      {/* Flash sutil (ex.: guia pro campo de cliente ao clicar Baixar vazio) */}
+      {toast && (
+        <div className="pointer-events-none fixed left-1/2 top-16 z-[60] -translate-x-1/2">
+          <div className="rounded-full border border-accent/50 bg-panel px-4 py-2 text-sm font-semibold text-ink shadow-[0_10px_30px_-8px_rgba(0,0,0,0.6)]">
+            {toast}
+          </div>
+        </div>
+      )}
       {/* Sub-header */}
       <div className="flex items-center justify-between border-b border-line px-6 py-2.5">
         <div className="text-[11px] text-ink-mute">
           {clientMissing ? (
             <button
               type="button"
-              onClick={() => {
-                trackFunnel("download_blocked", { reason: "cliente_vazio" });
-                const el = document.getElementById("cliente-sec");
-                el?.scrollIntoView({ behavior: "smooth", block: "center" });
-                el
-                  ?.querySelector<HTMLInputElement>("input")
-                  ?.focus({ preventScroll: true });
-              }}
+              onClick={focusClientField}
               className="cursor-pointer text-amber-400/90 underline-offset-2 transition hover:underline"
             >
               ⚠ Falta o nome do cliente pra baixar — clique aqui
@@ -751,7 +815,8 @@ export default function ClientBuilder() {
           <span className="h-5 w-px bg-line" />
           <DownloadActions
             layout="header"
-            disabled={clientMissing}
+            blocked={clientMissing}
+            onBlocked={focusClientField}
             highlight={firstRun && !clientMissing && !onbDismissed}
             onPdf={() => requestDownload(handleExportPDF, "PDF")}
             onHtml={() => requestDownload(handleExport, "HTML")}
@@ -777,20 +842,23 @@ export default function ClientBuilder() {
                   <span className="grid h-9 w-9 shrink-0 animate-bounce place-items-center rounded-full bg-accent text-lg font-bold text-bg">
                     ↓
                   </span>
-                  <p className="text-sm leading-snug text-ink-soft sm:text-[15px]">
-                    <span className="font-semibold text-ink">
-                      {onboarding
-                        ? "✨ A IA escreveu sua proposta inteira!"
-                        : "Sua proposta está pronta!"}
-                    </span>{" "}
-                    Falta <strong className="text-ink">1 passo</strong> pra
-                    baixar (grátis): diga{" "}
-                    <strong className="text-ink">pra quem é</strong> nos campos{" "}
-                    <span className="font-semibold text-accent">
-                      destacados abaixo
-                    </span>
-                    .
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm leading-snug text-ink-soft sm:text-[15px]">
+                      <span className="font-semibold text-ink">
+                        {onboarding
+                          ? "✨ A IA escreveu sua proposta inteira!"
+                          : "Sua proposta está pronta!"}
+                      </span>{" "}
+                      Falta <strong className="text-ink">1 passo</strong> pra
+                      baixar (grátis): diga{" "}
+                      <strong className="text-ink">pra quem é</strong> nos campos{" "}
+                      <span className="font-semibold text-accent">
+                        destacados abaixo
+                      </span>
+                      .
+                    </p>
+                    <Stepper current={2} />
+                  </div>
                 </>
               ) : (
                 <>
@@ -805,23 +873,14 @@ export default function ClientBuilder() {
                       Agora é só clicar em{" "}
                       <strong className="text-ink">Baixar</strong>{" "}
                       <span className="font-semibold text-accent">
-                        ali em cima ↗
+                        ali em cima
+                      </span>{" "}
+                      <span className="inline-block animate-bounce font-bold text-accent">
+                        ↗
                       </span>{" "}
                       — sua 1ª proposta é grátis.
                     </p>
-                    <div className="mt-2 flex items-center gap-2 text-[13px] font-semibold">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-accent/25 px-2.5 py-1 text-ink">
-                        <span aria-hidden>✓</span> 1 · Descreva
-                      </span>
-                      <span aria-hidden className="text-ink-mute">→</span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-accent/25 px-2.5 py-1 text-ink">
-                        <span aria-hidden>✓</span> 2 · Cliente
-                      </span>
-                      <span aria-hidden className="text-ink-mute">→</span>
-                      <span className="inline-flex items-center gap-1 rounded-full border border-accent bg-accent px-2.5 py-1 font-bold text-bg">
-                        3 · Baixe (grátis)
-                      </span>
-                    </div>
+                    <Stepper current={3} />
                   </div>
                 </>
               )}
@@ -859,7 +918,7 @@ export default function ClientBuilder() {
               Empresa do cliente (capa){" "}
               <span className="text-amber-400">*</span>
               {firstRun && !form.clientName.trim() && (
-                <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-accent px-1.5 py-[1px] align-middle text-[9px] font-bold tracking-wide text-bg">
+                <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 align-middle text-[11px] font-bold tracking-wide text-bg shadow-[0_2px_8px_-2px_var(--accent)]">
                   comece aqui
                   <span className="inline-block animate-bounce">↓</span>
                 </span>
@@ -881,7 +940,7 @@ export default function ClientBuilder() {
               {firstRun &&
                 form.clientName.trim() !== "" &&
                 !form.clientLegalName.trim() && (
-                  <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-accent px-1.5 py-[1px] align-middle text-[9px] font-bold tracking-wide text-bg">
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 align-middle text-[11px] font-bold tracking-wide text-bg shadow-[0_2px_8px_-2px_var(--accent)]">
                     agora aqui
                     <span className="inline-block animate-bounce">↓</span>
                   </span>
@@ -894,6 +953,24 @@ export default function ClientBuilder() {
               highlight={firstRun && !form.clientLegalName.trim()}
             />
           </label>
+          {/* Próximo passo: preenchido o cliente, aponta pra conferir + Baixar
+              (onde antes ficavam as setas → fecha a lacuna do fluxo). */}
+          {firstRun && !clientMissing && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-accent/50 bg-accent/[0.1] p-3">
+              <span className="text-lg leading-none" aria-hidden>
+                ✅
+              </span>
+              <p className="text-[13px] leading-snug text-ink-soft">
+                <strong className="text-ink">Cliente definido!</strong> Confira a
+                proposta no preview ao lado e clique em{" "}
+                <strong className="text-ink">Baixar</strong>{" "}
+                <span className="inline-block animate-bounce font-bold text-accent">
+                  ↗
+                </span>{" "}
+                lá no topo — sua 1ª proposta é grátis.
+              </p>
+            </div>
+          )}
           <label className="mt-3 block">
             <Label>Frase da capa (antes da empresa do cliente)</Label>
             <TextInput
@@ -1454,7 +1531,8 @@ export default function ClientBuilder() {
           )}
           <DownloadActions
             layout="panel"
-            disabled={clientMissing}
+            blocked={clientMissing}
+            onBlocked={focusClientField}
             onPdf={() => requestDownload(handleExportPDF, "PDF")}
             onHtml={() => requestDownload(handleExport, "HTML")}
           />
@@ -1792,13 +1870,19 @@ function AppearanceControls({
 function DownloadActions({
   onPdf,
   onHtml,
-  disabled,
+  disabled = false,
+  blocked = false,
+  onBlocked,
   layout,
   highlight = false,
 }: {
   onPdf: () => void;
   onHtml: () => void;
-  disabled: boolean;
+  disabled?: boolean;
+  // blocked = clicável, mas ainda falta algo (ex.: nome do cliente) → em vez de
+  // abrir o menu, chama onBlocked (que guia pro campo). Nada de dead-click.
+  blocked?: boolean;
+  onBlocked?: () => void;
   layout: "header" | "panel";
   highlight?: boolean;
 }) {
@@ -1836,7 +1920,13 @@ function DownloadActions({
           — NÃO usa transform:scale, que vazava da viewport e criava scroll. */}
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (blocked) {
+            onBlocked?.();
+            return;
+          }
+          setOpen((o) => !o);
+        }}
         disabled={disabled}
         aria-expanded={open}
         className={`relative flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-accent font-semibold text-bg shadow-sm transition enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 ${
