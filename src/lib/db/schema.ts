@@ -150,6 +150,8 @@ export const consultants = pgTable("consultants", {
   role: text("role").notNull().default("Consultor"), // cargo/papel comercial
   email: text("email").notNull().default(""),
   phone: text("phone").notNull().default(""),
+  // Opt-in explícito (LGPD): o vendedor autorizou aviso por WhatsApp nesse tel.
+  whatsappOptin: boolean("whatsapp_optin").notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

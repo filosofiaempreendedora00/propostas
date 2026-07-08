@@ -21,12 +21,13 @@ export async function getAccountDetail(orgId: string): Promise<AccountDetail> {
   `)) as unknown as Array<{ name: string; tagline: string }>;
 
   const consultants = (await db.execute(sql`
-    select name, role, email, phone from consultants where org_id = ${orgId} order by sort_order
+    select name, role, email, phone, whatsapp_optin from consultants where org_id = ${orgId} order by sort_order
   `)) as unknown as Array<{
     name: string;
     role: string;
     email: string;
     phone: string;
+    whatsapp_optin: boolean;
   }>;
 
   const [{ n: plansCount }] = (await db.execute(
@@ -55,6 +56,7 @@ export async function getAccountDetail(orgId: string): Promise<AccountDetail> {
       role: c.role,
       email: c.email,
       phone: c.phone,
+      whatsappOptin: !!c.whatsapp_optin,
     })),
     plansCount: Number(plansCount) || 0,
     templatesCount: Number(templatesCount) || 0,
