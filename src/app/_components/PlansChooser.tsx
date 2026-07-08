@@ -75,7 +75,7 @@ function PlanCard({
     >
       {focus && (
         <span className="absolute -top-3 left-6 rounded-full bg-accent px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-bg">
-          Mais popular
+          Recomendado pra você
         </span>
       )}
       <h2 className="font-display text-2xl font-semibold tracking-tight text-ink">
@@ -200,13 +200,14 @@ export default function PlansChooser({ email, individual, time }: Props) {
           annualUpfront={PRICES.individual.annualUpfront}
           link={annual ? individual.annual : individual.monthly}
           annual={annual}
+          focus
           email={email}
           features={[
-            "Propostas ilimitadas",
-            "Soluções e planos ilimitados",
-            "1 usuário",
-            "Geração em 60 segundos",
-            "Suporte por e-mail e chat",
+            "Propostas ilimitadas, uma para cada cliente",
+            "Pronta em 60 segundos — responda antes do concorrente",
+            "Autoridade desde a primeira página",
+            "Seu catálogo inteiro, reaproveitado em segundos",
+            "1 usuário · suporte por e-mail e chat",
           ]}
         />
         <PlanCard
@@ -217,7 +218,6 @@ export default function PlansChooser({ email, individual, time }: Props) {
           annualUpfront={PRICES.time.annualUpfront}
           link={annual ? time.annual : time.monthly}
           annual={annual}
-          focus
           email={email}
           features={[
             "Tudo do Individual",

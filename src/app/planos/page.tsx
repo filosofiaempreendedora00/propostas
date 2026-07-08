@@ -23,13 +23,13 @@ export default async function PlanosPage() {
   const heading = canceled
     ? "Sua assinatura terminou"
     : locked
-      ? `Você usou suas ${FREE_DOWNLOADS} propostas grátis`
-      : "Escolha seu plano";
+      ? "Três propostas feitas. Continue sem limite."
+      : "Menos tempo montando proposta. Mais tempo fechando negócio.";
   const subheading = canceled
-    ? "Reative para voltar a gerar propostas. Seus dados continuam salvos."
+    ? "Reative quando quiser. Seus dados continuam salvos."
     : locked
-      ? "Assine para continuar gerando propostas — seus dados continuam salvos."
-      : null;
+      ? "R$ 67 por mês é menos que a comissão de um único negócio."
+      : "Uma proposta profissional em 60 segundos. R$ 67 por mês é menos que a comissão de um único negócio.";
 
   return (
     <div className="min-h-screen bg-bg px-5 py-12 text-ink">
@@ -48,13 +48,7 @@ export default async function PlanosPage() {
             {heading}
           </h1>
           <p className="mt-1.5 max-w-md text-sm text-ink-mute">
-            {subheading ?? (
-              <>
-                Comece pelo Individual ou escale com o Time.
-                <br />
-                No plano anual você economiza em até 40%.
-              </>
-            )}
+            {subheading}
           </p>
         </div>
 
