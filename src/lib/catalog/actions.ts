@@ -219,6 +219,7 @@ export async function listConsultants(): Promise<CatalogConsultant[]> {
     role: c.role,
     email: c.email,
     phone: c.phone,
+    whatsappOptin: c.whatsappOptin,
   }));
 }
 
@@ -249,6 +250,7 @@ export async function upsertConsultant(
     role: c.role,
     email: c.email,
     phone: c.phone,
+    whatsappOptin: c.whatsappOptin,
     sortOrder,
   };
   await db
@@ -418,6 +420,7 @@ export async function generateAndReplaceCatalog(
     role: consultant.role,
     email: "", // contato real é preenchido pelo usuário (IA não inventa)
     phone: "",
+    whatsappOptin: true, // nudge: já vem marcado; só vale ao pôr telefone real
     sortOrder: 0,
   });
 

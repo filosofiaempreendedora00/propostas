@@ -78,7 +78,9 @@ export function blankSolution(index: number): CatalogSolution {
 }
 
 export function blankConsultant(): CatalogConsultant {
-  return { id: uid(), name: "Novo consultor", role: "Consultor", email: "", phone: "" };
+  // Opt-in de WhatsApp já vem marcado (nudge) para consultores NOVOS — só passa
+  // a valer quando houver telefone real; a pessoa desmarca quando quiser.
+  return { id: uid(), name: "Novo consultor", role: "Consultor", email: "", phone: "", whatsappOptin: true };
 }
 
 export const SEED_SOLUTIONS: CatalogSolution[] = [
@@ -128,5 +130,6 @@ export const SEED_CONSULTANTS: CatalogConsultant[] = [
     role: "Consultor",
     email: "consultor@suaempresa.com",
     phone: "(00) 00000-0000",
+    whatsappOptin: true,
   },
 ];

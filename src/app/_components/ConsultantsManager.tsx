@@ -5,6 +5,10 @@ import { ROLE_OPTIONS } from "@/lib/company/terms";
 import { Label, TextInput, MiniBtn } from "./fields";
 import KronosLoader from "./KronosLoader";
 
+// Telefone "de verdade" = tem dígito diferente de zero (não é o placeholder).
+const isRealPhone = (p: string) =>
+  p.replace(/\D/g, "").replace(/0/g, "").length > 0;
+
 export default function ConsultantsManager() {
   const { items, ready, add, update, remove } = useConsultants();
 
@@ -87,6 +91,35 @@ export default function ConsultantsManager() {
                   />
                 </label>
               </div>
+
+              {/* Opt-in de WhatsApp (LGPD): desmarcado por padrão; só habilita
+                  com telefone real. Não bloqueia nada — só autoriza aviso. */}
+              <label
+                className={`mt-3 flex items-start gap-2 text-[12px] leading-snug ${
+                  isRealPhone(c.phone)
+                    ? "cursor-pointer text-ink-soft"
+                    : "cursor-not-allowed text-ink-mute/50"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={c.whatsappOptin}
+                  disabled={!isRealPhone(c.phone)}
+                  onChange={(e) =>
+                    update(c.id, { whatsappOptin: e.target.checked })
+                  }
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)] disabled:opacity-40"
+                />
+                <span>
+                  💬 Pode te avisar neste WhatsApp quando sua proposta ficar
+                  pronta e sobre novidades.{" "}
+                  <span className="text-ink-mute">
+                    {isRealPhone(c.phone)
+                      ? "Você desliga quando quiser."
+                      : "Preencha um telefone pra habilitar."}
+                  </span>
+                </span>
+              </label>
             </div>
           ))}
         </div>

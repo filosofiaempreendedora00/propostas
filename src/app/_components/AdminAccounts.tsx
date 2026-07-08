@@ -373,6 +373,36 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
                 >
                   {o.ownerEmail ?? "—"}
                 </div>
+                {o.consultantWhatsapp && (
+                  <div
+                    className="mt-0.5 flex items-center gap-1.5 text-xs"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <a
+                      href={waLink(o.consultantWhatsapp)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-emerald-400 hover:underline"
+                      title="Abrir WhatsApp do consultor"
+                    >
+                      💬 {o.consultantWhatsapp} ↗
+                    </a>
+                    <span
+                      className={`shrink-0 rounded-full border px-1.5 py-px text-[9px] font-semibold ${
+                        o.consultantOptin
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                          : "border-line text-ink-mute"
+                      }`}
+                      title={
+                        o.consultantOptin
+                          ? "Autorizou aviso por WhatsApp (opt-in)"
+                          : "Sem opt-in de WhatsApp"
+                      }
+                    >
+                      {o.consultantOptin ? "✓ opt-in" : "sem opt-in"}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
                 <div className="whitespace-nowrap text-[11px] text-ink-mute">
@@ -513,6 +543,15 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
                                       >
                                         {c.phone} ↗
                                       </a>
+                                      <span
+                                        className={`ml-1 rounded-full border px-1.5 py-px text-[9px] font-semibold ${
+                                          c.whatsappOptin
+                                            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                                            : "border-line text-ink-mute"
+                                        }`}
+                                      >
+                                        {c.whatsappOptin ? "✓ opt-in" : "sem opt-in"}
+                                      </span>
                                     </>
                                   )}
                                   {!real && (

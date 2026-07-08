@@ -37,4 +37,5 @@ export interface CatalogConsultant {
   role: string; // cargo/papel (Consultor, Especialista, Diretor comercial, ...)
   email: string;
   phone: string;
+  whatsappOptin: boolean; // autorizou aviso por WhatsApp nesse telefone (LGPD)
 }

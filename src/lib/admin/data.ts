@@ -56,6 +56,8 @@ export type AdminOrg = {
   members: number;
   pending: number;
   ownerEmail: string | null;
+  consultantWhatsapp: string | null; // telefone real do 1º consultor (p/ wa.me)
+  consultantOptin: boolean; // esse consultor autorizou aviso por WhatsApp
   acquisitionSource: string | null; // origem derivada: google | meta | direct
   acquisitionGclid: string | null; // gclid do Google Ads (conversão offline)
   acquisitionFbclid: string | null; // fbclid do Meta (CAPI / conversão offline)
@@ -75,7 +77,13 @@ export type AdminOrg = {
 export type AccountDetail = {
   signupName: string | null;
   solutions: { name: string; tagline: string }[];
-  consultants: { name: string; role: string; email: string; phone: string }[];
+  consultants: {
+    name: string;
+    role: string;
+    email: string;
+    phone: string;
+    whatsappOptin: boolean;
+  }[];
   plansCount: number;
   templatesCount: number;
   hasLogo: boolean;
@@ -165,6 +173,12 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       o.acquisition_fbclid                  as acquisition_fbclid,
       o.acquisition_first_url               as acquisition_first_url,
       (select u.email from auth.users u where u.id = o.owner_id) as owner_email,
+      (select c.phone from consultants c where c.org_id = o.id
+        and c.phone ~ '[1-9]' and c.phone not like '%00000%'
+        order by c.sort_order, c.created_at limit 1) as consultant_wa,
+      (select coalesce(c.whatsapp_optin, false) from consultants c where c.org_id = o.id
+        and c.phone ~ '[1-9]' and c.phone not like '%00000%'
+        order by c.sort_order, c.created_at limit 1) as consultant_wa_optin,
       (select count(*)::int from memberships m where m.org_id = o.id) as members,
       (select count(*)::int from invitations i
          where i.org_id = o.id and i.accepted_at is null)             as pending,
@@ -206,6 +220,8 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     acquisition_fbclid: string | null;
     acquisition_first_url: string | null;
     owner_email: string | null;
+    consultant_wa: string | null;
+    consultant_wa_optin: boolean;
     members: number;
     pending: number;
     has_logo: boolean;
@@ -261,6 +277,8 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       members: o.members,
       pending: o.pending,
       ownerEmail: o.owner_email,
+      consultantWhatsapp: o.consultant_wa,
+      consultantOptin: !!o.consultant_wa_optin,
       acquisitionSource: o.acquisition_source,
       acquisitionGclid: o.acquisition_gclid,
       acquisitionFbclid: o.acquisition_fbclid,
