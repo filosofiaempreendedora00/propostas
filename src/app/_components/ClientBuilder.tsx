@@ -452,7 +452,11 @@ export default function ClientBuilder() {
     }
     setOnboarding(onb);
     setFirstRun(onb || !done);
-    if (done) setOnbDismissed(true); // já ativou → sem banner-guia
+    // Só esconde o banner-guia pra quem já ativou E NÃO veio explicitamente do
+    // onboarding. Com ?bemvindo=1 (emenda da geração por IA) o guia SEMPRE
+    // aparece — senão o localStorage "done" (por domínio) matava o banner numa
+    // conta que acabou de gerar (bug localhost×produção).
+    if (done && !onb) setOnbDismissed(true);
     trackFunnel("chegou_ao_gerador", onb ? { via: "ia" } : {});
   }, []);
 
@@ -918,9 +922,9 @@ export default function ClientBuilder() {
               Empresa do cliente (capa){" "}
               <span className="text-amber-400">*</span>
               {firstRun && !form.clientName.trim() && (
-                <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 align-middle text-[11px] font-bold tracking-wide text-bg shadow-[0_2px_8px_-2px_var(--accent)]">
+                <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 align-middle text-[13px] font-bold normal-case tracking-normal text-bg shadow-[0_2px_12px_-2px_var(--accent)]">
                   comece aqui
-                  <span className="inline-block animate-bounce">↓</span>
+                  <span className="inline-block animate-bounce text-base leading-none">↓</span>
                 </span>
               )}
             </Label>
@@ -940,9 +944,9 @@ export default function ClientBuilder() {
               {firstRun &&
                 form.clientName.trim() !== "" &&
                 !form.clientLegalName.trim() && (
-                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 align-middle text-[11px] font-bold tracking-wide text-bg shadow-[0_2px_8px_-2px_var(--accent)]">
+                  <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 align-middle text-[13px] font-bold normal-case tracking-normal text-bg shadow-[0_2px_12px_-2px_var(--accent)]">
                     agora aqui
-                    <span className="inline-block animate-bounce">↓</span>
+                    <span className="inline-block animate-bounce text-base leading-none">↓</span>
                   </span>
                 )}
             </Label>
