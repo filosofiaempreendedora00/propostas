@@ -145,15 +145,13 @@ function temperatureOf(o: {
   customSolution: boolean;
 }): Temperature {
   if (o.status === "active") return "cliente";
-  // QUENTE: sinal forte de intenção/esforço — baixou uma proposta (ativou),
-  //   subiu a própria logo, ou preencheu contato real do consultor.
-  if (o.downloadsUsed >= 1 || o.hasLogo || o.consultantHasContact) {
-    return "quente";
-  }
-  // MORNO: experimentou (tem catálogo real, tipicamente gerado pela IA) mas
-  //   não personalizou nem baixou nada — engajou, não se comprometeu.
-  if (o.customSolution) return "morno";
-  // FRIO: cadastrou e parou (catálogo vazio / de exemplo).
+  // QUENTE = ativou DE VERDADE: baixou ao menos uma proposta. Só isso. Preencher
+  //   catálogo/logo/contato é esforço, mas não é intenção de compra — vira morno.
+  if (o.downloadsUsed >= 1) return "quente";
+  // MORNO = fez algum setup real (logo, catálogo, ou contato do consultor), mas
+  //   não chegou a baixar — engajou, não ativou.
+  if (o.hasLogo || o.customSolution || o.consultantHasContact) return "morno";
+  // FRIO = cadastrou e parou (catálogo vazio / de exemplo).
   return "frio";
 }
 
