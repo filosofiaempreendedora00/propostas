@@ -3,6 +3,7 @@ import "server-only";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { billingCustomers, organizations } from "@/lib/db/schema";
+import { syncBrevoContact } from "@/lib/integrations/brevo";
 
 // Aplica a assinatura (billing_customers) na org indicada, se existir uma
 // assinatura pro e-mail. Sem assinatura, não mexe na org.
@@ -27,6 +28,16 @@ export async function applyEntitlementToOrg(
       billingRef: ent.subscriptionId ?? null,
     })
     .where(eq(organizations.id, orgId));
+
+  // Espelha o plano no Brevo (choke point do Kiwify + do cadastro-pago).
+  // Ativou → 'cliente'/paid; cancelou/atrasou → reflete o plano, mas NÃO
+  // rebaixa o lifecycle (segue como estava). Fire-and-forget.
+  void syncBrevoContact(
+    email,
+    ent.status === "active"
+      ? { PLAN: "paid", LIFECYCLE_STAGE: "cliente" }
+      : { PLAN: ent.status }, // canceled | past_due
+  );
 }
 
 // Dado um e-mail, acha a org do dono (se já tiver conta) e aplica a assinatura.

@@ -5,6 +5,7 @@ import { db } from "@/lib/db/client";
 import { organizations } from "@/lib/db/schema";
 import { requireUser, requireOrgId } from "@/lib/auth/org";
 import { applyEntitlementByEmail } from "@/lib/billing/entitlement";
+import { syncBrevoContact, brevoDate } from "@/lib/integrations/brevo";
 import { FREE_DOWNLOADS } from "@/lib/limits";
 
 export type Usage = {
@@ -79,6 +80,13 @@ export async function recordDownload(): Promise<
 
   if (org?.status === "active") {
     const firstDownload = await markFirstDownload(orgId, org.firstDownloadAt);
+    // Espelha no Brevo: assinante baixou → 'cliente' + reatividade (mirror).
+    void syncBrevoContact(email, {
+      DOWNLOADS_COUNT: org.used,
+      LIFECYCLE_STAGE: "cliente",
+      LAST_ACTIVE_AT: brevoDate(),
+      PLAN: "paid",
+    });
     return { allowed: true, firstDownload, ...pack(email, "active", org.used) };
   }
 
@@ -90,6 +98,12 @@ export async function recordDownload(): Promise<
 
   if (rows.length) {
     const firstDownload = await markFirstDownload(orgId, org?.firstDownloadAt);
+    // Espelha no Brevo: baixou (free) → 'quente' + contador (mirror).
+    void syncBrevoContact(email, {
+      DOWNLOADS_COUNT: rows[0].downloads_used,
+      LIFECYCLE_STAGE: "quente",
+      LAST_ACTIVE_AT: brevoDate(),
+    });
     return {
       allowed: true,
       firstDownload,
