@@ -6,7 +6,7 @@ import { organizations, memberships, invitations } from "@/lib/db/schema";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { applyEntitlementToOrg } from "@/lib/billing/entitlement";
 import { FREE_DOWNLOADS } from "@/lib/limits";
-import { addLeadToBrevo } from "@/lib/integrations/brevo";
+import { addLeadToBrevo, syncBrevoContact, brevoDate } from "@/lib/integrations/brevo";
 import { cookies } from "next/headers";
 
 // Atribuição do lead a partir dos cookies (setados na 1ª visita pelo
@@ -201,6 +201,24 @@ export async function requireOrgId(): Promise<string> {
           str("last_name", "family_name") ??
           full?.split(" ").slice(1).join(" ") ??
           null,
+      });
+
+      // Espelha o estado inicial no Brevo (mirror pras automações segmentarem).
+      // Lê a org depois do entitlement: se a pessoa já era cliente pago (comprou
+      // antes de criar a conta), nasce como 'cliente'; senão, 'frio'.
+      const [freshOrg] = await db
+        .select({ status: organizations.status })
+        .from(organizations)
+        .where(eq(organizations.id, result.orgId))
+        .limit(1);
+      const paid = freshOrg?.status === "active";
+      void syncBrevoContact(user.email, {
+        SIGNUP_DATE: brevoDate(),
+        ACQ_SOURCE: acq.source, // google | meta | direct
+        LIFECYCLE_STAGE: paid ? "cliente" : "frio",
+        HAS_CATALOG: false,
+        DOWNLOADS_COUNT: 0,
+        PLAN: paid ? "paid" : "free",
       });
     }
   }

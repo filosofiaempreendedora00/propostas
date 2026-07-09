@@ -9,8 +9,14 @@ import {
   consultants,
   aiGenerations,
   blockTemplates,
+  organizations,
 } from "@/lib/db/schema";
 import { requireOrgId, requireUser } from "@/lib/auth/org";
+import {
+  syncBrevoContact,
+  brevoLifecycle,
+  brevoDate,
+} from "@/lib/integrations/brevo";
 import { LIMITS, LimitError, FREE_AI_GENERATIONS } from "@/lib/limits";
 import type { ProposalData } from "@/lib/proposal/types";
 import type { CatalogSolution, CatalogConsultant, Billing } from "./types";
@@ -261,6 +267,23 @@ export async function upsertConsultant(
       set: base,
       where: eq(consultants.orgId, orgId),
     });
+
+  // Espelha o opt-in de WhatsApp no Brevo (nível da conta): true se ALGUM
+  // consultor da org tem opt-in E telefone real (>= 10 dígitos). Recalcula do
+  // banco pra refletir a verdade após este upsert. Fire-and-forget.
+  try {
+    const user = await requireUser();
+    const rows = await db
+      .select({ optin: consultants.whatsappOptin, phone: consultants.phone })
+      .from(consultants)
+      .where(eq(consultants.orgId, orgId));
+    const waOptin = rows.some(
+      (r) => r.optin && (r.phone || "").replace(/\D/g, "").length >= 10,
+    );
+    void syncBrevoContact(user.email, { WA_OPTIN: waOptin });
+  } catch (e) {
+    console.error("[brevo] sync opt-in WA falhou:", e);
+  }
 }
 
 export async function deleteConsultant(id: string): Promise<void> {
@@ -439,6 +462,28 @@ export async function generateAndReplaceCatalog(
     });
   } catch (e) {
     console.error("[ai] falha ao registrar custo da geração:", e);
+  }
+
+  // Espelha no Brevo: agora tem catálogo real. Deriva o lifecycle do estado
+  // real (fonte da verdade = Supabase) pra não rebaixar quem já baixou/pagou —
+  // normalmente sobe pra 'morno'. Fire-and-forget: nunca quebra a geração.
+  try {
+    const user = await requireUser();
+    const [org] = await db
+      .select({
+        status: organizations.status,
+        used: organizations.downloadsUsed,
+      })
+      .from(organizations)
+      .where(eq(organizations.id, orgId))
+      .limit(1);
+    void syncBrevoContact(user.email, {
+      HAS_CATALOG: true,
+      LIFECYCLE_STAGE: brevoLifecycle(org?.status, org?.used ?? 0, true),
+      LAST_ACTIVE_AT: brevoDate(),
+    });
+  } catch (e) {
+    console.error("[brevo] sync catálogo falhou:", e);
   }
 
   return { solutions: generated.length };
