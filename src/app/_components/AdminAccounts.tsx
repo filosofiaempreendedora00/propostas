@@ -3,6 +3,16 @@
 import { useEffect, useState } from "react";
 import { getAccountDetail } from "@/lib/admin/actions";
 import type { AdminOrg, AccountDetail, Temperature } from "@/lib/admin/data";
+import { FREE_DOWNLOADS } from "@/lib/limits";
+
+// Filtro por atividade de download. Nenhum = todos.
+//   baixou   = baixou ao menos 1 proposta (downloadsUsed≥1 ou já teve 1º download)
+//   esgotou  = usou os 3 downloads grátis e não assinou (preso no paywall)
+type DownloadFilter = "all" | "baixou" | "esgotou";
+const downloadedAtLeastOnce = (o: AdminOrg) =>
+  o.downloadsUsed >= 1 || !!o.firstDownloadAt;
+const exhaustedFree = (o: AdminOrg) =>
+  o.status !== "active" && o.downloadsUsed >= FREE_DOWNLOADS;
 
 const TEMP: Record<Temperature, { label: string; icon: string; cls: string }> = {
   cliente: {
@@ -112,6 +122,7 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
   const [to, setTo] = useState("");
   const [temps, setTemps] = useState<Set<Temperature>>(new Set());
   const [srcs, setSrcs] = useState<Set<string>>(new Set());
+  const [dl, setDl] = useState<DownloadFilter>("all");
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 25;
 
@@ -137,11 +148,13 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
     if (temps.size > 0 && !temps.has(o.temperature)) return false;
     if (srcs.size > 0 && !(o.acquisitionSource && srcs.has(o.acquisitionSource)))
       return false;
+    if (dl === "baixou" && !downloadedAtLeastOnce(o)) return false;
+    if (dl === "esgotou" && !exhaustedFree(o)) return false;
     return true;
   });
 
   // Paginação: 25 por página. Volta pra 1ª página quando o filtro muda.
-  useEffect(() => setPage(0), [from, to, temps, srcs]);
+  useEffect(() => setPage(0), [from, to, temps, srcs, dl]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount - 1);
   const paged = filtered.slice(
@@ -309,6 +322,54 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
             limpar filtro
           </button>
         )}
+
+        {/* Separador + filtro por atividade de DOWNLOAD (single-select). */}
+        <span className="mx-1 hidden h-8 w-px bg-line sm:block" />
+        {(
+          [
+            {
+              k: "baixou",
+              label: "Baixou ≥1",
+              icon: "📥",
+              n: accounts.filter(downloadedAtLeastOnce).length,
+            },
+            {
+              k: "esgotou",
+              label: "Cota 3/3",
+              icon: "🔒",
+              n: accounts.filter(exhaustedFree).length,
+            },
+          ] as { k: DownloadFilter; label: string; icon: string; n: number }[]
+        ).map((f) => {
+          const active = dl === f.k;
+          return (
+            <button
+              key={f.k}
+              type="button"
+              onClick={() => setDl(active ? "all" : f.k)}
+              className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                active
+                  ? "border-accent/50 bg-accent/10 text-accent ring-1 ring-inset ring-current"
+                  : "border-line text-ink-soft hover:border-ink-mute/50 hover:text-ink"
+              }`}
+              title={
+                f.k === "esgotou"
+                  ? "Usaram os 3 downloads grátis e não assinaram (presos no paywall)"
+                  : "Baixaram ao menos uma proposta"
+              }
+            >
+              <span className="text-base leading-none">{f.icon}</span>
+              {f.label}
+              <span
+                className={`ml-0.5 min-w-[1.5rem] rounded-md px-1.5 py-0.5 text-center text-xs font-bold tabular-nums ${
+                  active ? "bg-black/25" : "bg-panel-2 text-ink-mute"
+                }`}
+              >
+                {f.n}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-line">
