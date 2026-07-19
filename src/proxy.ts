@@ -7,9 +7,15 @@ const PUBLIC_PREFIXES = ["/login", "/cadastro", "/auth"];
 // Proxy (no Next 16 substitui o middleware): mantém a sessão do Supabase
 // atualizada nos cookies e protege as rotas — sem login → /login.
 export async function proxy(request: NextRequest) {
-  // Webhooks (Kiwify) e keep-alive (cron) são públicos — não passam por auth.
+  // Webhooks (Kiwify), keep-alive (cron) e ingestão de funil são públicos — não
+  // passam por auth. O /api/funnel resolve a org pela sessão internamente (aceita
+  // eventos pré-login, com org_id null), então não pode redirecionar pro /login.
   const p0 = request.nextUrl.pathname;
-  if (p0.startsWith("/api/webhooks") || p0.startsWith("/api/keepalive")) {
+  if (
+    p0.startsWith("/api/webhooks") ||
+    p0.startsWith("/api/keepalive") ||
+    p0.startsWith("/api/funnel")
+  ) {
     return NextResponse.next();
   }
 
