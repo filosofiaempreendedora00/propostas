@@ -13,6 +13,26 @@ export const GADS_CONVERSIONS = {
 
 type Gtag = (...args: unknown[]) => void;
 
+// Id anônimo de 1º toque (localStorage) — costura pré-login → pós-login no funil.
+// Gera na 1ª visita e persiste. Falha silenciosa (SSR / storage bloqueado).
+function getAnonId(): string {
+  try {
+    if (typeof localStorage === "undefined") return "";
+    const K = "kronos:anon";
+    let v = localStorage.getItem(K);
+    if (!v) {
+      v =
+        (typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `a-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
+      localStorage.setItem(K, v);
+    }
+    return v;
+  } catch {
+    return "";
+  }
+}
+
 // Eventos de FUNIL (não são conversões pagas do Ads — são eventos GA4 + Meta
 // para medir onde o onboarding vaza). Um lugar só: adicionar é pôr a linha e
 // chamar trackFunnel() no ponto certo. No-op em dev/sem tag.
@@ -32,6 +52,22 @@ export function trackFunnel(
   }
   try {
     if (typeof w.fbq === "function") w.fbq("trackCustom", name, params ?? {});
+  } catch {
+    /* ignora */
+  }
+  // Persiste no NOSSO banco (POST /api/funnel) — device é derivado no servidor.
+  // sendBeacon: não bloqueia navegação e sobrevive ao unload (eventos de saída).
+  try {
+    const payload = JSON.stringify({
+      event: name,
+      params: params ?? {},
+      anon_id: getAnonId(),
+      path: location.pathname,
+    });
+    navigator.sendBeacon?.(
+      "/api/funnel",
+      new Blob([payload], { type: "application/json" }),
+    );
   } catch {
     /* ignora */
   }

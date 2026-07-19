@@ -57,6 +57,13 @@
       "when": 1782071940484,
       "tag": "0007_fantastic_selene",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784472961618,
+      "tag": "0008_omniscient_nightshade",
+      "breakpoints": true
     }
   ]
 }

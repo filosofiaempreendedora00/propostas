@@ -10,6 +10,7 @@ import {
   timestamp,
   uuid,
   unique,
+  index,
 } from "drizzle-orm/pg-core";
 
 // ---------------- Multi-tenant: organizações, membros e convites ----------------
@@ -198,6 +199,32 @@ export const aiGenerations = pgTable("ai_generations", {
     .notNull()
     .defaultNow(),
 });
+
+// Log bruto de eventos de funil — instrumentação do caminho (não só resultado).
+// Escrito server-side pelo POST /api/funnel; leitura por SQL (agentes/Central).
+// org_id é uuid SIMPLES (sem FK) de propósito: tracking é fire-and-forget e não
+// pode falhar por constraint nem acoplar lock ao ciclo de vida da org. Fica null
+// em evento pré-login; anon_id (1º toque) costura pré-login → pós-login.
+export const funnelEvents = pgTable(
+  "funnel_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id"), // preenchido quando há sessão; null pré-login
+    anonId: text("anon_id"), // id anônimo do localStorage (costura pré→pós login)
+    event: text("event").notNull(), // ex: catalog_generated, download_blocked
+    device: text("device"), // mobile | tablet | desktop — derivado do UA no servidor
+    path: text("path"), // pathname onde o evento disparou
+    params: jsonb("params").$type<Record<string, unknown>>(), // via, solutions, reason, etc.
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("funnel_events_org_idx").on(t.orgId),
+    index("funnel_events_event_idx").on(t.event),
+    index("funnel_events_created_idx").on(t.createdAt),
+  ],
+);
 
 export const blockTemplates = pgTable("block_templates", {
   id: text("id").primaryKey(),

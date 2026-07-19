@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
+import { trackFunnel } from "@/lib/analytics/google";
 import {
   AuthShell,
   AuthFooter,
@@ -25,6 +26,13 @@ export default function CadastroPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Topo do funil que controlamos (a landing de marketing é externa): quem chega
+  // na tela de cadastro. Com o device derivado no servidor, é aqui que se vê o
+  // tráfego mobile do Meta antes de tocar a IA.
+  useEffect(() => {
+    trackFunnel("landing_view", { page: "cadastro" });
+  }, []);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -33,6 +41,7 @@ export default function CadastroPage() {
       setError("A senha precisa ter pelo menos 6 caracteres.");
       return;
     }
+    trackFunnel("signup_submitted", { method: "email" });
     setLoading(true);
     try {
       const supabase = createSupabaseBrowser();
