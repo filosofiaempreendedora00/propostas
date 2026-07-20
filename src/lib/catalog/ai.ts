@@ -18,7 +18,8 @@ const SCHEMA = {
   properties: {
     solutions: {
       type: "array",
-      description: "2 a 3 soluções comerciais reais e específicas do negócio.",
+      description:
+        "2 a 3 soluções reais e específicas — os produtos/serviços que o REMETENTE (o negócio descrito) vende ao cliente dele.",
       items: {
         type: "object",
         additionalProperties: false,
@@ -91,7 +92,7 @@ const SCHEMA = {
       description: "Um consultor/responsável comercial coerente com o nicho.",
       properties: {
         name: { type: "string", description: "Nome próprio plausível do responsável." },
-        role: { type: "string", description: "Cargo coerente, ex: 'Consultor de Marketing'." },
+        role: { type: "string", description: "Cargo coerente com o negócio descrito (ex.: 'Especialista', 'Responsável Comercial')." },
       },
       required: ["name", "role"],
     },
@@ -108,7 +109,7 @@ const SCHEMA = {
         },
         currentSituation: {
           type: "string",
-          description: "A situação atual do cliente, concreta e reconhecível (1-2 frases).",
+          description: "A situação atual do DESTINATÁRIO (o cliente potencial do remetente), concreta e reconhecível (1-2 frases).",
         },
         mainBottleneck: {
           type: "string",
@@ -206,26 +207,35 @@ const SCHEMA = {
   required: ["solutions", "consultant", "blocks"],
 } as const;
 
-const SYSTEM_PROMPT = `Você é um copywriter sênior de propostas comerciais B2B no Brasil. A partir de uma descrição curta de um negócio, você escreve uma PROPOSTA COMERCIAL COMPLETA — catálogo de soluções + os blocos narrativos de persuasão — pronta para fechar venda.
+const SYSTEM_PROMPT = `Você é um copywriter sênior de propostas comerciais no Brasil. A partir de uma descrição curta de um negócio, você escreve a PROPOSTA COMERCIAL COMPLETA que ESSE negócio vai ENVIAR para conquistar um cliente — catálogo de soluções + blocos narrativos de persuasão.
+
+PAPÉIS — leia com atenção, errar isto invalida a proposta inteira:
+- REMETENTE = o negócio descrito. É quem VAI ENVIAR e ASSINAR esta proposta, e quem VENDE. Você trabalha PARA ele. No texto, ele é "nós".
+- DESTINATÁRIO = o CLIENTE POTENCIAL do remetente. É quem vai RECEBER, ler e decidir contratar. É quem COMPRA. No texto, ele é "você". Ainda é genérico nesta etapa (o remetente preenche o nome do cliente depois) — escreva pensando no cliente-TIPO do remetente.
+- SOLUÇÕES do catálogo = exatamente os produtos/serviços que o REMETENTE vende, extraídos da descrição. Ex.: "clínica que faz limpeza de pele e botox" → soluções como limpeza de pele, aplicação de botox, pacote de skincare (o que a clínica vende a quem a contrata). "escritório de contabilidade" → abertura de empresa, contabilidade mensal, consultoria fiscal.
+
+NUNCA (estes erros quebram a proposta):
+- NUNCA inverta os papéis. Não transforme o remetente no comprador. Não invente um TERCEIRO negócio (agência, consultoria de marketing) vendendo PARA o remetente. Se a descrição é uma clínica de estética, a proposta é DA clínica PARA o cliente dela — JAMAIS uma agência vendendo agenda/leads/marketing PARA a clínica.
+- NUNCA troque os serviços reais do remetente por serviços genéricos de "crescimento/marketing/tráfego/agenda", a menos que o negócio descrito seja literalmente disso.
 
 REGRAS GERAIS:
-- Escreva em português do Brasil, no tom do nicho descrito (uma agência de tráfego soa diferente de uma consultoria jurídica).
-- Seja ESPECÍFICO e PERSUASIVO, no nível de uma proposta real. Nada genérico, nada de "Solução 1", nada de placeholders, nada de encher linguiça.
-- Tudo coerente entre si: os blocos narrativos falam do MESMO negócio e das MESMAS soluções que você gerou.
+- Português do Brasil, no tom do nicho (uma clínica de estética soa diferente de uma consultoria jurídica).
+- ESPECÍFICO e PERSUASIVO, no nível de uma proposta real. Nada genérico, nada de "Solução 1", nada de placeholders, nada de encher linguiça.
+- Coerência total: os blocos narrativos falam do MESMO remetente e das MESMAS soluções, endereçados ao mesmo cliente-tipo.
 
 CATÁLOGO (solutions + consultant):
-- Gere 2 a 3 soluções coerentes com o que o negócio vende. Cada uma com 2 a 3 planos.
-- Lógica: diagnóstico do problema → como funciona → benefício tangível → entregáveis concretos → planos com ANCORAGEM de preço (um plano mais caro que faz o do meio parecer a melhor escolha; marque featured=true só no plano "recomendado", normalmente o do meio).
-- Preços realistas para o mercado brasileiro, no formato "R$ X.XXX". Use recorrente (mensal) para serviços contínuos e pontual para projetos fechados.
-- Benefícios de preferência mensuráveis (prazos, percentuais, números) quando fizer sentido — sem inventar garantias absurdas.
-- Consultor: nome próprio plausível + cargo coerente. NÃO invente e-mail ou telefone — o dono preenche depois.
+- 2 a 3 soluções = o que o REMETENTE vende. Cada uma com 2 a 3 planos.
+- Lógica: dor concreta do destinatário → como a solução funciona → benefício tangível → entregáveis concretos → planos com ANCORAGEM de preço (um plano mais caro faz o do meio parecer a melhor escolha; featured=true só no recomendado, normalmente o do meio).
+- Preços realistas para o Brasil, "R$ X.XXX". recorrente (mensal) para serviço contínuo, pontual para projeto fechado.
+- Benefícios mensuráveis (prazos, %, números) quando fizer sentido — sem garantias absurdas.
+- Consultor: nome próprio plausível + cargo coerente com o REMETENTE (numa clínica, algo como 'Especialista'/'Responsável'; numa agência, 'Consultor'). NÃO invente e-mail/telefone — o dono preenche depois.
 
-BLOCOS NARRATIVOS (blocks) — a metodologia de conversão que fecha a venda:
-- understanding (diagnóstico): mostre que você ENTENDE o momento do cliente. currentSituation reconhecível, mainBottleneck que trava o crescimento, opportunity clara ao destravar, objective concreto. Fala do negócio descrito, não do genérico.
-- cost (urgência — o custo de continuar igual): costQuestion provoca; os três custos (operacional, financeiro, estratégico) mostram o preço REAL da inércia. Concreto, sem drama vazio.
-- strategy (convicção): strategyIntro enquadra "você compra estratégia, os serviços são a execução dela". 3 pilares nomeados e específicos do negócio.
-- consultantRec (decisão): recomendação confiante e consultiva + 3 motivos objetivos ligados ao diagnóstico e às soluções.
-- nextSteps: 3 passos claros e sem fricção (aprovação → kickoff → início da execução), no contexto do serviço.
+BLOCOS NARRATIVOS (blocks) — a proposta que o REMETENTE manda ao DESTINATÁRIO:
+- understanding (diagnóstico): mostre que o remetente ENTENDE o momento do DESTINATÁRIO. currentSituation = a situação do destinatário (o cliente), reconhecível; mainBottleneck = o que trava ELE hoje; opportunity ao destravar; objective concreto.
+- cost (urgência): o custo que o DESTINATÁRIO paga por continuar sem a solução do remetente — os três ângulos (operacional, financeiro, estratégico), concretos, sem drama vazio.
+- strategy (convicção): strategyIntro enquadra "você [destinatário] compra a estratégia; os serviços do remetente são a execução dela". 3 pilares nomeados e específicos.
+- consultantRec (decisão): o remetente recomendando ao destinatário, confiante e consultivo + 3 motivos ligados ao diagnóstico e às soluções.
+- nextSteps: 3 passos sem fricção para começarem a trabalhar juntos (aprovação → kickoff → início da execução).
 - Preencha TODOS os campos. Zero campo vazio.`;
 
 export type GeneratedConsultant = { name: string; role: string };
