@@ -613,6 +613,8 @@ export default function ClientBuilder() {
   // Celebração pós-1º download (WOW): confirma a conquista e faz a oferta
   // suave atada ao desejo (ilimitadas/sem espera) — momento certo de assinar.
   const [celebrate, setCelebrate] = useState(false);
+  // Já baixou a proposta de EXEMPLO (aha sem cliente real) → troca o CTA pelo nudge.
+  const [exampleDownloaded, setExampleDownloaded] = useState(false);
 
   // Flash sutil, sem lib (o app não tem toast). Some sozinho.
   const [toast, setToast] = useState<string | null>(null);
@@ -623,14 +625,19 @@ export default function ClientBuilder() {
     toastTimer.current = setTimeout(() => setToast(null), 2600);
   };
 
-  // Cliente vazio → em vez de o botão ficar mudo, GUIA: rola até o campo,
-  // foca o input e avisa. É o comportamento do aviso "clique aqui" reusado.
-  const focusClientField = () => {
-    trackFunnel("download_blocked", { reason: "cliente_vazio" });
+  // Rola até o campo de cliente, foca e avisa — SEM tracking. Reusado pelo guia
+  // de "cliente vazio" (bloqueio) e pelo nudge positivo pós-exemplo.
+  const scrollToClientField = (msg: string) => {
     const el = document.getElementById("cliente-sec");
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
     el?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
-    flash("Diga pra quem é a proposta 👇");
+    flash(msg);
+  };
+
+  // Cliente vazio → em vez de o botão ficar mudo, GUIA pro campo (e loga o bloqueio).
+  const focusClientField = () => {
+    trackFunnel("download_blocked", { reason: "cliente_vazio" });
+    scrollToClientField("Diga pra quem é a proposta 👇");
   };
 
   // Portão do download: assinante baixa; free consome 1 da cota;
@@ -737,9 +744,9 @@ export default function ClientBuilder() {
 
   // PDF: usa a impressão nativa do navegador (100% local, sem custo de API).
   // Renderiza num iframe oculto, espera as fontes e chama print() → "Salvar como PDF".
-  const handleExportPDF = () => {
-    if (clientMissing) return;
-    const html = renderProposalHTML(data, { editable: false });
+  // Parametrizado por `d` pra servir tanto o download REAL quanto o de EXEMPLO.
+  const printProposalPDF = (d: ProposalData) => {
+    const html = renderProposalHTML(d, { editable: false });
     const iframe = document.createElement("iframe");
     iframe.setAttribute("aria-hidden", "true");
     iframe.style.cssText =
@@ -766,6 +773,26 @@ export default function ClientBuilder() {
       else setTimeout(doPrint, 500);
     };
     iframe.srcdoc = html;
+  };
+
+  const handleExportPDF = () => {
+    if (clientMissing) return;
+    printProposalPDF(data);
+  };
+
+  // "Ver uma proposta pronta (exemplo)": baixa o PDF NA HORA com um cliente
+  // fictício, sem exigir input e SEM consumir cota (não passa por recordDownload).
+  // Manufatura o aha pra quem está explorando e não tem um negócio na mão AGORA.
+  // NÃO dispara a conversão paga de ativação — essa fica só pro 1º download REAL.
+  const downloadExample = () => {
+    const exampleData: ProposalData = {
+      ...data,
+      clientName: "Cliente Exemplo",
+      clientLegalName: "Cliente Exemplo Ltda",
+    };
+    printProposalPDF(exampleData);
+    trackFunnel("example_downloaded", { via: onboarding ? "ia" : "gerador" });
+    setExampleDownloaded(true);
   };
 
   // ----- consultor: drag & drop -----
@@ -862,6 +889,28 @@ export default function ClientBuilder() {
                       .
                     </p>
                     <Stepper current={2} />
+                    {/* Aha sem cliente real: quem está explorando e não tem um
+                        negócio na mão baixa um PDF de EXEMPLO em 1 clique (sem
+                        gastar cota). Depois, nudge pra fazer a proposta dele. */}
+                    {!exampleDownloaded ? (
+                      <button
+                        type="button"
+                        onClick={downloadExample}
+                        className="mt-2.5 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-accent/40 bg-panel px-3 py-1.5 text-[13px] font-semibold text-accent transition hover:bg-accent/10"
+                      >
+                        👀 Ver uma proposta pronta (exemplo) — não gasta seu grátis
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          scrollToClientField("Agora faça a sua — diga pra quem é 👇")
+                        }
+                        className="mt-2.5 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-accent/50 bg-accent/10 px-3 py-1.5 text-[13px] font-semibold text-ink transition hover:bg-accent/15"
+                      >
+                        Gostou? Agora faça a sua — diga pra quem é 👇
+                      </button>
+                    )}
                   </div>
                 </>
               ) : (
