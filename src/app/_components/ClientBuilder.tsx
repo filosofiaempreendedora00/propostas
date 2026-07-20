@@ -889,26 +889,31 @@ export default function ClientBuilder() {
                       .
                     </p>
                     <Stepper current={2} />
-                    {/* Aha sem cliente real: quem está explorando e não tem um
-                        negócio na mão baixa um PDF de EXEMPLO em 1 clique (sem
-                        gastar cota). Depois, nudge pra fazer a proposta dele. */}
+                    {/* Aha sem cliente real: quem explora e não tem um negócio
+                        na mão baixa um PDF de EXEMPLO em 1 clique (sem gastar
+                        cota). Depois, nudge sólido pra fazer a proposta dele. */}
                     {!exampleDownloaded ? (
-                      <button
-                        type="button"
-                        onClick={downloadExample}
-                        className="mt-2.5 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-accent/40 bg-panel px-3 py-1.5 text-[13px] font-semibold text-accent transition hover:bg-accent/10"
-                      >
-                        👀 Ver uma proposta pronta (exemplo) — não gasta seu grátis
-                      </button>
+                      <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                        <button
+                          type="button"
+                          onClick={downloadExample}
+                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-accent/60 bg-panel-2 px-3.5 py-2 text-[13px] font-semibold text-ink shadow-sm transition hover:border-accent hover:bg-panel"
+                        >
+                          👀 Ver um exemplo pronto
+                        </button>
+                        <span className="text-[11px] text-ink-mute">
+                          não tem cliente na mão? veja sem gastar seu grátis
+                        </span>
+                      </div>
                     ) : (
                       <button
                         type="button"
                         onClick={() =>
                           scrollToClientField("Agora faça a sua — diga pra quem é 👇")
                         }
-                        className="mt-2.5 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-accent/50 bg-accent/10 px-3 py-1.5 text-[13px] font-semibold text-ink transition hover:bg-accent/15"
+                        className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 text-[13px] font-bold text-bg shadow-sm transition hover:opacity-90"
                       >
-                        Gostou? Agora faça a sua — diga pra quem é 👇
+                        Gostou? Faça a sua agora 👇
                       </button>
                     )}
                   </div>
