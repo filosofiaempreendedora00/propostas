@@ -31,7 +31,7 @@ function Check() {
       strokeWidth="2.2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="mt-0.5 h-4 w-4 shrink-0 text-accent"
+      className="mt-0.5 h-5 w-5 shrink-0 text-accent"
     >
       <path d="M20 6 9 17l-5-5" />
     </svg>
@@ -74,49 +74,49 @@ function PlanCard({
       }`}
     >
       {focus && (
-        <span className="absolute -top-3 left-6 rounded-full bg-accent px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-bg">
+        <span className="absolute -top-3 left-6 rounded-full bg-accent px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-bg">
           Recomendado pra você
         </span>
       )}
-      <h2 className="font-display text-2xl font-semibold tracking-tight text-ink">
+      <h2 className="font-display text-[1.7rem] font-semibold tracking-tight text-ink">
         {name}
       </h2>
-      <p className="mt-1 text-sm text-ink-mute">{tagline}</p>
+      <p className="mt-1.5 text-base text-ink-mute">{tagline}</p>
 
-      <div className="mt-4 min-h-[92px]">
-        <div className="flex items-end gap-1">
-          <span className="text-sm text-ink-mute">R$</span>
-          <span className="font-display text-4xl font-semibold leading-none text-ink">
+      <div className="mt-4 min-h-[104px]">
+        <div className="flex items-end gap-1.5">
+          <span className="text-base text-ink-mute">R$</span>
+          <span className="font-display text-5xl font-semibold leading-none text-ink">
             {brl(annual ? annualPerMonth : monthly)}
           </span>
-          <span className="mb-1 text-sm text-ink-mute">/mês</span>
+          <span className="mb-1 text-base text-ink-mute">/mês</span>
         </div>
 
         {annual ? (
-          <div className="mt-2">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+          <div className="mt-2.5">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
               <span className="text-ink-mute">Parcele em até 12× ou</span>
               <span className="font-semibold text-ink">
                 R$ {brl(annualUpfront)} à vista
               </span>
-              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-400">
                 {discUpfront}% OFF
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-emerald-400/90">
+            <p className="mt-1.5 text-[13px] text-emerald-400/90">
               Economize R$ {brl(saveUpfront)} no Plano Anual à vista
             </p>
           </div>
         ) : (
-          <p className="mt-2 text-xs text-ink-mute">
+          <p className="mt-2.5 text-sm text-ink-mute">
             Cobrado mensalmente. Cancele quando quiser.
           </p>
         )}
       </div>
 
-      <ul className="mt-5 flex flex-1 flex-col gap-2.5">
+      <ul className="mt-5 flex flex-1 flex-col gap-3">
         {features.map((f) => (
-          <li key={f} className="flex gap-2 text-sm text-ink-soft">
+          <li key={f} className="flex gap-2.5 text-base leading-snug text-ink-soft">
             <Check />
             <span>{f}</span>
           </li>
@@ -128,7 +128,7 @@ function PlanCard({
         target="_blank"
         rel="noopener noreferrer"
         aria-disabled={!link}
-        className={`mt-6 rounded-full bg-accent px-5 py-3 text-center text-sm font-semibold text-bg transition hover:opacity-90 ${
+        className={`mt-6 rounded-full bg-accent px-5 py-3.5 text-center text-base font-semibold text-bg transition hover:opacity-90 ${
           !link ? "pointer-events-none opacity-40" : ""
         }`}
       >
@@ -136,7 +136,7 @@ function PlanCard({
         {annual ? " anual" : " mensal"}
       </a>
 
-      <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[11px] text-ink-mute">
+      <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[13px] text-ink-mute">
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -144,7 +144,7 @@ function PlanCard({
           strokeWidth="1.8"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="h-3.5 w-3.5"
+          className="h-4 w-4"
         >
           <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" />
           <path d="M9.5 12l1.8 1.8L15 10" />
@@ -166,7 +166,7 @@ export default function PlansChooser({ email, individual, time }: Props) {
           <button
             type="button"
             onClick={() => setAnnual(false)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+            className={`rounded-full px-5 py-2 text-base font-medium transition ${
               !annual ? "bg-accent text-bg" : "text-ink-mute hover:text-ink-soft"
             }`}
           >
@@ -175,13 +175,13 @@ export default function PlansChooser({ email, individual, time }: Props) {
           <button
             type="button"
             onClick={() => setAnnual(true)}
-            className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition ${
+            className={`flex items-center gap-2 rounded-full px-5 py-2 text-base font-medium transition ${
               annual ? "bg-accent text-bg" : "text-ink-mute hover:text-ink-soft"
             }`}
           >
             Anual
             <span
-              className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+              className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
                 annual ? "bg-bg/20 text-bg" : "bg-emerald-500/15 text-emerald-400"
               }`}
             >

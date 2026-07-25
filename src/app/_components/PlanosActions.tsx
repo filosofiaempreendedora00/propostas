@@ -45,7 +45,7 @@ export default function PlanosActions({
       {!locked && (
         <a
           href="/inicio"
-          className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-bg transition hover:opacity-90"
+          className="rounded-full bg-accent px-6 py-3 text-base font-semibold text-bg transition hover:opacity-90"
         >
           ← Continuar testando
           {remaining > 0
@@ -58,22 +58,22 @@ export default function PlanosActions({
         type="button"
         onClick={verify}
         disabled={checking}
-        className="rounded-full border border-line px-5 py-2 text-sm font-medium text-ink-soft transition hover:border-accent/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-full border border-line px-5 py-2.5 text-base font-medium text-ink-soft transition hover:border-accent/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
       >
         {checking ? "Verificando…" : "Já assinei — entrar"}
       </button>
 
       {msg && (
-        <p className="max-w-sm rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-[13px] text-amber-300">
+        <p className="max-w-sm rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-sm text-amber-300">
           {msg}
         </p>
       )}
 
-      <p className="text-[11px] text-ink-mute">
+      <p className="text-[13px] text-ink-mute">
         Use o mesmo e-mail da compra: <strong>{email}</strong>.
       </p>
       <form action="/auth/signout" method="post">
-        <button type="submit" className="text-[11px] text-accent hover:underline">
+        <button type="submit" className="text-[13px] text-accent hover:underline">
           Trocar conta
         </button>
       </form>

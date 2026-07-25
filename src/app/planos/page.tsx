@@ -44,10 +44,10 @@ export default async function PlanosPage() {
             unoptimized
             className="h-10 w-10 select-none"
           />
-          <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight">
+          <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight">
             {heading}
           </h1>
-          <p className="mt-1.5 max-w-md text-sm text-ink-mute">
+          <p className="mt-2.5 max-w-lg text-lg leading-relaxed text-ink-mute">
             {subheading}
           </p>
         </div>
