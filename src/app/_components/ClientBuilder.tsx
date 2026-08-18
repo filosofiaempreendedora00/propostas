@@ -997,7 +997,10 @@ export default function ClientBuilder() {
                 <button
                   key={mode}
                   type="button"
-                  onClick={() => setFillMode(mode)}
+                  onClick={() => {
+                    setFillMode(mode);
+                    trackFunnel("fillmode_selected", { mode });
+                  }}
                   className={`flex-1 rounded-md px-2.5 py-1.5 font-medium transition ${
                     fillMode === mode
                       ? "bg-accent text-bg"
