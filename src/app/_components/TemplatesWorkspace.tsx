@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useTemplates } from "@/lib/templates/store";
 import { BLOCKS, NON_EDITABLE_BLOCKS, type BlockKey } from "@/lib/templates/types";
@@ -144,20 +144,13 @@ export default function TemplatesWorkspace() {
     [selected, update],
   );
 
-  // Ao ENTRAR num bloco, abre a primeira variação (uma vez por bloco). Depois
-  // o usuário pode fechar/abrir à vontade — inclusive deixar todas fechadas.
-  const initedBlock = useRef<BlockKey | null>(null);
-  useEffect(() => {
-    if (blockItems.length && initedBlock.current !== block) {
-      initedBlock.current = block;
-      setSelectedId(blockItems[0].id);
-    }
-  }, [block, blockItems]);
-
+  // Estado inicial LIMPO: nada auto-expande. A tela abre só com os cards das
+  // variações (título) colapsados — o usuário expande o que quiser editar
+  // (evita a "parede de campos"). Ao trocar de bloco, o selectedId antigo não
+  // bate com nenhum card do novo bloco, então tudo já nasce fechado.
   const handleAdd = () => {
     const id = add(block);
-    initedBlock.current = block;
-    setSelectedId(id);
+    setSelectedId(id); // recém-criada abre pra edição imediata
   };
 
   return (
