@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { DEFAULT_PROPOSAL } from "@/lib/proposal/defaults";
 import { renderProposalHTML, slugify } from "@/lib/proposal/render";
 import type { ProposalData, InvestmentGroup } from "@/lib/proposal/types";
+import TranscriptGenerator from "./TranscriptGenerator";
 import { toRenderSolution, planToTier } from "@/lib/proposal/fromCatalog";
 import { useCatalog, useConsultants } from "@/lib/catalog/store";
 import type { CatalogSolution, Billing } from "@/lib/catalog/types";
@@ -615,6 +616,22 @@ export default function ClientBuilder() {
   const [celebrate, setCelebrate] = useState(false);
   // Já baixou a proposta de EXEMPLO (aha sem cliente real) → troca o CTA pelo nudge.
   const [exampleDownloaded, setExampleDownloaded] = useState(false);
+  // Como montar a proposta: pela call (transcript, default) ou por templates.
+  const [fillMode, setFillMode] = useState<"transcript" | "templates">(
+    "transcript",
+  );
+  // Aplica no form os blocos personalizados que a IA extraiu do transcript da
+  // call (Item 5). O catálogo de soluções continua vindo do negócio.
+  const applyTranscriptBlocks = (
+    clientName: string,
+    blocks: Partial<ProposalData>,
+  ) => {
+    setForm((f) => ({
+      ...f,
+      ...(blocks as Partial<ClientForm>),
+      clientName: clientName.trim() || f.clientName,
+    }));
+  };
 
   // Flash sutil, sem lib (o app não tem toast). Some sozinho.
   const [toast, setToast] = useState<string | null>(null);
@@ -964,11 +981,59 @@ export default function ClientBuilder() {
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(320px,380px)_1fr]">
         {/* Painel — controles. Os textos editam-se no preview. */}
         <div className="form-scroll overflow-y-auto border-r border-line px-6 py-6">
+          {/* Item 5 — como montar: pela CALL (transcript, recomendado) ou por
+              TEMPLATES. O switcher fica acima do quadro "Edite os textos". */}
+          <div className="mb-3">
+            <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-mute">
+              Como montar a proposta
+            </div>
+            <div className="mb-2.5 flex rounded-lg border border-line p-0.5 text-xs">
+              {(
+                [
+                  ["transcript", "🎙️ Pela call (IA)"],
+                  ["templates", "Templates"],
+                ] as const
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setFillMode(mode)}
+                  className={`flex-1 rounded-md px-2.5 py-1.5 font-medium transition ${
+                    fillMode === mode
+                      ? "bg-accent text-bg"
+                      : "text-ink-mute hover:text-ink"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {fillMode === "transcript" ? (
+              <TranscriptGenerator onApply={applyTranscriptBlocks} />
+            ) : (
+              <p className="rounded-lg border border-line bg-panel/50 px-3 py-2.5 text-[12px] leading-relaxed text-ink-soft">
+                Use as{" "}
+                <strong className="text-ink">variações de texto</strong> nos
+                blocos abaixo (menu “Selecionar variação”) — o padrão pra quem
+                reaproveita argumentos. Ou gerencie tudo em{" "}
+                <Link href="/templates" className="text-accent hover:underline">
+                  Templates
+                </Link>
+                .
+              </p>
+            )}
+          </div>
+
+          {/* Item 6 — copy que instrui os dois caminhos + edição inline. */}
           <div className="rounded-lg border border-accent/40 bg-accent/10 p-3 text-xs leading-relaxed text-ink-soft">
-            ✏️ <strong className="text-ink">Edite os textos no preview.</strong>{" "}
-            Diagnóstico, custo, estratégia, recomendação e próximos passos —
-            passe o mouse e clique para editar no lugar. Soluções, planos e
-            consultor vêm de{" "}
+            ✏️{" "}
+            <strong className="text-ink">Escolha como montar acima</strong> —
+            suba o transcript da sua call de vendas (recomendado) ou use um
+            template. Depois,{" "}
+            <strong className="text-ink">
+              edite qualquer texto direto no preview
+            </strong>{" "}
+            (passe o mouse e clique). Soluções, planos e consultor vêm de{" "}
             <Link href="/empresa" className="text-accent hover:underline">
               Sua Empresa
             </Link>
