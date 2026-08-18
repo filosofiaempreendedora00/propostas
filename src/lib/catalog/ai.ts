@@ -238,6 +238,94 @@ BLOCOS NARRATIVOS (blocks) — a proposta que o REMETENTE manda ao DESTINATÁRIO
 - nextSteps: 3 passos sem fricção para começarem a trabalhar juntos (aprovação → kickoff → início da execução).
 - Preencha TODOS os campos. Zero campo vazio.`;
 
+// ---- Geração a partir do TRANSCRIPT da call (personaliza os blocos) ----
+// Schema = só os blocos narrativos (reusa o do catálogo) + nome do cliente
+// inferido da call. O catálogo de serviços continua vindo do negócio (não muda).
+const TRANSCRIPT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    clientName: {
+      type: "string",
+      description:
+        "Nome da empresa/pessoa do CLIENTE mencionado na call (o destinatário da proposta). Vazio se não der pra inferir.",
+    },
+    blocks: SCHEMA.properties.blocks,
+  },
+  required: ["clientName", "blocks"],
+} as const;
+
+const TRANSCRIPT_SYSTEM = `Você é um copywriter sênior de propostas comerciais no Brasil. Você recebe o TRANSCRIPT de uma call de vendas entre o REMETENTE (quem VENDE e vai assinar a proposta) e um CLIENTE POTENCIAL (o destinatário, quem vai contratar).
+
+TAREFA: ler a call e escrever os BLOCOS NARRATIVOS da proposta PERSONALIZADOS àquele cliente — usando as dores, desejos, contexto e objeções REAIS que aparecem na conversa. Nada genérico: reflita a situação concreta que o cliente descreveu, com as palavras/prioridades dele.
+
+PAPÉIS (não inverta): o REMETENTE vende; o CLIENTE da call é o destinatário ("você" nos textos). Os blocos são a proposta do remetente PARA esse cliente.
+- currentSituation / mainBottleneck / opportunity / objective = a situação e a dor REAIS do cliente, ditas na call.
+- os três custos = o que o cliente perde por continuar como está (do que a call revelou).
+- strategy + 3 pilares = como o remetente resolve, ancorado no que o cliente quer.
+- consultantRec (+ 3 motivos) e nextSteps = recomendação e próximos passos coerentes com a conversa.
+- clientName = nome da empresa/pessoa do cliente, se mencionado (senão vazio).
+
+Preencha TODOS os campos dos blocos. Português do Brasil, específico e persuasivo, no tom do nicho.`;
+
+export async function generateBlocksFromTranscript(transcript: string): Promise<{
+  clientName: string;
+  blocks: Partial<ProposalData>;
+  usage: GenUsage;
+}> {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) {
+    throw new Error(
+      "Geração por IA indisponível: falta configurar ANTHROPIC_API_KEY no servidor.",
+    );
+  }
+  // Teto generoso (call longa) mas limita custo — bem acima dos 2000 do brief.
+  const clean = (transcript ?? "").trim().slice(0, 60000);
+  if (clean.length < 40) {
+    throw new Error(
+      "Transcript muito curto pra personalizar. Envie a call completa (PDF, DOCX ou TXT).",
+    );
+  }
+
+  const client = new Anthropic({ apiKey: key });
+  const resp = await client.messages.create({
+    model: MODEL,
+    max_tokens: 8000,
+    system: TRANSCRIPT_SYSTEM,
+    output_config: { format: { type: "json_schema", schema: TRANSCRIPT_SCHEMA } },
+    messages: [
+      {
+        role: "user",
+        content: `Transcript da call de vendas:\n"""\n${clean}\n"""\n\nEscreva os blocos personalizados + o clientName seguindo as regras.`,
+      },
+    ],
+  });
+
+  const text = resp.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("")
+    .trim();
+
+  let data: { clientName?: unknown; blocks?: unknown };
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error("A IA retornou um formato inesperado. Tente gerar de novo.");
+  }
+
+  const usage: GenUsage = {
+    model: MODEL,
+    inputTokens:
+      (resp.usage.input_tokens ?? 0) +
+      (resp.usage.cache_read_input_tokens ?? 0) +
+      (resp.usage.cache_creation_input_tokens ?? 0),
+    outputTokens: resp.usage.output_tokens ?? 0,
+  };
+
+  return { clientName: str(data.clientName), blocks: normalizeBlocks(data.blocks), usage };
+}
+
 export type GeneratedConsultant = { name: string; role: string };
 export type GenUsage = {
   model: string;
