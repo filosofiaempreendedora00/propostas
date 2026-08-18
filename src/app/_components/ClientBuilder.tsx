@@ -844,11 +844,20 @@ export default function ClientBuilder() {
             isHex={isHex}
           />
           <span className="h-5 w-px bg-line" />
+          {/* Sinal inconfundível de que dá pra baixar — junto do botão, não
+              dependendo mais da setinha sutil. Aparece quando os obrigatórios
+              estão completos (cohort de 1ª vez). */}
+          {firstRun && !clientMissing && (
+            <span className="hidden items-center gap-1.5 whitespace-nowrap rounded-full border border-accent/50 bg-accent/15 px-3 py-1.5 text-[13px] font-bold text-accent lg:inline-flex">
+              <span aria-hidden>✓</span> Tudo pronto — baixe
+              <span aria-hidden>→</span>
+            </span>
+          )}
           <DownloadActions
             layout="header"
             blocked={clientMissing}
             onBlocked={focusClientField}
-            highlight={firstRun && !clientMissing && !onbDismissed}
+            highlight={firstRun && !clientMissing}
             onPdf={() => requestDownload(handleExportPDF, "PDF")}
             onHtml={() => requestDownload(handleExport, "HTML")}
           />
@@ -893,18 +902,16 @@ export default function ClientBuilder() {
                         na mão baixa um PDF de EXEMPLO em 1 clique (sem gastar
                         cota). Depois, nudge sólido pra fazer a proposta dele. */}
                     {!exampleDownloaded ? (
-                      <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                        <button
-                          type="button"
-                          onClick={downloadExample}
-                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-accent/60 bg-panel-2 px-3.5 py-2 text-[13px] font-semibold text-ink shadow-sm transition hover:border-accent hover:bg-panel"
-                        >
-                          👀 Ver um exemplo pronto
-                        </button>
-                        <span className="text-[11px] text-ink-mute">
-                          não tem cliente na mão? veja sem gastar seu grátis
+                      <button
+                        type="button"
+                        onClick={downloadExample}
+                        className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-full border border-accent/40 px-4 py-2 text-[13px] font-semibold text-accent transition hover:border-accent hover:bg-accent/10"
+                      >
+                        <span aria-hidden>👀</span> Ver um exemplo pronto
+                        <span className="font-normal text-ink-mute">
+                          · não gasta seu grátis
                         </span>
-                      </div>
+                      </button>
                     ) : (
                       <button
                         type="button"
