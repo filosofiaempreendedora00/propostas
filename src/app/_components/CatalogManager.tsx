@@ -32,10 +32,19 @@ export default function CatalogManager() {
     void reload();
   };
 
-  // Seleciona o primeiro item assim que o catálogo carrega.
+  // Seleciona o primeiro item assim que o catálogo carrega — OU a solução
+  // pedida via deep-link do builder (/empresa?sol=<id> → ✏️ "editar solução").
   useEffect(() => {
     if (ready && selectedId === null && items.length > 0) {
-      setSelectedId(items[0].id);
+      let target: string | null = null;
+      try {
+        target = new URLSearchParams(window.location.search).get("sol");
+      } catch {
+        /* SSR/param ausente */
+      }
+      const focus = target && items.some((s) => s.id === target) ? target : null;
+      setSelectedId(focus ?? items[0].id);
+      if (focus) setTab("detalhes");
     }
     // Se o item selecionado foi removido, cai pro primeiro.
     if (selectedId && !items.some((s) => s.id === selectedId)) {
