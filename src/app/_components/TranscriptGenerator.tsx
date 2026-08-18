@@ -37,6 +37,10 @@ export default function TranscriptGenerator({
         error?: string;
       };
       if (!res.ok) {
+        trackFunnel("transcript_failed", {
+          status: res.status,
+          reason: (data?.error || "").slice(0, 80),
+        });
         setError(data?.error || "Não consegui processar o arquivo. Tente de novo.");
         return;
       }
@@ -48,6 +52,7 @@ export default function TranscriptGenerator({
           : "Proposta personalizada a partir da call — revise no preview ao lado.",
       );
     } catch {
+      trackFunnel("transcript_failed", { reason: "network" });
       setError("Falha de rede ao enviar. Tente de novo.");
     } finally {
       setLoading(false);
