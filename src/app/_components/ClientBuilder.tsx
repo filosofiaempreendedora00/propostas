@@ -1166,36 +1166,52 @@ export default function ClientBuilder() {
                           : "border-line bg-panel"
                       }`}
                     >
-                      {/* Cabeçalho: liga/desliga a solução */}
-                      <button
-                        type="button"
-                        onClick={() => toggleSolution(s)}
-                        className="flex w-full items-start gap-3 px-3.5 py-3 text-left"
+                      {/* Cabeçalho: liga/desliga a solução + ✏️ editar conteúdo.
+                          O ✏️ leva ao catálogo focado nesta solução (edita nome,
+                          textos, entregáveis — não só o preço). */}
+                      <div
+                        className={`flex items-stretch ${
+                          on ? "border-b border-accent/25" : ""
+                        }`}
                       >
-                        <span
-                          className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 text-[11px] transition ${
-                            on
-                              ? "border-accent bg-accent text-bg"
-                              : "border-ink-mute/50 text-transparent"
-                          }`}
+                        <button
+                          type="button"
+                          onClick={() => toggleSolution(s)}
+                          className="flex min-w-0 flex-1 items-start gap-3 px-3.5 py-3 text-left"
                         >
-                          ✓
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-sm font-semibold text-ink">
-                            {s.icon} {s.name}
+                          <span
+                            className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 text-[11px] transition ${
+                              on
+                                ? "border-accent bg-accent text-bg"
+                                : "border-ink-mute/50 text-transparent"
+                            }`}
+                          >
+                            ✓
                           </span>
-                          {s.tagline && (
-                            <span className="block truncate text-xs text-ink-mute">
-                              {s.tagline}
+                          <span className="min-w-0">
+                            <span className="block text-[15px] font-semibold leading-tight text-ink">
+                              {s.icon} {s.name}
                             </span>
-                          )}
-                        </span>
-                      </button>
+                            {s.tagline && (
+                              <span className="mt-0.5 block truncate text-xs text-ink-mute">
+                                {s.tagline}
+                              </span>
+                            )}
+                          </span>
+                        </button>
+                        <Link
+                          href={`/empresa?sol=${s.id}`}
+                          title="Editar o conteúdo desta solução (nome, textos, entregáveis…)"
+                          className="flex shrink-0 items-center gap-1 self-stretch border-l border-line px-3 text-[11px] font-medium text-ink-mute transition hover:bg-accent/10 hover:text-accent"
+                        >
+                          ✏️ <span className="hidden lg:inline">editar</span>
+                        </Link>
+                      </div>
 
-                      {/* Planos — dentro da MESMA seleção da solução */}
+                      {/* Planos — sub-área nitidamente subordinada (fundo
+                          próprio), pra não parecer "outra caixa igual" à solução. */}
                       {on && (
-                        <div className="border-t border-accent/20 px-3 py-3">
+                        <div className="bg-panel-2/40 px-3 py-3">
                           {s.plans.length === 0 ? (
                             <p className="text-[11px] text-ink-mute">
                               Sem planos. Cadastre em{" "}
