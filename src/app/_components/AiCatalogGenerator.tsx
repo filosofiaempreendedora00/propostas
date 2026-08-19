@@ -92,6 +92,52 @@ export default function AiCatalogGenerator({
     }
   };
 
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  // Sobe um arquivo do negócio (PDF/DOCX/TXT) → a IA extrai e cria o catálogo.
+  // Mesmo destino/sucesso do fluxo digitado; barra e erro iguais.
+  const sendFile = async (file: File) => {
+    setLoading(true);
+    setError(null);
+    setProgress(0);
+    trackFunnel("business_described", {
+      via: "empresa_file",
+      ext: file.name.split(".").pop()?.toLowerCase() ?? "",
+    });
+    const start = performance.now();
+    timer.current = setInterval(() => {
+      const s = (performance.now() - start) / 1000;
+      setProgress(Math.min(94, (1 - Math.exp(-s / 26)) * 100));
+    }, 150);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const resp = await fetch("/api/catalog/from-file", { method: "POST", body: fd });
+      const data = (await resp.json().catch(() => ({}))) as {
+        solutions?: number;
+        error?: string;
+      };
+      if (timer.current) clearInterval(timer.current);
+      if (!resp.ok) {
+        throw new Error(data?.error || "Não consegui processar o arquivo. Tente de novo.");
+      }
+      trackFunnel("catalog_generated", {
+        via: "empresa_file",
+        solutions: data.solutions ?? 0,
+      });
+      setProgress(100);
+      await new Promise((r) => setTimeout(r, 350));
+      onGenerated();
+      setDone(true);
+    } catch (e) {
+      if (timer.current) clearInterval(timer.current);
+      setError(e instanceof Error ? e.message : "Falha ao enviar. Tente de novo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const noneLeft = left?.remaining === 0;
   const tooShort = brief.trim().length < 20;
 
@@ -170,7 +216,7 @@ export default function AiCatalogGenerator({
                 </div>
                 <div className="flex items-baseline justify-between gap-3">
                   <h2 className="font-display text-2xl font-semibold tracking-tight text-ink">
-                    Descreva seu negócio
+                    Gerar catálogo com IA
                   </h2>
                   {left && (
                     <span className="shrink-0 rounded-full border border-line bg-panel-2 px-2.5 py-0.5 text-[11px] font-medium text-ink-mute">
@@ -179,11 +225,9 @@ export default function AiCatalogGenerator({
                   )}
                 </div>
                 <p className="mt-1.5 text-sm text-ink-mute">
-                  Em um parágrafo: o que você vende, para quem, principais
-                  serviços e faixa de preço.{" "}
-                  <strong className="text-ink-soft">
-                    Quanto mais detalhes, melhor o resultado.
-                  </strong>
+                  <strong className="text-ink-soft">Suba um arquivo</strong> do seu
+                  negócio (PDF, DOCX ou TXT) e a IA extrai tudo — ou descreva num
+                  parágrafo. Quanto mais detalhes, melhor.
                 </p>
 
                 {noneLeft ? (
@@ -194,6 +238,57 @@ export default function AiCatalogGenerator({
                   </p>
                 ) : (
                   <>
+                    {/* Caminho PREFERENCIAL: subir um arquivo do negócio → a IA
+                        extrai e cria os serviços. */}
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept=".pdf,.docx,.txt"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void sendFile(f);
+                        e.target.value = "";
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragOver(true);
+                      }}
+                      onDragLeave={() => setDragOver(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setDragOver(false);
+                        const f = e.dataTransfer.files?.[0];
+                        if (f) void sendFile(f);
+                      }}
+                      className={`mt-4 flex w-full cursor-pointer flex-col items-center gap-1 rounded-xl border-2 border-dashed px-4 py-5 text-center transition ${
+                        dragOver
+                          ? "border-accent bg-accent/[0.12]"
+                          : "border-accent/45 bg-accent/[0.06] hover:border-accent hover:bg-accent/10"
+                      }`}
+                    >
+                      <span className="text-2xl leading-none" aria-hidden>
+                        ⬆️
+                      </span>
+                      <span className="text-sm font-semibold text-ink">
+                        Suba um arquivo do seu negócio
+                      </span>
+                      <span className="text-[11px] text-ink-mute">
+                        Arraste aqui ou clique · PDF, DOCX ou TXT — a IA extrai e
+                        cria seus serviços
+                      </span>
+                    </button>
+
+                    <div className="my-3 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-ink-mute">
+                      <span className="h-px flex-1 bg-line" />
+                      ou descreva
+                      <span className="h-px flex-1 bg-line" />
+                    </div>
+
                     <textarea
                       value={brief}
                       onChange={(e) => setBrief(e.target.value)}
