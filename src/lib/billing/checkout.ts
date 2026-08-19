@@ -8,7 +8,7 @@
 export const CHECKOUT = {
   individual: {
     monthly: "https://pay.kiwify.com.br/uuZ8y2I",
-    annual: "https://pay.kiwify.com.br/vaYLMVx",
+    annual: "https://pay.kiwify.com.br/RKehqQY",
   },
   time: {
     monthly: "https://pay.kiwify.com.br/mtHrzfO",
