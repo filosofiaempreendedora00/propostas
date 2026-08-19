@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   generateAndReplaceCatalog,
@@ -23,6 +24,7 @@ export default function AiCatalogGenerator({
   onGenerated: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false); // portal só depois de montar (SSR-safe)
   const [brief, setBrief] = useState("");
   const [showDescribe, setShowDescribe] = useState(false); // "ou descreva" recolhido
   const [loading, setLoading] = useState(false);
@@ -46,6 +48,19 @@ export default function AiCatalogGenerator({
       if (timer.current) clearInterval(timer.current);
     };
   }, []);
+
+  // Portal precisa do document (client). Marca montado após a hidratação.
+  useEffect(() => setMounted(true), []);
+
+  // Trava o scroll do fundo enquanto o modal está aberto.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
 
   const close = () => {
     if (loading) return;
@@ -166,11 +181,13 @@ export default function AiCatalogGenerator({
         Gerar catálogo com IA
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4 backdrop-blur-sm"
-          onClick={close}
-        >
+      {open &&
+        mounted &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] grid place-items-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={close}
+          >
           <div
             className="cream max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-line bg-bg p-5 shadow-2xl sm:p-6"
             onClick={(e) => e.stopPropagation()}
@@ -452,8 +469,9 @@ export default function AiCatalogGenerator({
               </>
             )}
           </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
