@@ -7,10 +7,10 @@ import { useState } from "react";
 // annualPerMonth = anual PARCELADO (R$/mês em 12×, com juros embutidos)
 // annualUpfront  = anual À VISTA (pagamento único no ano) — maior desconto
 // Preços TÊM que bater com o que cada link Kiwify cobra (ver checkout.ts).
-// annualPerMonth = valor/mês exibido no anual; annualUpfront = à vista no ano.
+// annualPerMonth = anual PARCELADO em 12× (com juros); annualUpfront = à vista.
 const PRICES = {
-  individual: { monthly: 37, annualPerMonth: 25, annualUpfront: 297 },
-  time: { monthly: 97, annualPerMonth: 75, annualUpfront: 897 },
+  individual: { monthly: 37, annualPerMonth: 30.72, annualUpfront: 297 },
+  time: { monthly: 97, annualPerMonth: 92.77, annualUpfront: 897 },
 };
 
 const brl = (n: number) => n.toLocaleString("pt-BR");
