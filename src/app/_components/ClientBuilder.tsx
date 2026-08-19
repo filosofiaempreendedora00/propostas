@@ -584,7 +584,7 @@ export default function ClientBuilder() {
   // A contagem "X de 3 grátis" aparece na top-bar; aqui usamos só p/ a lógica.
   const router = useRouter();
 
-  // Clique na logo do preview → Sua Empresa, na aba "Sua marca", já destacando
+  // Clique na logo do preview → Minha Empresa, na aba "Minha marca", já destacando
   // a logo do tema atual (clara/escura). A intenção vai por QUERY PARAM (?marca=)
   // — determinístico ao montar a página (não some sob StrictMode como o
   // sessionStorage consumido, que abria a aba errada de primeira).
@@ -950,7 +950,7 @@ export default function ClientBuilder() {
             </strong>{" "}
             (passe o mouse e clique). Soluções, planos e consultor vêm de{" "}
             <Link href="/empresa" className="text-accent hover:underline">
-              Sua Empresa
+              Minha Empresa
             </Link>
             .
           </div>
@@ -1199,7 +1199,7 @@ export default function ClientBuilder() {
                                 href="/empresa"
                                 className="text-accent hover:underline"
                               >
-                                Sua Empresa
+                                Minha Empresa
                               </Link>
                               .
                             </p>
@@ -1392,7 +1392,7 @@ export default function ClientBuilder() {
             <strong className="text-ink">marcou em cada solução</strong> acima.
             Edite preços e itens em{" "}
             <Link href="/empresa" className="text-accent hover:underline">
-              Sua Empresa
+              Minha Empresa
             </Link>
             . Título e justificativa editam-se no preview.
           </div>
@@ -2345,7 +2345,7 @@ function EmptyCatalog({ label }: { label: string }) {
         href="/empresa"
         className="mt-2 inline-block font-medium text-accent hover:underline"
       >
-        → Cadastrar em Sua Empresa
+        → Cadastrar em Minha Empresa
       </Link>
     </div>
   );

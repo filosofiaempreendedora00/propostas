@@ -597,7 +597,7 @@ ${watermarkHtml}
   <div class="wrap cover-top">
     <div class="brandmark"${
       editable
-        ? ` data-logo="${d.theme === "light" ? "escura" : "clara"}" title="${d.logo ? "Clique para trocar a logo em Sua Empresa" : "Clique para adicionar sua logo em Sua Empresa"}"`
+        ? ` data-logo="${d.theme === "light" ? "escura" : "clara"}" title="${d.logo ? "Clique para trocar a logo em Minha Empresa" : "Clique para adicionar sua logo em Minha Empresa"}"`
         : ""
     }>${
       d.logo
