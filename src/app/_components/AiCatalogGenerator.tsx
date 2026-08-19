@@ -14,9 +14,9 @@ const EXAMPLE =
 
 type Left = { used: number; limit: number; remaining: number };
 
-// Botão + modal: o usuário descreve o negócio e a IA gera o catálogo completo
-// (soluções + planos + consultor), substituindo o catálogo atual. Limite de
-// gerações por conta; barra de progresso com estimativa durante a geração.
+// Botão + modal: o usuário sobe um arquivo do negócio (ou descreve) e a IA gera o
+// catálogo completo (soluções + planos + consultor), substituindo o catálogo
+// atual. Limite de gerações por conta; barra de progresso durante a geração.
 export default function AiCatalogGenerator({
   onGenerated,
 }: {
@@ -24,6 +24,7 @@ export default function AiCatalogGenerator({
 }) {
   const [open, setOpen] = useState(false);
   const [brief, setBrief] = useState("");
+  const [showDescribe, setShowDescribe] = useState(false); // "ou descreva" recolhido
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false); // sucesso → CTA pro Gerador
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +52,7 @@ export default function AiCatalogGenerator({
     setOpen(false);
     setError(null);
     setDone(false);
+    setShowDescribe(false);
   };
 
   const generate = async () => {
@@ -143,12 +145,25 @@ export default function AiCatalogGenerator({
 
   return (
     <>
+      {/* keyframes locais: borda tracejada em movimento ("marching ants") — a
+          mesma linguagem viva da demo do /inicio, aplicada à zona de upload. */}
+      <style>{`@keyframes catAnts{to{stroke-dashoffset:-36}}`}</style>
+
+      {/* Botão-âncora do /empresa: agora é o CTA principal (grande e evidente). */}
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-xs font-semibold text-accent transition hover:bg-accent/15"
+        className="group flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-bg shadow-[0_12px_26px_-16px_rgba(120,90,40,0.85)] transition hover:opacity-95"
       >
-        ✨ Gerar catálogo com IA
+        <svg
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden
+          className="h-4 w-4 transition-transform group-hover:scale-110"
+        >
+          <path d="M12 2c0 5-5 10-10 10 5 0 10 5 10 10 0-5 5-10 10-10-5 0-10-5-10-10z" />
+        </svg>
+        Gerar catálogo com IA
       </button>
 
       {open && (
@@ -157,7 +172,7 @@ export default function AiCatalogGenerator({
           onClick={close}
         >
           <div
-            className="cream w-full max-w-lg rounded-2xl border border-line bg-bg p-6 shadow-2xl"
+            className="cream max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-line bg-bg p-5 shadow-2xl sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
             {done ? (
@@ -211,24 +226,44 @@ export default function AiCatalogGenerator({
               </div>
             ) : (
               <>
-                <div className="mb-1 text-[11px] font-medium uppercase tracking-[0.16em] text-accent">
-                  Geração por IA
-                </div>
                 <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="font-display text-2xl font-semibold tracking-tight text-ink">
-                    Gerar catálogo com IA
-                  </h2>
+                  <div className="flex items-center gap-1.5">
+                    <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-accent">
+                      Geração por IA
+                    </div>
+                    {/* Reasseguro discreto ("não precisa ficar perfeito") escondido
+                        num "i" — só aparece no hover, pra não poluir. */}
+                    <span className="group/info relative inline-flex">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                        tabIndex={0}
+                        className="h-4 w-4 cursor-help text-ink-mute/70 outline-none transition hover:text-accent focus:text-accent"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 16v-4M12 8h.01" />
+                      </svg>
+                      <span className="pointer-events-none absolute left-0 top-full z-10 mt-2 w-64 rounded-xl border border-line bg-panel px-3.5 py-2.5 text-[12px] leading-relaxed text-ink-soft opacity-0 shadow-xl transition-opacity duration-150 group-hover/info:opacity-100 group-focus-within/info:opacity-100">
+                        Não precisa ficar perfeito de primeira — depois você{" "}
+                        <strong className="text-ink">edita e revisa tudo</strong>{" "}
+                        nos campos normais (nomes, textos, preços…). Fica fácil.
+                      </span>
+                    </span>
+                  </div>
                   {left && (
                     <span className="shrink-0 rounded-full border border-line bg-panel-2 px-2.5 py-0.5 text-[11px] font-medium text-ink-mute">
                       {left.remaining} de {left.limit} gerações
                     </span>
                   )}
                 </div>
-                <p className="mt-1.5 text-sm text-ink-mute">
-                  <strong className="text-ink-soft">Suba um arquivo</strong> do seu
-                  negócio (PDF, DOCX ou TXT) e a IA extrai tudo — ou descreva num
-                  parágrafo. Quanto mais detalhes, melhor.
-                </p>
+                <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight text-ink">
+                  Gerar catálogo com IA
+                </h2>
 
                 {noneLeft ? (
                   <p className="mt-4 rounded-xl border border-line bg-panel-2 px-3.5 py-3 text-sm text-ink-soft">
@@ -239,8 +274,14 @@ export default function AiCatalogGenerator({
                   </p>
                 ) : (
                   <>
-                    {/* Caminho PREFERENCIAL: subir um arquivo do negócio → a IA
-                        extrai e cria os serviços. */}
+                    <p className="mt-1.5 text-sm text-ink-mute">
+                      <strong className="text-ink-soft">Suba um arquivo</strong> do
+                      seu negócio e a IA lê e monta o catálogo inteiro pra você.
+                    </p>
+
+                    {/* Caminho PRINCIPAL e em destaque: subir um arquivo do
+                        negócio → a IA extrai e cria os serviços. Borda tracejada
+                        VIVA (marching ants) — o herói do modal, sem vazio. */}
                     <input
                       ref={fileRef}
                       type="file"
@@ -266,55 +307,117 @@ export default function AiCatalogGenerator({
                         const f = e.dataTransfer.files?.[0];
                         if (f) void sendFile(f);
                       }}
-                      className={`mt-4 flex w-full cursor-pointer flex-col items-center gap-1 rounded-xl border-2 border-dashed px-4 py-5 text-center transition ${
+                      className={`relative mt-4 flex w-full cursor-pointer flex-col items-center gap-2.5 rounded-2xl px-4 py-8 text-center transition ${
                         dragOver
-                          ? "border-accent bg-accent/[0.12]"
-                          : "border-accent/45 bg-accent/[0.06] hover:border-accent hover:bg-accent/10"
+                          ? "bg-accent/[0.14] text-accent shadow-[0_0_0_4px_rgba(169,126,51,0.18)]"
+                          : "bg-accent/[0.06] text-accent/60 hover:bg-accent/[0.1] hover:text-accent"
                       }`}
                     >
-                      <span className="text-2xl leading-none" aria-hidden>
-                        ⬆️
+                      {/* borda tracejada animada (fica atrás do conteúdo) */}
+                      <svg
+                        className="pointer-events-none absolute inset-0 h-full w-full"
+                        aria-hidden
+                      >
+                        <rect
+                          x="1.5"
+                          y="1.5"
+                          width="calc(100% - 3px)"
+                          height="calc(100% - 3px)"
+                          rx="15"
+                          ry="15"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeDasharray="10 8"
+                          style={{ animation: "catAnts 1.15s linear infinite" }}
+                        />
+                      </svg>
+
+                      <span className="relative z-[1] grid h-12 w-12 place-items-center rounded-full bg-accent/15 text-accent">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.9"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-6 w-6"
+                          aria-hidden
+                        >
+                          <path d="M12 16V4M7 9l5-5 5 5" />
+                          <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                        </svg>
                       </span>
-                      <span className="text-sm font-semibold text-ink">
+                      <span className="relative z-[1] text-sm font-semibold text-ink">
                         Suba um arquivo do seu negócio
                       </span>
-                      <span className="text-[11px] text-ink-mute">
+                      <span className="relative z-[1] text-[11px] text-ink-mute">
                         Arraste aqui ou clique · PDF, DOCX ou TXT — a IA extrai e
                         cria seus serviços
                       </span>
                     </button>
 
-                    <div className="my-3 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-ink-mute">
-                      <span className="h-px flex-1 bg-line" />
-                      ou descreva
-                      <span className="h-px flex-1 bg-line" />
-                    </div>
+                    {/* "ou descreva": recolhido por padrão, abre no clique. */}
+                    {!showDescribe ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowDescribe(true)}
+                        className="mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 text-[12px] font-medium text-ink-mute transition hover:text-accent"
+                      >
+                        <span className="h-px w-6 bg-line" />
+                        ou prefiro descrever em texto
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                          className="h-3.5 w-3.5"
+                        >
+                          <path d="M6 9l6 6 6-6" />
+                        </svg>
+                      </button>
+                    ) : (
+                      <div className="mt-4">
+                        <textarea
+                          value={brief}
+                          onChange={(e) => setBrief(e.target.value)}
+                          rows={5}
+                          maxLength={2000}
+                          autoFocus
+                          placeholder={EXAMPLE}
+                          className="w-full resize-none rounded-xl border border-line bg-panel-2 px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-mute/70 focus:border-accent/70"
+                        />
+                        <div className="mt-1 flex items-center justify-between text-[11px] text-ink-mute">
+                          <span>
+                            {tooShort ? "Conte um pouco mais…" : "Pronto para gerar."}
+                          </span>
+                          <span>{brief.length}/2000</span>
+                        </div>
+                      </div>
+                    )}
 
-                    <textarea
-                      value={brief}
-                      onChange={(e) => setBrief(e.target.value)}
-                      rows={5}
-                      maxLength={2000}
-                      autoFocus
-                      placeholder={EXAMPLE}
-                      className="mt-4 w-full resize-none rounded-xl border border-line bg-panel-2 px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-mute/70 focus:border-accent/70"
-                    />
-                    <div className="mt-1 flex items-center justify-between text-[11px] text-ink-mute">
+                    {/* Aviso de substituição — fica por padrão, mas discreto. */}
+                    <p className="mt-4 flex items-start gap-1.5 text-[11.5px] leading-snug text-ink-mute">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                        className="mt-px h-3.5 w-3.5 shrink-0 text-amber-600"
+                      >
+                        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <path d="M12 9v4M12 17h.01" />
+                      </svg>
                       <span>
-                        {tooShort ? "Conte um pouco mais…" : "Pronto para gerar."}
+                        Isto <strong className="text-ink-soft">substitui</strong> seu
+                        catálogo atual pelo gerado.
                       </span>
-                      <span>{brief.length}/2000</span>
-                    </div>
-
-                    <p className="mt-3 rounded-lg border border-accent/25 bg-accent/[0.07] px-3 py-2 text-[12px] text-ink-soft">
-                      😌 Não precisa ficar perfeito de primeira — depois você{" "}
-                      <strong>edita e revisa tudo</strong> nos campos normais
-                      (nomes, textos, preços…). Fica fácil.
-                    </p>
-
-                    <p className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-700">
-                      ⚠️ Isto <strong>substitui</strong> seu catálogo atual pelo
-                      gerado.
                     </p>
                   </>
                 )}
@@ -333,7 +436,9 @@ export default function AiCatalogGenerator({
                   >
                     {noneLeft ? "Fechar" : "Cancelar"}
                   </button>
-                  {!noneLeft && (
+                  {/* "Gerar catálogo" só faz sentido no caminho de texto — o
+                      upload dispara sozinho ao escolher o arquivo. */}
+                  {!noneLeft && showDescribe && (
                     <button
                       type="button"
                       onClick={generate}
