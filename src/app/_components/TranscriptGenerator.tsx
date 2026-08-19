@@ -98,16 +98,28 @@ export default function TranscriptGenerator({
             const f = e.dataTransfer.files?.[0];
             if (f) void send(f);
           }}
-          className={`flex w-full flex-col items-center gap-1 rounded-xl border-2 border-dashed px-4 py-5 text-center transition ${
+          className={`flex w-full cursor-pointer flex-col items-center gap-2.5 rounded-2xl border-2 border-dashed px-4 py-9 text-center transition ${
             dragOver
               ? "border-accent bg-accent/[0.12]"
               : "border-accent/40 bg-accent/[0.05] hover:border-accent hover:bg-accent/[0.1]"
           }`}
         >
-          <span className="text-xl leading-none" aria-hidden>
-            ⬆️
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-accent/12 text-accent">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-5 w-5"
+              aria-hidden
+            >
+              <path d="M12 16V4M7 9l5-5 5 5" />
+              <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+            </svg>
           </span>
-          <span className="text-[13px] font-semibold text-ink">
+          <span className="text-sm font-semibold text-ink">
             Subir o transcript da call de vendas
           </span>
           <span className="text-[11px] text-ink-mute">

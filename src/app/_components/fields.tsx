@@ -202,15 +202,22 @@ export function SectionTitle({
   right,
   children,
   onJump,
+  open,
+  onToggle,
 }: {
   n?: number;
   right?: React.ReactNode;
   children: React.ReactNode;
   /** Se passado, o título vira um botão que leva o preview até esta seção. */
   onJump?: () => void;
+  /** Accordion: quando onToggle é passado, o título expande/recolhe a seção
+   * (chevron indica o estado). Tem precedência sobre onJump. */
+  open?: boolean;
+  onToggle?: () => void;
 }) {
   const color =
     n != null ? BLOCK_COLORS[(n - 1) % BLOCK_COLORS.length] : "var(--color-accent)";
+  const collapsible = !!onToggle;
 
   const inner = (
     <>
@@ -231,9 +238,9 @@ export function SectionTitle({
             Bloco {n}
           </span>
         )}
-        <span className="flex items-center gap-1.5 text-[13px] font-semibold tracking-tight text-ink">
+        <span className="flex items-center gap-1.5 text-[14.5px] font-semibold tracking-tight text-ink">
           {children}
-          {onJump && (
+          {!collapsible && onJump && (
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -260,7 +267,28 @@ export function SectionTitle({
         borderColor: `color-mix(in srgb, ${color} 45%, transparent)`,
       }}
     >
-      {onJump ? (
+      {collapsible ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          title={open ? "Recolher" : "Expandir"}
+          className="group flex min-w-0 flex-1 items-center gap-2.5 text-left transition hover:opacity-80"
+        >
+          {inner}
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+            className={`ml-auto h-4 w-4 shrink-0 text-ink-mute transition-transform ${open ? "rotate-180" : ""}`}
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+      ) : onJump ? (
         <button
           type="button"
           onClick={onJump}

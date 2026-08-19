@@ -610,6 +610,20 @@ export default function ClientBuilder() {
   const [fillMode, setFillMode] = useState<"transcript" | "templates">(
     "transcript",
   );
+  // Accordion dos blocos: começam MINIMIZADOS (menos poluição). Só Identificação
+  // vem aberta. Clicar no título expande/recolhe; ao EXPANDIR, leva o preview até
+  // a seção (não conflita com o "ver no preview", que continua no expandir).
+  const [openSecs, setOpenSecs] = useState<Set<string>>(new Set());
+  const toggleSec = (key: string, jump?: () => void) =>
+    setOpenSecs((prev) => {
+      const n = new Set(prev);
+      if (n.has(key)) n.delete(key);
+      else {
+        n.add(key);
+        jump?.();
+      }
+      return n;
+    });
   // Aplica no form os blocos personalizados que a IA extraiu do transcript da
   // call (Item 5). O catálogo de soluções continua vindo do negócio.
   const applyTranscriptBlocks = (
@@ -839,17 +853,13 @@ export default function ClientBuilder() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm leading-snug text-ink-soft sm:text-[15px]">
                       <span className="font-semibold text-ink">
-                        {onboarding
-                          ? "✨ A IA escreveu sua proposta inteira!"
-                          : "Sua proposta está pronta!"}
+                        Montei um rascunho a partir do seu catálogo.
                       </span>{" "}
-                      Falta <strong className="text-ink">1 passo</strong> pra
-                      baixar (grátis): diga{" "}
-                      <strong className="text-ink">pra quem é</strong> nos campos{" "}
-                      <span className="font-semibold text-accent">
-                        destacados abaixo
-                      </span>
-                      .
+                      Pra ficar sob medida: diga{" "}
+                      <strong className="text-ink">pra quem é</strong> abaixo — e,
+                      se tiver,{" "}
+                      <strong className="text-ink">traga a call</strong> acima pra
+                      a IA usar as dores reais do cliente. Depois é só baixar.
                     </p>
                     <Stepper current={2} />
                   </div>
@@ -899,7 +909,7 @@ export default function ClientBuilder() {
             <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-mute">
               Como montar a proposta
             </div>
-            <div className="mb-2.5 flex rounded-lg border border-line p-0.5 text-xs">
+            <div className="mb-2.5 flex rounded-xl border border-line bg-panel/40 p-1 text-[13px]">
               {(
                 [
                   ["transcript", "🎙️ Pela call (IA)"],
@@ -913,9 +923,9 @@ export default function ClientBuilder() {
                     setFillMode(mode);
                     trackFunnel("fillmode_selected", { mode });
                   }}
-                  className={`flex-1 rounded-md px-2.5 py-1.5 font-medium transition ${
+                  className={`flex-1 rounded-lg px-3 py-2.5 font-semibold transition ${
                     fillMode === mode
-                      ? "bg-accent text-bg"
+                      ? "bg-accent text-bg shadow-sm"
                       : "text-ink-mute hover:text-ink"
                   }`}
                 >
@@ -939,22 +949,6 @@ export default function ClientBuilder() {
             )}
           </div>
 
-          {/* Item 6 — copy que instrui os dois caminhos + edição inline. */}
-          <div className="rounded-lg border border-accent/40 bg-accent/10 p-3 text-xs leading-relaxed text-ink-soft">
-            ✏️{" "}
-            <strong className="text-ink">Escolha como montar acima</strong> —
-            suba o transcript da sua call de vendas (recomendado) ou use um
-            template. Depois,{" "}
-            <strong className="text-ink">
-              edite qualquer texto direto no preview
-            </strong>{" "}
-            (passe o mouse e clique). Soluções, planos e consultor vêm de{" "}
-            <Link href="/empresa" className="text-accent hover:underline">
-              Minha Empresa
-            </Link>
-            .
-          </div>
-
           <SectionTitle n={1} onJump={() => scrollPreviewTo(".cover")}>
             Identificação
           </SectionTitle>
@@ -963,7 +957,7 @@ export default function ClientBuilder() {
               Empresa do cliente (capa){" "}
               <span className="text-amber-400">*</span>
               {firstRun && !form.clientName.trim() && (
-                <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 align-middle text-[13px] font-bold normal-case tracking-normal text-bg shadow-[0_2px_12px_-2px_var(--accent)]">
+                <span className="mt-2 flex w-fit items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-[13px] font-bold normal-case tracking-normal text-bg shadow-[0_2px_12px_-2px_var(--accent)]">
                   comece aqui
                   <span className="inline-block animate-bounce text-base leading-none">↓</span>
                 </span>
@@ -1029,7 +1023,10 @@ export default function ClientBuilder() {
           </label>
           <SectionTitle
             n={2}
-            onJump={() => scrollPreviewTo(".understand")}
+            open={openSecs.has("understanding")}
+            onToggle={() =>
+              toggleSec("understanding", () => scrollPreviewTo(".understand"))
+            }
             right={
               <EyeToggle
                 on={form.showUnderstanding}
@@ -1041,22 +1038,27 @@ export default function ClientBuilder() {
           >
             O que entendemos
           </SectionTitle>
-          <VariationBar
-            list={templates.filter((t) => t.block === "understanding")}
-            selectedId={selectedVar.understanding}
-            onLoad={(id, payload) => loadVar("understanding", id, payload)}
-            onSave={() => saveVariation("understanding")}
-          />
-          <BlockFieldsEditor
-            block="understanding"
-            form={form}
-            onField={(f, v) => set(f as keyof ClientForm, v)}
-            disabled={!form.showUnderstanding}
-          />
+          {openSecs.has("understanding") && (
+            <>
+              <VariationBar
+                list={templates.filter((t) => t.block === "understanding")}
+                selectedId={selectedVar.understanding}
+                onLoad={(id, payload) => loadVar("understanding", id, payload)}
+                onSave={() => saveVariation("understanding")}
+              />
+              <BlockFieldsEditor
+                block="understanding"
+                form={form}
+                onField={(f, v) => set(f as keyof ClientForm, v)}
+                disabled={!form.showUnderstanding}
+              />
+            </>
+          )}
 
           <SectionTitle
             n={3}
-            onJump={() => scrollPreviewTo(".cost")}
+            open={openSecs.has("cost")}
+            onToggle={() => toggleSec("cost", () => scrollPreviewTo(".cost"))}
             right={
               <EyeToggle
                 on={form.showCost}
@@ -1066,22 +1068,29 @@ export default function ClientBuilder() {
           >
             O custo de continuar igual
           </SectionTitle>
-          <VariationBar
-            list={templates.filter((t) => t.block === "cost")}
-            selectedId={selectedVar.cost}
-            onLoad={(id, payload) => loadVar("cost", id, payload)}
-            onSave={() => saveVariation("cost")}
-          />
-          <BlockFieldsEditor
-            block="cost"
-            form={form}
-            onField={(f, v) => set(f as keyof ClientForm, v)}
-            disabled={!form.showCost}
-          />
+          {openSecs.has("cost") && (
+            <>
+              <VariationBar
+                list={templates.filter((t) => t.block === "cost")}
+                selectedId={selectedVar.cost}
+                onLoad={(id, payload) => loadVar("cost", id, payload)}
+                onSave={() => saveVariation("cost")}
+              />
+              <BlockFieldsEditor
+                block="cost"
+                form={form}
+                onField={(f, v) => set(f as keyof ClientForm, v)}
+                disabled={!form.showCost}
+              />
+            </>
+          )}
 
           <SectionTitle
             n={4}
-            onJump={() => scrollPreviewTo(".strategy")}
+            open={openSecs.has("strategy")}
+            onToggle={() =>
+              toggleSec("strategy", () => scrollPreviewTo(".strategy"))
+            }
             right={
               <EyeToggle
                 on={form.showStrategy}
@@ -1091,25 +1100,32 @@ export default function ClientBuilder() {
           >
             Estratégia — pilares
           </SectionTitle>
-          <VariationBar
-            list={templates.filter((t) => t.block === "strategy")}
-            selectedId={selectedVar.strategy}
-            onLoad={(id, payload) => loadVar("strategy", id, payload)}
-            onSave={() => saveVariation("strategy")}
-          />
-          <div className={form.showStrategy ? "" : "opacity-40"}>
-            <TitleDescEditor
-              items={form.pillars}
-              onItem={setPillar}
-              onAdd={addPillar}
-              onRemove={removePillar}
-              addLabel="+ adicionar pilar"
-            />
-          </div>
+          {openSecs.has("strategy") && (
+            <>
+              <VariationBar
+                list={templates.filter((t) => t.block === "strategy")}
+                selectedId={selectedVar.strategy}
+                onLoad={(id, payload) => loadVar("strategy", id, payload)}
+                onSave={() => saveVariation("strategy")}
+              />
+              <div className={form.showStrategy ? "" : "opacity-40"}>
+                <TitleDescEditor
+                  items={form.pillars}
+                  onItem={setPillar}
+                  onAdd={addPillar}
+                  onRemove={removePillar}
+                  addLabel="+ adicionar pilar"
+                />
+              </div>
+            </>
+          )}
 
           <SectionTitle
             n={5}
-            onJump={() => scrollPreviewTo(".solutions")}
+            open={openSecs.has("solutions")}
+            onToggle={() =>
+              toggleSec("solutions", () => scrollPreviewTo(".solutions"))
+            }
             right={
               <EyeToggle
                 on={form.showSolutions}
@@ -1119,6 +1135,8 @@ export default function ClientBuilder() {
           >
             Soluções da proposta
           </SectionTitle>
+          {openSecs.has("solutions") && (
+          <>
           <VariationBar
             list={templates.filter((t) => t.block === "solutions")}
             selectedId={selectedVar.solutions}
@@ -1160,7 +1178,7 @@ export default function ClientBuilder() {
                           className="flex min-w-0 flex-1 items-start gap-3 px-3.5 py-3 text-left"
                         >
                           <span
-                            className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 text-[11px] transition ${
+                            className={`mt-0.5 grid h-[26px] w-[26px] shrink-0 place-items-center rounded-lg border-2 text-[15px] font-bold transition ${
                               on
                                 ? "border-accent bg-accent text-bg"
                                 : "border-ink-mute/50 text-transparent"
@@ -1181,10 +1199,23 @@ export default function ClientBuilder() {
                         </button>
                         <Link
                           href={`/empresa?sol=${s.id}`}
-                          title="Editar o conteúdo desta solução (nome, textos, entregáveis…)"
-                          className="flex shrink-0 items-center gap-1 self-stretch border-l border-line px-3 text-[11px] font-medium text-ink-mute transition hover:bg-accent/10 hover:text-accent"
+                          title="Editar o conteúdo desta solução em Minha Empresa"
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex shrink-0 items-center self-stretch px-3 text-ink-mute/50 transition hover:text-accent"
                         >
-                          ✏️ <span className="hidden lg:inline">editar</span>
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                            aria-hidden
+                          >
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                          </svg>
                         </Link>
                       </div>
 
@@ -1240,20 +1271,20 @@ export default function ClientBuilder() {
                                               ? "Não exibir este plano"
                                               : "Exibir este plano"
                                           }
-                                          className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 transition ${
+                                          className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded border transition ${
                                             checked
-                                              ? "border-accent bg-accent text-bg"
-                                              : "border-ink-mute/50 text-transparent hover:border-accent/60"
+                                              ? "border-accent/70 bg-accent/80 text-bg"
+                                              : "border-ink-mute/40 text-transparent hover:border-accent/60"
                                           }`}
                                         >
                                           <svg
                                             viewBox="0 0 24 24"
                                             fill="none"
                                             stroke="currentColor"
-                                            strokeWidth="3"
+                                            strokeWidth="3.2"
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
-                                            className="h-3.5 w-3.5"
+                                            className="h-2.5 w-2.5"
                                           >
                                             <path d="M5 13l4 4L19 7" />
                                           </svg>
@@ -1372,10 +1403,13 @@ export default function ClientBuilder() {
               </div>
             )}
           </div>
+          </>
+          )}
 
           <SectionTitle
             n={6}
-            onJump={() => scrollPreviewTo(".invest")}
+            open={openSecs.has("invest")}
+            onToggle={() => toggleSec("invest", () => scrollPreviewTo(".invest"))}
             right={
               <EyeToggle
                 on={form.showInvestment}
@@ -1385,6 +1419,7 @@ export default function ClientBuilder() {
           >
             Investimento
           </SectionTitle>
+          {openSecs.has("invest") && (
           <div
             className={`rounded-lg border border-line bg-panel p-3 text-xs leading-relaxed text-ink-soft ${form.showInvestment ? "" : "opacity-40"}`}
           >
@@ -1396,10 +1431,14 @@ export default function ClientBuilder() {
             </Link>
             . Título e justificativa editam-se no preview.
           </div>
+          )}
 
           <SectionTitle
             n={7}
-            onJump={() => scrollPreviewTo(".consultant-rec")}
+            open={openSecs.has("rec")}
+            onToggle={() =>
+              toggleSec("rec", () => scrollPreviewTo(".consultant-rec"))
+            }
             right={
               <EyeToggle
                 on={form.showConsultantRec}
@@ -1411,32 +1450,37 @@ export default function ClientBuilder() {
           >
             Recomendação — motivos
           </SectionTitle>
-          <VariationBar
-            list={templates.filter((t) => t.block === "consultantRec")}
-            selectedId={selectedVar.consultantRec}
-            onLoad={(id, payload) => loadVar("consultantRec", id, payload)}
-            onSave={() => saveVariation("consultantRec")}
-          />
-          <div className={form.showConsultantRec ? "" : "opacity-40"}>
-            <BlockFieldsEditor
-              block="consultantRec"
-              form={form}
-              onField={(f, v) => set(f as keyof ClientForm, v)}
-            />
-            <div className="mt-2">
-              <StringListEditor
-                items={form.consultantRecReasons}
-                onItem={setReason}
-                onAdd={addReason}
-                onRemove={removeReason}
-                addLabel="+ adicionar motivo"
+          {openSecs.has("rec") && (
+            <div className={form.showConsultantRec ? "" : "opacity-40"}>
+              <VariationBar
+                list={templates.filter((t) => t.block === "consultantRec")}
+                selectedId={selectedVar.consultantRec}
+                onLoad={(id, payload) => loadVar("consultantRec", id, payload)}
+                onSave={() => saveVariation("consultantRec")}
               />
+              <BlockFieldsEditor
+                block="consultantRec"
+                form={form}
+                onField={(f, v) => set(f as keyof ClientForm, v)}
+              />
+              <div className="mt-2">
+                <StringListEditor
+                  items={form.consultantRecReasons}
+                  onItem={setReason}
+                  onAdd={addReason}
+                  onRemove={removeReason}
+                  addLabel="+ adicionar motivo"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <SectionTitle
             n={8}
-            onJump={() => scrollPreviewTo(".nextsteps")}
+            open={openSecs.has("nextSteps")}
+            onToggle={() =>
+              toggleSec("nextSteps", () => scrollPreviewTo(".nextsteps"))
+            }
             right={
               <EyeToggle
                 on={form.showNextSteps}
@@ -1446,28 +1490,30 @@ export default function ClientBuilder() {
           >
             Próximos passos
           </SectionTitle>
-          <VariationBar
-            list={templates.filter((t) => t.block === "nextSteps")}
-            selectedId={selectedVar.nextSteps}
-            onLoad={(id, payload) => loadVar("nextSteps", id, payload)}
-            onSave={() => saveVariation("nextSteps")}
-          />
-          <div className={form.showNextSteps ? "" : "opacity-40"}>
-            <BlockFieldsEditor
-              block="nextSteps"
-              form={form}
-              onField={(f, v) => set(f as keyof ClientForm, v)}
-            />
-            <div className="mt-2">
-              <TitleDescEditor
-                items={form.steps}
-                onItem={setStep}
-                onAdd={addStep}
-                onRemove={removeStep}
-                addLabel="+ adicionar passo"
+          {openSecs.has("nextSteps") && (
+            <div className={form.showNextSteps ? "" : "opacity-40"}>
+              <VariationBar
+                list={templates.filter((t) => t.block === "nextSteps")}
+                selectedId={selectedVar.nextSteps}
+                onLoad={(id, payload) => loadVar("nextSteps", id, payload)}
+                onSave={() => saveVariation("nextSteps")}
               />
+              <BlockFieldsEditor
+                block="nextSteps"
+                form={form}
+                onField={(f, v) => set(f as keyof ClientForm, v)}
+              />
+              <div className="mt-2">
+                <TitleDescEditor
+                  items={form.steps}
+                  onItem={setStep}
+                  onAdd={addStep}
+                  onRemove={removeStep}
+                  addLabel="+ adicionar passo"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <SectionTitle>Responsável e validade</SectionTitle>
           <div
