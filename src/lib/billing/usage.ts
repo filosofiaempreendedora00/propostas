@@ -58,11 +58,11 @@ async function markFirstDownload(
   return rows.length > 0;
 }
 
-// Registra um download: assinante = liberado; free = consome 1 da cota
-// (incremento atômico condicional, à prova de corrida). allowed=false quando esgotou.
-// `firstDownload` = true apenas no PRIMEIRO download bem-sucedido da conta.
+// Registra um download. Modelo MARCA D'ÁGUA: download é SEMPRE permitido (sem
+// cap). Assinante baixa limpo; free baixa com marca d'água (watermarked=true).
+// Incrementa downloads_used só pra analytics. `firstDownload` = true só no 1º.
 export async function recordDownload(): Promise<
-  { allowed: boolean; firstDownload: boolean } & Usage
+  { allowed: true; firstDownload: boolean; watermarked: boolean } & Usage
 > {
   const user = await requireUser();
   const orgId = await requireOrgId();
@@ -78,42 +78,30 @@ export async function recordDownload(): Promise<
     .where(eq(organizations.id, orgId))
     .limit(1);
 
-  if (org?.status === "active") {
-    const firstDownload = await markFirstDownload(orgId, org.firstDownloadAt);
-    // Espelha no Brevo: assinante baixou → 'cliente' + reatividade (mirror).
-    void syncBrevoContact(email, {
-      DOWNLOADS_COUNT: org.used,
-      LIFECYCLE_STAGE: "cliente",
-      LAST_ACTIVE_AT: brevoDate(),
-      PLAN: "paid",
-    });
-    return { allowed: true, firstDownload, ...pack(email, "active", org.used) };
-  }
+  const active = org?.status === "active";
 
+  // Incrementa SEMPRE (sem cap) — só pra contagem/analytics.
   const rows = (await db.execute(sql`
     update organizations set downloads_used = downloads_used + 1
-    where id = ${orgId} and downloads_used < ${FREE_DOWNLOADS}
+    where id = ${orgId}
     returning downloads_used
   `)) as unknown as Array<{ downloads_used: number }>;
+  const used = rows[0]?.downloads_used ?? (org?.used ?? 0) + 1;
+  const firstDownload = await markFirstDownload(orgId, org?.firstDownloadAt);
 
-  if (rows.length) {
-    const firstDownload = await markFirstDownload(orgId, org?.firstDownloadAt);
-    // Espelha no Brevo: baixou (free) → 'quente' + contador (mirror).
-    void syncBrevoContact(email, {
-      DOWNLOADS_COUNT: rows[0].downloads_used,
-      LIFECYCLE_STAGE: "quente",
-      LAST_ACTIVE_AT: brevoDate(),
-    });
-    return {
-      allowed: true,
-      firstDownload,
-      ...pack(email, org?.status, rows[0].downloads_used),
-    };
-  }
+  // Espelha no Brevo: assinante → 'cliente'; free (marca d'água) → 'quente'.
+  void syncBrevoContact(email, {
+    DOWNLOADS_COUNT: used,
+    LIFECYCLE_STAGE: active ? "cliente" : "quente",
+    LAST_ACTIVE_AT: brevoDate(),
+    ...(active ? { PLAN: "paid" as const } : {}),
+  });
+
   return {
-    allowed: false,
-    firstDownload: false,
-    ...pack(email, org?.status, org?.used ?? FREE_DOWNLOADS),
+    allowed: true,
+    firstDownload,
+    watermarked: !active,
+    ...pack(email, org?.status, used),
   };
 }
 

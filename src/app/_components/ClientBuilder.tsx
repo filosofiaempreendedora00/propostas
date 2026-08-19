@@ -7,6 +7,7 @@ import { DEFAULT_PROPOSAL } from "@/lib/proposal/defaults";
 import { renderProposalHTML, slugify } from "@/lib/proposal/render";
 import type { ProposalData, InvestmentGroup } from "@/lib/proposal/types";
 import TranscriptGenerator from "./TranscriptGenerator";
+import UnlockLink from "./UnlockLink";
 import { toRenderSolution, planToTier } from "@/lib/proposal/fromCatalog";
 import { useCatalog, useConsultants } from "@/lib/catalog/store";
 import type { CatalogSolution, Billing } from "@/lib/catalog/types";
@@ -21,7 +22,6 @@ import {
   trackFunnel,
   GADS_CONVERSIONS,
 } from "@/lib/analytics/google";
-import { FREE_DOWNLOADS } from "@/lib/limits";
 
 function extractPayload(
   block: BlockKey,
@@ -603,19 +603,9 @@ export default function ClientBuilder() {
     getUsage().then(setUsage).catch(() => {});
   }, []);
 
-  // Confirmação antes de gastar 1 crédito (só para quem está no teste grátis).
-  const [confirmDl, setConfirmDl] = useState<{
-    run: () => void;
-    format: string;
-    remaining: number;
-    limit: number;
-  } | null>(null);
-
-  // Celebração pós-1º download (WOW): confirma a conquista e faz a oferta
-  // suave atada ao desejo (ilimitadas/sem espera) — momento certo de assinar.
+  // Modal pós-download GRÁTIS (marca d'água): mostra que saiu com marca e
+  // oferece o desbloqueio (assinar → baixar limpo).
   const [celebrate, setCelebrate] = useState(false);
-  // Já baixou a proposta de EXEMPLO (aha sem cliente real) → troca o CTA pelo nudge.
-  const [exampleDownloaded, setExampleDownloaded] = useState(false);
   // Como montar a proposta: pela call (transcript, default) ou por templates.
   const [fillMode, setFillMode] = useState<"transcript" | "templates">(
     "transcript",
@@ -657,99 +647,14 @@ export default function ClientBuilder() {
     scrollToClientField("Diga pra quem é a proposta 👇");
   };
 
-  // Portão do download: assinante baixa; free consome 1 da cota;
-  // esgotado → manda pra tela de planos (pricing padrão).
-  const tryDownload = async (run: () => void) => {
-    if (clientMissing) {
-      focusClientField();
-      return;
-    }
-    try {
-      const res = await recordDownload();
-      setUsage(res);
-      if (res.allowed) {
-        run();
-        trackFunnel("download_success", { first: res.firstDownload });
-        // Ativação: 1ª proposta baixada com sucesso pela conta (uma única vez).
-        // firstDownload é decidido no servidor (atômico) → só dispara na 1ª.
-        if (res.firstDownload) {
-          const fbq = (window as Window & { fbq?: (...a: unknown[]) => void })
-            .fbq;
-          if (typeof fbq === "function") {
-            fbq("trackCustom", "BaixouPrimeiraProposta"); // Meta
-          }
-          trackGoogleConversion(GADS_CONVERSIONS.primeiraProposta); // Google Ads
-          // Onboarding concluído (persistido) + celebração com oferta suave.
-          try {
-            localStorage.setItem("kronos:onb", "done");
-          } catch {
-            /* ignora */
-          }
-          setOnbDismissed(true);
-          setCelebrate(true);
-          trackFunnel("upgrade_prompt_view", { at: "pos_1o_download" });
-        }
-        // Avisa a top-bar pra atualizar a contagem na hora (sem reload).
-        if (!res.unlimited) {
-          window.dispatchEvent(
-            new CustomEvent("kronos:usage", {
-              detail: { remaining: res.remaining },
-            }),
-          );
-        }
-      } else {
-        trackFunnel("download_blocked", { reason: "cota_esgotada" });
-        router.push("/planos");
-      }
-    } catch {
-      // Em caso de erro de rede, não trava o usuário.
-      run();
-    }
-  };
-
-  // Clique em "Baixar PDF/HTML": assinante baixa direto; free vê a confirmação
-  // (pra não gastar crédito sem ter certeza do conteúdo/estética).
-  // EXCEÇÃO: o 1º download da conta NUNCA vê modal — aversão à perda antes de
-  // sentir o valor mata a ativação. Aha primeiro; economizar créditos depois.
-  const requestDownload = async (run: () => void, format: string) => {
-    if (clientMissing) {
-      focusClientField();
-      return;
-    }
-    trackFunnel("download_attempt", { format });
-    let u = usage;
-    if (!u) {
-      try {
-        u = await getUsage();
-        setUsage(u);
-      } catch {
-        /* sem dados → trata como grátis */
-      }
-    }
-    if (u?.unlimited || (u?.used ?? 0) === 0) {
-      tryDownload(run);
-      return;
-    }
-    // Já esgotou → vai direto pros planos (sem modal confuso de "0 de 3").
-    if ((u?.remaining ?? 0) <= 0) {
-      trackFunnel("download_blocked", { reason: "cota_esgotada" });
-      router.push("/planos");
-      return;
-    }
-    setConfirmDl({
-      run,
-      format,
-      remaining: u?.remaining ?? FREE_DOWNLOADS,
-      limit: u?.limit ?? FREE_DOWNLOADS,
-    });
-  };
-
-  // ----- export -----
+  // ----- export (modelo MARCA D'ÁGUA) -----
   const exportRef = useRef<HTMLAnchorElement | null>(null);
-  const handleExport = () => {
+  const isPaid = !!usage?.unlimited; // assinante → download limpo
+
+  // Baixa como .html (com ou sem marca d'água).
+  const handleExport = (watermark: boolean) => {
     if (clientMissing) return;
-    // Arquivo baixado: sem edição inline (nem hover, nem contenteditable).
-    const html = renderProposalHTML(data, { editable: false });
+    const html = renderProposalHTML(data, { editable: false, watermark });
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = exportRef.current ?? document.createElement("a");
@@ -759,11 +664,9 @@ export default function ClientBuilder() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
-  // PDF: usa a impressão nativa do navegador (100% local, sem custo de API).
-  // Renderiza num iframe oculto, espera as fontes e chama print() → "Salvar como PDF".
-  // Parametrizado por `d` pra servir tanto o download REAL quanto o de EXEMPLO.
-  const printProposalPDF = (d: ProposalData) => {
-    const html = renderProposalHTML(d, { editable: false });
+  // PDF via impressão nativa (iframe oculto). `watermark` liga a marca d'água.
+  const printProposalPDF = (d: ProposalData, watermark: boolean) => {
+    const html = renderProposalHTML(d, { editable: false, watermark });
     const iframe = document.createElement("iframe");
     iframe.setAttribute("aria-hidden", "true");
     iframe.style.cssText =
@@ -791,25 +694,59 @@ export default function ClientBuilder() {
     };
     iframe.srcdoc = html;
   };
-
-  const handleExportPDF = () => {
+  const handleExportPDF = (watermark: boolean) => {
     if (clientMissing) return;
-    printProposalPDF(data);
+    printProposalPDF(data, watermark);
   };
 
-  // "Ver uma proposta pronta (exemplo)": baixa o PDF NA HORA com um cliente
-  // fictício, sem exigir input e SEM consumir cota (não passa por recordDownload).
-  // Manufatura o aha pra quem está explorando e não tem um negócio na mão AGORA.
-  // NÃO dispara a conversão paga de ativação — essa fica só pro 1º download REAL.
-  const downloadExample = () => {
-    const exampleData: ProposalData = {
-      ...data,
-      clientName: "Cliente Exemplo",
-      clientLegalName: "Cliente Exemplo Ltda",
-    };
-    printProposalPDF(exampleData);
-    trackFunnel("example_downloaded", { via: onboarding ? "ia" : "gerador" });
-    setExampleDownloaded(true);
+  // Download: SEMPRE liberado (sem cap/paywall). Assinante = LIMPO; free = com
+  // MARCA D'ÁGUA + oferta de desbloqueio. Registra e dispara os eventos.
+  const doDownload = async (format: "PDF" | "HTML") => {
+    if (clientMissing) {
+      focusClientField();
+      return;
+    }
+    trackFunnel("download_attempt", { format });
+
+    // Confirma se é assinante (pode não ter carregado ainda) → decide a marca.
+    let u = usage;
+    if (!u) {
+      try {
+        u = await getUsage();
+        setUsage(u);
+      } catch {
+        /* sem dados → trata como free (marca d'água) */
+      }
+    }
+    const watermark = !u?.unlimited;
+
+    if (format === "PDF") handleExportPDF(watermark);
+    else handleExport(watermark);
+
+    trackFunnel("download_success", { format, watermark });
+    if (watermark) trackFunnel("watermark_download", { format });
+
+    try {
+      const res = await recordDownload();
+      setUsage(res);
+      // Ativação: 1ª proposta baixada pela conta (uma vez só; server-atômico).
+      if (res.firstDownload) {
+        const fbq = (window as Window & { fbq?: (...a: unknown[]) => void }).fbq;
+        if (typeof fbq === "function") fbq("trackCustom", "BaixouPrimeiraProposta");
+        trackGoogleConversion(GADS_CONVERSIONS.primeiraProposta);
+        try {
+          localStorage.setItem("kronos:onb", "done");
+        } catch {
+          /* ignora */
+        }
+        setOnbDismissed(true);
+      }
+    } catch {
+      /* rede: já baixou localmente, não trava */
+    }
+
+    // Momento do download grátis → oferece o desbloqueio (modal com CTA tracked).
+    if (watermark) setCelebrate(true);
   };
 
   // ----- consultor: drag & drop -----
@@ -875,8 +812,8 @@ export default function ClientBuilder() {
             blocked={clientMissing}
             onBlocked={focusClientField}
             highlight={firstRun && !clientMissing}
-            onPdf={() => requestDownload(handleExportPDF, "PDF")}
-            onHtml={() => requestDownload(handleExport, "HTML")}
+            onPdf={() => doDownload("PDF")}
+            onHtml={() => doDownload("HTML")}
           />
         </div>
         <a ref={exportRef} className="hidden" />
@@ -915,31 +852,6 @@ export default function ClientBuilder() {
                       .
                     </p>
                     <Stepper current={2} />
-                    {/* Aha sem cliente real: quem explora e não tem um negócio
-                        na mão baixa um PDF de EXEMPLO em 1 clique (sem gastar
-                        cota). Depois, nudge sólido pra fazer a proposta dele. */}
-                    {!exampleDownloaded ? (
-                      <button
-                        type="button"
-                        onClick={downloadExample}
-                        className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-full border border-accent/40 px-4 py-2 text-[13px] font-semibold text-accent transition hover:border-accent hover:bg-accent/10"
-                      >
-                        <span aria-hidden>👀</span> Ver um exemplo pronto
-                        <span className="font-normal text-ink-mute">
-                          · não gasta seu grátis
-                        </span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          scrollToClientField("Agora faça a sua — diga pra quem é 👇")
-                        }
-                        className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 text-[13px] font-bold text-bg shadow-sm transition hover:opacity-90"
-                      >
-                        Gostou? Faça a sua agora 👇
-                      </button>
-                    )}
                   </div>
                 </>
               ) : (
@@ -1682,15 +1594,15 @@ export default function ClientBuilder() {
             layout="panel"
             blocked={clientMissing}
             onBlocked={focusClientField}
-            onPdf={() => requestDownload(handleExportPDF, "PDF")}
-            onHtml={() => requestDownload(handleExport, "HTML")}
+            onPdf={() => doDownload("PDF")}
+            onHtml={() => doDownload("HTML")}
           />
 
           <div className="h-24" />
         </div>
 
         {/* Preview (editável) — documento contido e centralizado, com margem */}
-        <div className="flex min-h-0 min-w-0 justify-center overflow-hidden bg-bg px-4">
+        <div className="relative flex min-h-0 min-w-0 justify-center overflow-hidden bg-bg px-4">
           <iframe
             ref={previewRef}
             title="Preview da proposta"
@@ -1718,10 +1630,28 @@ export default function ClientBuilder() {
             style={{ maxWidth: 860 }}
             className="h-full w-full border-0"
           />
+          {/* CTA de desbloqueio no PREVIEW (free) — a marca d'água vai no
+              download; aqui avisamos e oferecemos assinar. */}
+          {!isPaid && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center px-4">
+              <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-accent/50 bg-panel/95 px-4 py-2 text-[13px] shadow-[0_10px_30px_-8px_rgba(0,0,0,0.6)] backdrop-blur">
+                <span className="text-ink-soft">
+                  🔒 O download sai com{" "}
+                  <strong className="text-ink">marca d&apos;água</strong>
+                </span>
+                <UnlockLink
+                  from="preview"
+                  className="whitespace-nowrap rounded-full bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-bg transition hover:opacity-90"
+                >
+                  Baixe sem a marca →
+                </UnlockLink>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Celebração do 1º download (WOW) + oferta suave — momento certo. */}
+      {/* Pós-download GRÁTIS: saiu com marca d'água → oferta de desbloqueio. */}
       {celebrate && (
         <div
           className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
@@ -1732,18 +1662,20 @@ export default function ClientBuilder() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-4xl" aria-hidden>
-              🎉
+              🔒
             </div>
             <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-ink">
-              Primeira proposta baixada!
+              Sua proposta está pronta
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-              É assim que se fecha venda. Faça quantas quiser — ajuste o
-              cliente, troque soluções, baixe de novo.
+              Você baixou com marca d&apos;água pra conferir. Pra{" "}
+              <strong className="text-ink">enviar a um cliente hoje</strong>,
+              desbloqueie sem a marca — o KRONOS não fica por cima da proposta.
             </p>
             <div className="mt-4 rounded-xl border border-line bg-panel-2 p-4 text-left text-[13px] leading-relaxed text-ink-soft">
-              Quer <strong className="text-ink">propostas ilimitadas</strong>,
-              sem contar download? Assine e libere tudo — leva 1 minuto.
+              Assine e baixe{" "}
+              <strong className="text-ink">sem marca d&apos;água</strong>, quantas
+              propostas quiser. 7 dias de garantia · cancele quando quiser.
             </div>
             <div className="mt-5 flex items-center justify-center gap-2">
               <button
@@ -1753,64 +1685,12 @@ export default function ClientBuilder() {
               >
                 Continuar criando
               </button>
-              <Link
-                href="/planos"
-                onClick={() => trackFunnel("upgrade_prompt_click", { at: "pos_1o_download" })}
+              <UnlockLink
+                from="download"
                 className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-bg transition hover:opacity-90"
               >
-                Ver planos →
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {confirmDl && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
-          onClick={() => setConfirmDl(null)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl border border-line bg-panel p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-base font-semibold text-ink">
-              {confirmDl.remaining <= 1
-                ? "Usar seu último download grátis?"
-                : "Usar 1 download grátis?"}
-            </div>
-            <p className="mt-2 text-sm text-ink-soft">
-              Você tem{" "}
-              <strong className="text-ink">
-                {confirmDl.remaining} de {confirmDl.limit}
-              </strong>{" "}
-              downloads grátis. Baixar em{" "}
-              <strong className="text-ink">{confirmDl.format}</strong> usa{" "}
-              <strong className="text-ink">1</strong>.
-            </p>
-            <div className="mt-3 rounded-xl border border-accent/30 bg-accent/10 p-3 text-[13px] leading-relaxed text-ink-soft">
-              💡 Confira o preview à vontade — capriche no conteúdo e na estética.
-              O crédito só é gasto quando você baixa.
-            </div>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setConfirmDl(null)}
-                className="rounded-lg px-3 py-1.5 text-sm text-ink-soft transition hover:text-ink"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const run = confirmDl.run;
-                  setConfirmDl(null);
-                  tryDownload(run);
-                }}
-                className="rounded-lg bg-accent px-4 py-1.5 text-sm font-semibold text-bg transition hover:opacity-90"
-              >
-                Baixar {confirmDl.format}
-              </button>
+                Baixar sem marca d&apos;água →
+              </UnlockLink>
             </div>
           </div>
         </div>

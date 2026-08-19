@@ -7,15 +7,7 @@ import { refreshAccess } from "@/lib/billing/usage";
 // Ações no rodapé da tela de planos.
 // - "Continuar testando": volta ao app SÓ se ainda houver cota grátis (não mente).
 // - "Já assinei": verifica a assinatura de verdade; só entra se estiver ativa.
-export default function PlanosActions({
-  email,
-  locked,
-  remaining,
-}: {
-  email: string | null;
-  locked: boolean;
-  remaining: number;
-}) {
+export default function PlanosActions({ email }: { email: string | null }) {
   const router = useRouter();
   const [checking, setChecking] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -42,17 +34,12 @@ export default function PlanosActions({
 
   return (
     <div className="mt-8 flex flex-col items-center gap-3 text-center">
-      {!locked && (
-        <a
-          href="/inicio"
-          className="rounded-full bg-accent px-6 py-3 text-base font-semibold text-bg transition hover:opacity-90"
-        >
-          ← Continuar testando
-          {remaining > 0
-            ? ` · ${remaining} grátis ${remaining === 1 ? "restante" : "restantes"}`
-            : ""}
-        </a>
-      )}
+      <a
+        href="/inicio"
+        className="rounded-full bg-accent px-6 py-3 text-base font-semibold text-bg transition hover:opacity-90"
+      >
+        ← Voltar ao gerador
+      </a>
 
       <button
         type="button"

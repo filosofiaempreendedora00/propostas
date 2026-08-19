@@ -1,10 +1,9 @@
-import Link from "next/link";
-import TrialStatus from "./TrialStatus";
+import UnlockLink from "./UnlockLink";
 
 // Número e mensagem do WhatsApp (dúvidas sobre a assinatura).
 const WHATSAPP = "5527998001953";
 const WHATSAPP_MSG =
-  "Olá! Estou no teste gratuito do gerador de propostas e queria tirar dúvidas sobre a assinatura.";
+  "Olá! Estou usando o gerador de propostas e queria tirar dúvidas sobre a assinatura.";
 const whatsappUrl = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(WHATSAPP_MSG)}`;
 
 function WhatsAppIcon() {
@@ -16,25 +15,23 @@ function WhatsAppIcon() {
   );
 }
 
-// Faixa de teste gratuito — fixa no topo, em todas as telas do app.
-// Mostra de forma elegante quantas propostas grátis ainda restam.
-export default function TrialBar({
-  remaining,
-  limit,
-}: {
-  remaining: number;
-  limit: number;
-}) {
+// Faixa fixa no topo do app (não-assinante). Modelo MARCA D'ÁGUA: em vez de
+// "X de 3 grátis", avisa que os downloads saem com marca d'água e oferece o
+// desbloqueio (assinar → baixar limpo).
+export default function TrialBar() {
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-accent px-4 py-3 text-white">
-      <TrialStatus initialRemaining={remaining} limit={limit} />
+      <span className="text-sm">
+        🔒 Plano grátis — seus downloads saem com{" "}
+        <strong className="font-semibold">marca d&apos;água</strong>.
+      </span>
       <div className="flex items-center gap-2.5">
-        <Link
-          href="/planos"
+        <UnlockLink
+          from="trialbar"
           className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-[#2a2018] transition hover:opacity-90"
         >
-          Ver planos
-        </Link>
+          Baixe sem marca d&apos;água →
+        </UnlockLink>
         <a
           href={whatsappUrl}
           target="_blank"

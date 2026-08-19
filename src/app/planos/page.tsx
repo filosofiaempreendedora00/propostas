@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { requireUser, getCurrentOrg } from "@/lib/auth/org";
-import { FREE_DOWNLOADS } from "@/lib/limits";
 import { CHECKOUT } from "@/lib/billing/checkout";
 import PlansChooser from "@/app/_components/PlansChooser";
 import PlanosActions from "@/app/_components/PlanosActions";
@@ -16,20 +15,14 @@ export default async function PlanosPage() {
   if (org?.status === "active") redirect("/inicio");
 
   const canceled = org?.status === "canceled";
-  const used = org?.downloadsUsed ?? 0;
-  const remaining = Math.max(0, FREE_DOWNLOADS - used);
-  const locked = used >= FREE_DOWNLOADS; // free e esgotou os downloads
 
+  // Modelo marca d'água: sem cota/"3 grátis". Ancoragem por VALOR.
   const heading = canceled
     ? "Sua assinatura terminou"
-    : locked
-      ? "Três propostas feitas. Continue sem limite."
-      : "Menos tempo montando proposta. Mais tempo fechando negócio.";
+    : "Menos tempo montando proposta. Mais tempo fechando negócio.";
   const subheading = canceled
     ? "Reative quando quiser. Seus dados continuam salvos."
-    : locked
-      ? "R$ 67 por mês é menos que a comissão de um único negócio."
-      : "Uma proposta profissional em 60 segundos. R$ 67 por mês é menos que a comissão de um único negócio.";
+    : "R$ 37 por mês é menos que a comissão de um único negócio fechado.";
 
   return (
     <div className="min-h-screen bg-bg px-5 py-12 text-ink">
@@ -64,11 +57,7 @@ export default async function PlanosPage() {
           }}
         />
 
-        <PlanosActions
-          email={user.email ?? null}
-          locked={locked}
-          remaining={remaining}
-        />
+        <PlanosActions email={user.email ?? null} />
       </div>
     </div>
   );
