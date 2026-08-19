@@ -232,9 +232,10 @@ export default function AiCatalogGenerator({
 
                 {noneLeft ? (
                   <p className="mt-4 rounded-xl border border-line bg-panel-2 px-3.5 py-3 text-sm text-ink-soft">
-                    Você já usou suas {left?.limit} gerações por IA. Sem problema
-                    — agora é só <strong>editar e revisar</strong> seu catálogo
-                    nos campos normais. É rápido e você ajusta tudo.
+                    Você já gerou {left?.limit} catálogos por IA nas últimas 24h.
+                    Sem problema — dá pra <strong>ajustar tudo à mão</strong> nos
+                    campos normais (nomes, textos, planos, preços), fica do jeito
+                    que você quiser. As gerações por IA voltam amanhã.
                   </p>
                 ) : (
                   <>
