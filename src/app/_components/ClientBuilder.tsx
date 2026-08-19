@@ -624,6 +624,16 @@ export default function ClientBuilder() {
       }
       return n;
     });
+  // Preços começam MINIMIZADOS por plano (só um chip com o valor); "editar" abre
+  // o input + cobrança. Menos poluição e números menos "grosseiros".
+  const [priceOpen, setPriceOpen] = useState<Set<string>>(new Set());
+  const togglePriceEdit = (id: string) =>
+    setPriceOpen((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
   // Aplica no form os blocos personalizados que a IA extraiu do transcript da
   // call (Item 5). O catálogo de soluções continua vindo do negócio.
   const applyTranscriptBlocks = (
@@ -1326,67 +1336,88 @@ export default function ClientBuilder() {
                                         </button>
                                       </div>
 
-                                      {/* Preço editável (grande) + cobrança */}
+                                      {/* Preço MINIMIZADO por padrão: um chip com
+                                          o valor; "editar" abre o input + cobrança. */}
                                       {checked && (
-                                        <div className="mt-2.5 space-y-2 pl-[34px]">
-                                          <label className="block">
-                                            <span className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-mute">
-                                              Preço{" "}
-                                              {bill === "recorrente"
-                                                ? "(por mês)"
-                                                : "(único)"}
-                                            </span>
-                                            <input
-                                              value={
-                                                p.id in priceById
-                                                  ? priceById[p.id]
-                                                  : displayPrice(p.price)
-                                              }
-                                              onChange={(e) =>
-                                                setPrice(
-                                                  p.id,
-                                                  maskBRL(e.target.value),
-                                                )
-                                              }
-                                              onBlur={(e) =>
-                                                setPrice(
-                                                  p.id,
-                                                  finalizeBRL(e.target.value),
-                                                )
-                                              }
-                                              inputMode="numeric"
-                                              placeholder="R$ 0,00"
-                                              className="w-full rounded-lg border border-line bg-panel-2 px-3 py-2 text-[17px] font-semibold tracking-tight text-ink outline-none transition placeholder:text-ink-mute/60 focus:border-accent/70"
-                                            />
-                                          </label>
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-[10px] uppercase tracking-wide text-ink-mute">
-                                              Investimento
-                                            </span>
-                                          <div className="inline-flex rounded-md border border-line p-0.5 text-[10px] font-medium">
-                                            {(
-                                              [
-                                                ["recorrente", "Mensal"],
-                                                ["pontual", "Único"],
-                                              ] as const
-                                            ).map(([val, label]) => (
-                                              <button
-                                                key={val}
-                                                type="button"
-                                                onClick={() =>
-                                                  setBilling(p.id, val)
-                                                }
-                                                className={`rounded px-2 py-0.5 transition ${
-                                                  bill === val
-                                                    ? "bg-accent text-bg"
-                                                    : "text-ink-mute hover:text-ink"
-                                                }`}
-                                              >
-                                                {label}
-                                              </button>
-                                            ))}
-                                          </div>
-                                          </div>
+                                        <div className="mt-2 pl-[30px]">
+                                          {!priceOpen.has(p.id) ? (
+                                            <button
+                                              type="button"
+                                              onClick={() => togglePriceEdit(p.id)}
+                                              className="inline-flex items-baseline gap-1.5 rounded-lg border border-line bg-panel px-3 py-1.5 transition hover:border-accent/50"
+                                            >
+                                              <span className="text-[15px] font-semibold tracking-tight text-ink">
+                                                {displayPrice(priceFor(p.id, p.price))}
+                                              </span>
+                                              <span className="text-[11px] text-ink-mute">
+                                                {bill === "recorrente" ? "/mês" : "único"}
+                                              </span>
+                                              <span className="ml-1.5 text-[11px] font-medium text-accent">
+                                                editar
+                                              </span>
+                                            </button>
+                                          ) : (
+                                            <div className="space-y-2">
+                                              <label className="block">
+                                                <span className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-mute">
+                                                  Preço{" "}
+                                                  {bill === "recorrente"
+                                                    ? "(por mês)"
+                                                    : "(único)"}
+                                                </span>
+                                                <input
+                                                  autoFocus
+                                                  value={
+                                                    p.id in priceById
+                                                      ? priceById[p.id]
+                                                      : displayPrice(p.price)
+                                                  }
+                                                  onChange={(e) =>
+                                                    setPrice(p.id, maskBRL(e.target.value))
+                                                  }
+                                                  onBlur={(e) =>
+                                                    setPrice(p.id, finalizeBRL(e.target.value))
+                                                  }
+                                                  inputMode="numeric"
+                                                  placeholder="R$ 0,00"
+                                                  className="w-full rounded-lg border border-line bg-panel-2 px-3 py-2 text-base font-semibold tracking-tight text-ink outline-none transition placeholder:text-ink-mute/60 focus:border-accent/70"
+                                                />
+                                              </label>
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-[10px] uppercase tracking-wide text-ink-mute">
+                                                  Investimento
+                                                </span>
+                                                <div className="inline-flex rounded-md border border-line p-0.5 text-[10px] font-medium">
+                                                  {(
+                                                    [
+                                                      ["recorrente", "Mensal"],
+                                                      ["pontual", "Único"],
+                                                    ] as const
+                                                  ).map(([val, label]) => (
+                                                    <button
+                                                      key={val}
+                                                      type="button"
+                                                      onClick={() => setBilling(p.id, val)}
+                                                      className={`rounded px-2 py-0.5 transition ${
+                                                        bill === val
+                                                          ? "bg-accent text-bg"
+                                                          : "text-ink-mute hover:text-ink"
+                                                      }`}
+                                                    >
+                                                      {label}
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => togglePriceEdit(p.id)}
+                                                  className="ml-auto rounded-md px-2 py-0.5 text-[11px] font-semibold text-accent transition hover:bg-accent/10"
+                                                >
+                                                  ok
+                                                </button>
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
                                       )}
                                     </div>
