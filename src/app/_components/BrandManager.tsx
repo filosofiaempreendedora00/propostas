@@ -205,7 +205,7 @@ export default function BrandManager({
       <div className="max-w-3xl px-10 py-9">
         <div className="mb-7 border-b border-line pb-5">
           <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
-            Sua marca
+            Minha marca
           </h1>
           <p className="mt-1.5 text-sm text-ink-mute">
             Cadastre duas versões da sua logo. No Gerador, a versão certa é

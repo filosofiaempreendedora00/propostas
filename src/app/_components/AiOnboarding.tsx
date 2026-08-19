@@ -15,7 +15,7 @@ const EXAMPLE =
   "Ex: Sou uma agência de marketing para clínicas odontológicas. Faço gestão de tráfego pago (Google e Meta), criação de conteúdo e otimização de perfil. Ticket entre R$ 1.500 e R$ 5.000/mês.";
 
 // Hero da /inicio para conta nova: descreva o negócio → IA gera o catálogo →
-// vai direto pra Sua Empresa ver o resultado (WOW). Reusa a mesma geração do
+// vai direto pra Minha Empresa ver o resultado (WOW). Reusa a mesma geração do
 // AiCatalogGenerator (generateAndReplaceCatalog).
 export default function AiOnboarding() {
   const router = useRouter();
@@ -164,7 +164,7 @@ export default function AiOnboarding() {
                 Você já usou suas {left?.limit} gerações por IA. Sem problema —
                 monte seu catálogo em{" "}
                 <Link href="/empresa" className="text-accent hover:underline">
-                  Sua Empresa
+                  Minha Empresa
                 </Link>
                 .
               </p>

@@ -205,7 +205,7 @@ export default function TemplateEditor({
               />
             </Field>
             <p className="text-xs text-ink-mute">
-              As soluções em si vêm do catálogo (Sua Empresa). Aqui você varia só
+              As soluções em si vêm do catálogo (Minha Empresa). Aqui você varia só
               a introdução do bloco.
             </p>
           </>

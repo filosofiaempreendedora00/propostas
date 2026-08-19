@@ -59,7 +59,7 @@ export default function EmpresaWorkspace() {
           [
             { id: "solucoes", label: "Soluções & Planos" },
             { id: "consultores", label: "Consultores" },
-            { id: "marca", label: "Sua marca" },
+            { id: "marca", label: "Minha marca" },
             { id: "equipe", label: "Equipe" },
           ] as const
         ).map((t) => (

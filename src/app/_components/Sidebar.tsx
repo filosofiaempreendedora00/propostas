@@ -151,7 +151,7 @@ function Chevron({ collapsed }: { collapsed: boolean }) {
 
 const ITEMS = [
   { href: "/inicio", label: "Início", Icon: IconHome, highlight: false },
-  { href: "/empresa", label: "Sua Empresa", Icon: IconEmpresa, highlight: false },
+  { href: "/empresa", label: "Minha Empresa", Icon: IconEmpresa, highlight: false },
   { href: "/templates", label: "Templates", Icon: IconTemplates, highlight: false },
   { href: "/cliente", label: "Gerador", Icon: IconGerador, highlight: true },
 ];
