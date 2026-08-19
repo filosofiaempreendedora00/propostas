@@ -328,10 +328,17 @@ export async function getAiGenerationsLeft(): Promise<{
   const orgId = await requireOrgId();
   let used = 0;
   try {
+    // Só gerações de CATÁLOGO nas últimas 24h (transcript não entra nessa cota).
     const [{ c }] = await db
       .select({ c: count() })
       .from(aiGenerations)
-      .where(eq(aiGenerations.orgId, orgId));
+      .where(
+        and(
+          eq(aiGenerations.orgId, orgId),
+          eq(aiGenerations.kind, "catalog"),
+          sql`${aiGenerations.createdAt} > now() - interval '24 hours'`,
+        ),
+      );
     used = Number(c) || 0;
   } catch {
     used = 0; // tabela ainda não migrada → não trava
@@ -401,15 +408,22 @@ export async function generateAndReplaceCatalog(
 ): Promise<{ solutions: number }> {
   const orgId = await requireOrgId();
 
-  // Trava anti-abuso: no máximo FREE_AI_GENERATIONS por conta.
+  // Trava anti-abuso: no máximo FREE_AI_GENERATIONS gerações de CATÁLOGO por DIA
+  // (janela de 24h). Só conta kind='catalog' — transcript tem cota própria.
   try {
     const [{ c }] = await db
       .select({ c: count() })
       .from(aiGenerations)
-      .where(eq(aiGenerations.orgId, orgId));
+      .where(
+        and(
+          eq(aiGenerations.orgId, orgId),
+          eq(aiGenerations.kind, "catalog"),
+          sql`${aiGenerations.createdAt} > now() - interval '24 hours'`,
+        ),
+      );
     if (Number(c) >= FREE_AI_GENERATIONS) {
       throw new LimitError(
-        `Você já usou suas ${FREE_AI_GENERATIONS} gerações por IA. Sem problema — agora é só editar e revisar seu catálogo nos campos normais, é rápido.`,
+        `Você já gerou ${FREE_AI_GENERATIONS} catálogos por IA nas últimas 24h. Sem problema — dá pra ajustar tudo à mão nos campos normais (nomes, textos, planos, preços), fica do jeito que você quiser. As gerações por IA voltam amanhã.`,
       );
     }
   } catch (e) {
