@@ -421,7 +421,9 @@ export async function generateCatalogFromBrief(brief: string): Promise<{
       "Geração por IA indisponível: falta configurar ANTHROPIC_API_KEY no servidor.",
     );
   }
-  const clean = (brief ?? "").trim().slice(0, 2000);
+  // Teto generoso: cabe tanto a descrição digitada quanto o TEXTO EXTRAÍDO de um
+  // arquivo (PDF/DOCX/TXT do negócio). Bem acima dos 2000 antigos; limita custo.
+  const clean = (brief ?? "").trim().slice(0, 16000);
   if (clean.length < 20) {
     throw new Error("Descreva seu negócio com um pouco mais de detalhe (o que vende, pra quem).");
   }
