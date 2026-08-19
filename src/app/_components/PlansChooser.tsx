@@ -6,9 +6,11 @@ import { useState } from "react";
 // monthly        = plano mensal (R$/mês)
 // annualPerMonth = anual PARCELADO (R$/mês em 12×, com juros embutidos)
 // annualUpfront  = anual À VISTA (pagamento único no ano) — maior desconto
+// Preços TÊM que bater com o que cada link Kiwify cobra (ver checkout.ts).
+// annualPerMonth = valor/mês exibido no anual; annualUpfront = à vista no ano.
 const PRICES = {
-  individual: { monthly: 67, annualPerMonth: 49, annualUpfront: 480 },
-  time: { monthly: 197, annualPerMonth: 147, annualUpfront: 1416 },
+  individual: { monthly: 37, annualPerMonth: 25, annualUpfront: 297 },
+  time: { monthly: 97, annualPerMonth: 75, annualUpfront: 897 },
 };
 
 const brl = (n: number) => n.toLocaleString("pt-BR");
@@ -149,7 +151,7 @@ function PlanCard({
           <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" />
           <path d="M9.5 12l1.8 1.8L15 10" />
         </svg>
-        7 dias de garantia incondicional
+        7 dias de garantia · sem fidelidade, cancele quando quiser
       </p>
     </div>
   );

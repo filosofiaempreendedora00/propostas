@@ -201,6 +201,7 @@ export function renderProposalHTML(
     editable?: boolean;
     onlyBlock?: PreviewBlock;
     editableCatalog?: boolean;
+    watermark?: boolean;
   } = {},
 ): string {
   // Edição inline (hover + contenteditable) só no preview do app.
@@ -211,6 +212,20 @@ export function renderProposalHTML(
   const editable = only ? opts.editable ?? false : opts.editable ?? true;
   // Edição dos CARDS de solução/plano (Sua Empresa) — desligada no Gerador.
   const editableCatalog = !!opts.editableCatalog;
+  // Marca d'água (download grátis): NUNCA em preview de bloco nem no editável.
+  const watermark = only ? false : !!opts.watermark;
+  // Tile diagonal do wordmark KRONOS (SVG data-URI) — leve, nítido, repetível.
+  // encodeURIComponent garante # e espaços válidos no url() do CSS.
+  const wmTile =
+    "data:image/svg+xml," +
+    encodeURIComponent(
+      `<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><text x='150' y='115' font-family='Georgia, "Times New Roman", serif' font-size='30' font-weight='700' letter-spacing='2' fill='#c9a876' fill-opacity='0.24' text-anchor='middle' transform='rotate(-28 150 100)'>KRONOS</text></svg>`,
+    );
+  const wmUnlockUrl = "https://gerador.kronos-ias.com.br/planos?src=watermark";
+  const watermarkHtml = watermark
+    ? `<div class="kwm" aria-hidden="true"></div>
+<div class="kwm-foot">🔒 Prévia com marca d'água — assine em <a href="${wmUnlockUrl}">kronos-ias.com.br/planos</a> para baixar sem a marca.</div>`
+    : "";
 
   // CTA → WhatsApp do consultor só no HTML exportado (o que o cliente abre).
   // No preview editável fica "#" pra não navegar ao clicar e não atrapalhar a
@@ -559,11 +574,24 @@ export function renderProposalHTML(
     .block,.tier,.pillar,.step,.rec-reason,.sol2{margin-bottom:6px}
     p{orphans:3;widows:3}
   }
+  /* Marca d'água do download GRÁTIS — tile diagonal do wordmark + rodapé de
+     desbloqueio. position:fixed repete em TODA página no print do Chrome.
+     Não escurece (dourado claro semi-transparente), mas cobre e "suja" o
+     bastante pra a prévia ficar inutilizável pra enviar a um cliente. */
+  .kwm{position:fixed;inset:0;z-index:2147483000;pointer-events:none;
+    background-image:url("${wmTile}");background-repeat:repeat;background-position:top center;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .kwm-foot{position:fixed;left:0;right:0;bottom:0;z-index:2147483001;
+    text-align:center;padding:9px 14px;
+    font:600 12px/1.35 ui-sans-serif,system-ui,-apple-system,sans-serif;
+    color:#6f5316;background:rgba(201,168,118,0.2);border-top:1px solid rgba(201,168,118,0.6);
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .kwm-foot a{color:#6f5316;font-weight:700}
 </style>
 ${only ? `<style>.cover,footer{display:none!important}section{border-top:none!important;break-before:auto!important}.pad{padding:40px 0}</style>` : ""}
 </head>
 <body>
-
+${watermarkHtml}
 <!-- 1. CAPA -->
 <section class="cover">
   <div class="wrap cover-top">

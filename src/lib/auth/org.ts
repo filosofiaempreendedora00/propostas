@@ -259,6 +259,8 @@ export async function getAccessState(): Promise<{
     used,
     limit: FREE_DOWNLOADS,
     remaining: Math.max(0, FREE_DOWNLOADS - used),
-    locked: !active && used >= FREE_DOWNLOADS,
+    // Modelo marca d'água: download é sempre liberado (free sai com marca).
+    // Nunca trava em /planos — o paywall virou marca d'água + CTA de desbloqueio.
+    locked: false,
   };
 }
