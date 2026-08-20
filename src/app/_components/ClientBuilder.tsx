@@ -54,8 +54,6 @@ const ACCENT_PRESETS = [
   { name: "Prata", value: "#B8BCC4" },
 ];
 
-const DND_TYPE = "application/x-consultant-id";
-
 const MONTHS_PT = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
   "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
@@ -169,7 +167,6 @@ export default function ClientBuilder() {
   const [priceById, setPriceById] = useState<Record<string, string>>({});
   const [consultantId, setConsultantId] = useState<string | null>(null);
   const seededCons = useRef(false);
-  const [dragOver, setDragOver] = useState(false);
   const [validISO, setValidISO] = useState("2026-06-29");
   const skipRender = useRef(false);
   // Rolagem do preview preservada através do reload do iframe (não volta ao topo).
@@ -774,14 +771,6 @@ export default function ClientBuilder() {
   };
 
   // ----- consultor: drag & drop -----
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const id =
-      e.dataTransfer.getData(DND_TYPE) || e.dataTransfer.getData("text/plain");
-    if (id && consultants.some((c) => c.id === id)) setConsultantId(id);
-  };
-
   return (
     <div className="flex h-full flex-col">
       {/* Flash sutil (ex.: guia pro campo de cliente ao clicar Baixar vazio) */}
@@ -1547,79 +1536,98 @@ export default function ClientBuilder() {
           )}
 
           <SectionTitle>Responsável e validade</SectionTitle>
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-            className={`rounded-lg border border-dashed p-3 transition ${
-              dragOver ? "border-accent bg-accent/10" : "border-line bg-panel"
-            }`}
-          >
-            {consultant ? (
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">
-                    {consultant.name}
-                    {consultant.role ? (
-                      <span className="ml-2 text-xs font-normal text-accent">
-                        {consultant.role}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="truncate text-xs text-ink-mute">
-                    {consultant.email || "sem e-mail"}
-                    {consultant.phone ? ` · ${consultant.phone}` : ""}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setConsultantId(null)}
-                  className="shrink-0 text-xs text-ink-mute hover:text-red-400"
+          <div>
+            <Label>Consultor responsável</Label>
+            {consReady && consultants.length === 0 ? (
+              /* Sem consultor ainda → leva direto pra criar na tela de Consultores. */
+              <Link
+                href="/empresa?tab=consultores"
+                className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-accent/45 bg-accent/[0.07] px-3 py-3 text-sm font-semibold text-accent transition hover:border-accent hover:bg-accent/[0.12]"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                  className="h-4 w-4"
                 >
-                  limpar
-                </button>
-              </div>
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Criar meu consultor
+              </Link>
             ) : (
-              <div className="text-center text-xs text-ink-mute">
-                Selecione um consultor no menu abaixo
+              <div className="flex items-stretch gap-2">
+                {/* Só o seletor (sem card duplicado), com ícone de pessoa + chevron. */}
+                <div className="relative flex-1">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-accent"
+                  >
+                    <path d="M20 21a8 8 0 0 0-16 0" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <select
+                    value={consultantId ?? ""}
+                    onChange={(e) => setConsultantId(e.target.value || null)}
+                    className="w-full appearance-none rounded-lg border border-line bg-panel-2 py-2.5 pl-9 pr-9 text-sm font-medium text-ink outline-none transition hover:border-accent/40 focus:border-accent/60"
+                  >
+                    <option value="">Selecione um consultor…</option>
+                    {consultants.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name || "Sem nome"}
+                        {c.role ? ` — ${c.role}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-mute"
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </div>
+                {/* Editar → abre a tela de Consultores (edição, mesmo em conta individual). */}
+                <Link
+                  href="/empresa?tab=consultores"
+                  title="Editar consultor"
+                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-line bg-panel px-3 text-[13px] font-medium text-ink-soft transition hover:border-accent/50 hover:text-accent"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                    className="h-3.5 w-3.5"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
+                  Editar
+                </Link>
               </div>
             )}
+            <span className="mt-1.5 block text-[11px] text-ink-mute">
+              Aparece assinando a proposta.
+            </span>
           </div>
-          {consReady && consultants.length === 0 ? (
-            <div className="mt-2">
-              <EmptyCatalog label="consultor" />
-            </div>
-          ) : (
-            <div className="relative mt-2">
-              <select
-                value={consultantId ?? ""}
-                onChange={(e) => setConsultantId(e.target.value || null)}
-                className="w-full appearance-none rounded-lg border border-line bg-panel-2 px-3 py-2 pr-9 text-sm text-ink-soft outline-none transition hover:border-accent/40 focus:border-accent/60"
-              >
-                <option value="">Selecione um consultor…</option>
-                {consultants.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name || "Sem nome"}
-                    {c.role ? ` — ${c.role}` : ""}
-                  </option>
-                ))}
-              </select>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-mute"
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </div>
-          )}
 
           <label className="mt-4 block">
             <Label>Proposta válida até</Label>
@@ -1642,30 +1650,6 @@ export default function ClientBuilder() {
               🎉 Está pronta! Baixe agora — sua{" "}
               <strong className="text-ink">primeira proposta é grátis</strong>.
             </p>
-          )}
-          {clientMissing && (
-            /* Passo alto e explícito COLADO no botão — nunca botão cinza mudo. */
-            <div className="mb-2.5 rounded-xl border border-amber-400/40 bg-amber-400/[0.08] p-3">
-              <p className="text-[12px] font-semibold text-amber-300">
-                Falta só isto pra baixar:
-              </p>
-              <label className="mt-2 block">
-                <Label>Empresa do cliente</Label>
-                <TextInput
-                  value={form.clientName}
-                  onChange={(v) => set("clientName", v)}
-                  placeholder="Ex: Magazine Luiza"
-                />
-              </label>
-              <label className="mt-2 block">
-                <Label>Nome do cliente</Label>
-                <TextInput
-                  value={form.clientLegalName}
-                  onChange={(v) => set("clientLegalName", v)}
-                  placeholder="Ex: João Silva"
-                />
-              </label>
-            </div>
           )}
           <DownloadActions
             layout="panel"
