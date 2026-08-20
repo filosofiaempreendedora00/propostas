@@ -207,6 +207,26 @@ const SCHEMA = {
   required: ["solutions", "consultant", "blocks"],
 } as const;
 
+// Geração dividida em DUAS chamadas paralelas (catálogo | blocos). Cada uma gera
+// ~metade do output; rodando em paralelo o tempo total ≈ a maior das duas, então
+// uma descrição/arquivo rico não estoura os 60s da função serverless.
+const CATALOG_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    solutions: SCHEMA.properties.solutions,
+    consultant: SCHEMA.properties.consultant,
+  },
+  required: ["solutions", "consultant"],
+} as const;
+
+const BLOCKS_ONLY_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: { blocks: SCHEMA.properties.blocks },
+  required: ["blocks"],
+} as const;
+
 const SYSTEM_PROMPT = `Você é um copywriter sênior de propostas comerciais no Brasil. A partir de uma descrição curta de um negócio, você escreve a PROPOSTA COMERCIAL COMPLETA que ESSE negócio vai ENVIAR para conquistar um cliente — catálogo de soluções + blocos narrativos de persuasão.
 
 PAPÉIS — leia com atenção, errar isto invalida a proposta inteira:
@@ -429,37 +449,57 @@ export async function generateCatalogFromBrief(brief: string): Promise<{
   }
 
   const client = new Anthropic({ apiKey: key });
-  const resp = await client.messages.create({
-    model: MODEL,
-    max_tokens: 16000, // catálogo + blocos narrativos (proposta completa)
-    system: SYSTEM_PROMPT,
-    output_config: { format: { type: "json_schema", schema: SCHEMA } },
-    messages: [
-      {
-        role: "user",
-        content: `Descrição do negócio:\n"""\n${clean}\n"""\n\nEscreva a proposta completa (catálogo + blocos narrativos) seguindo as regras.`,
-      },
-    ],
-  });
 
-  const text = resp.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("")
-    .trim();
+  // Duas gerações EM PARALELO: catálogo (solutions+consultant) e blocos
+  // narrativos. Cada chamada gera ~metade do output; com Promise.all o
+  // wall-clock ≈ a MAIOR das duas (não a soma). Era 1 chamada só com
+  // max_tokens 16000 — num arquivo/descrição rico o output ficava grande e
+  // às vezes passava dos 60s da função (derrubando a resposta em não-JSON).
+  const userBrief = `Descrição do negócio:\n"""\n${clean}\n"""\n\n`;
+  const [catResp, blkResp] = await Promise.all([
+    client.messages.create({
+      model: MODEL,
+      max_tokens: 8000,
+      system: SYSTEM_PROMPT,
+      output_config: { format: { type: "json_schema", schema: CATALOG_SCHEMA } },
+      messages: [
+        {
+          role: "user",
+          content: `${userBrief}Escreva SÓ o catálogo (solutions + consultant) seguindo as regras.`,
+        },
+      ],
+    }),
+    client.messages.create({
+      model: MODEL,
+      max_tokens: 8000,
+      system: SYSTEM_PROMPT,
+      output_config: { format: { type: "json_schema", schema: BLOCKS_ONLY_SCHEMA } },
+      messages: [
+        {
+          role: "user",
+          content: `${userBrief}Escreva SÓ os blocos narrativos (blocks) da proposta seguindo as regras.`,
+        },
+      ],
+    }),
+  ]);
 
-  let data: {
-    solutions?: unknown[];
-    consultant?: Record<string, unknown>;
-    blocks?: unknown;
-  };
+  const textOf = (resp: Anthropic.Message) =>
+    resp.content
+      .filter((b): b is Anthropic.TextBlock => b.type === "text")
+      .map((b) => b.text)
+      .join("")
+      .trim();
+
+  let catData: { solutions?: unknown[]; consultant?: Record<string, unknown> };
+  let blkData: { blocks?: unknown };
   try {
-    data = JSON.parse(text);
+    catData = JSON.parse(textOf(catResp));
+    blkData = JSON.parse(textOf(blkResp));
   } catch {
     throw new Error("A IA retornou um formato inesperado. Tente gerar de novo.");
   }
 
-  const rawSolutions = Array.isArray(data.solutions) ? data.solutions : [];
+  const rawSolutions = Array.isArray(catData.solutions) ? catData.solutions : [];
   const solutions: CatalogSolution[] = rawSolutions.slice(0, 4).map((s) => {
     const o = (s ?? {}) as Record<string, unknown>;
     const deliverables = strList(o.deliverables);
@@ -485,22 +525,27 @@ export async function generateCatalogFromBrief(brief: string): Promise<{
     throw new Error("A IA não conseguiu gerar soluções. Tente descrever o negócio com mais detalhe.");
   }
 
-  const c = (data.consultant ?? {}) as Record<string, unknown>;
+  const c = (catData.consultant ?? {}) as Record<string, unknown>;
   const consultant: GeneratedConsultant = {
     name: str(c.name, "Consultor"),
     role: str(c.role, "Consultor"),
   };
 
-  const blocks = normalizeBlocks(data.blocks);
+  const blocks = normalizeBlocks(blkData.blocks);
 
-  // Tokens efetivamente cobrados (entrada + cache contam como input).
+  // Tokens efetivamente cobrados (soma das DUAS chamadas; entrada + cache = input).
+  const u1 = catResp.usage;
+  const u2 = blkResp.usage;
   const usage: GenUsage = {
     model: MODEL,
     inputTokens:
-      (resp.usage.input_tokens ?? 0) +
-      (resp.usage.cache_read_input_tokens ?? 0) +
-      (resp.usage.cache_creation_input_tokens ?? 0),
-    outputTokens: resp.usage.output_tokens ?? 0,
+      (u1.input_tokens ?? 0) +
+      (u1.cache_read_input_tokens ?? 0) +
+      (u1.cache_creation_input_tokens ?? 0) +
+      (u2.input_tokens ?? 0) +
+      (u2.cache_read_input_tokens ?? 0) +
+      (u2.cache_creation_input_tokens ?? 0),
+    outputTokens: (u1.output_tokens ?? 0) + (u2.output_tokens ?? 0),
   };
 
   return { solutions, consultant, blocks, usage };
