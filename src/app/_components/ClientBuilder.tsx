@@ -1144,7 +1144,7 @@ export default function ClientBuilder() {
           />
           <div className={form.showSolutions ? "" : "opacity-40"}>
             {solReady && solutions.length === 0 ? (
-              <EmptyCatalog label="solução" />
+              <NoCatalogNotice />
             ) : (
               <div className="space-y-2">
                 <p className="mb-1 text-xs text-ink-mute">
@@ -2397,16 +2397,49 @@ function StringListEditor({
 }
 
 
-function EmptyCatalog({ label }: { label: string }) {
+// Sem NENHUMA solução (nem por IA, nem manual) não dá pra montar proposta.
+// Aviso explícito + CTA pro catálogo (aba Soluções & Planos, onde vive a IA).
+function NoCatalogNotice() {
   return (
-    <div className="rounded-lg border border-dashed border-line p-4 text-center text-sm text-ink-soft">
-      Nenhum(a) {label} cadastrado(a).
-      <br />
+    <div className="rounded-xl border border-dashed border-accent/40 bg-accent/[0.05] p-5 text-center">
+      <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-accent/12 text-accent">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+          className="h-5 w-5"
+        >
+          <path d="M12 2 2 7l10 5 10-5-10-5z" />
+          <path d="m2 17 10 5 10-5" />
+          <path d="m2 12 10 5 10-5" />
+        </svg>
+      </div>
+      <h3 className="mt-3 text-[15px] font-semibold text-ink">
+        Seu catálogo ainda está vazio
+      </h3>
+      <p className="mx-auto mt-1.5 max-w-xs text-[13px] leading-relaxed text-ink-soft">
+        Pra montar uma proposta você precisa primeiro das{" "}
+        <strong className="text-ink">soluções que você vende</strong>. A IA pode
+        escrever tudo a partir de uma descrição ou arquivo — ou você preenche à
+        mão.
+      </p>
       <Link
-        href="/empresa"
-        className="mt-2 inline-block font-medium text-accent hover:underline"
+        href="/empresa?tab=solucoes"
+        className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-bg transition hover:opacity-90"
       >
-        → Cadastrar em Minha Empresa
+        <svg
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden
+          className="h-4 w-4"
+        >
+          <path d="M12 2c0 5-5 10-10 10 5 0 10 5 10 10 0-5 5-10 10-10-5 0-10-5-10-10z" />
+        </svg>
+        Montar meu catálogo
       </Link>
     </div>
   );
