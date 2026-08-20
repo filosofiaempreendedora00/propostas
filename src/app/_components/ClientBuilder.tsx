@@ -45,6 +45,11 @@ type ClientForm = Omit<
   | "consultantTerm"
 >;
 
+// Bloco com o "olho" fechado (oculto no preview): fica levemente ofuscado e um
+// tom mais escuro (não some), pra deixar claro que não sai na proposta. Sempre
+// junto de `transition duration-200` no wrapper pra suavizar o toggle.
+const HIDDEN_BLOCK = "opacity-65 [filter:brightness(0.6)]";
+
 const ACCENT_PRESETS = [
   { name: "Champagne", value: "#C9A876" },
   { name: "Azul", value: "#6E8BFF" },
@@ -1107,7 +1112,7 @@ export default function ClientBuilder() {
                 onLoad={(id, payload) => loadVar("strategy", id, payload)}
                 onSave={() => saveVariation("strategy")}
               />
-              <div className={form.showStrategy ? "" : "opacity-40"}>
+              <div className={`transition duration-200 ${form.showStrategy ? "" : HIDDEN_BLOCK}`}>
                 <TitleDescEditor
                   items={form.pillars}
                   onItem={setPillar}
@@ -1142,7 +1147,7 @@ export default function ClientBuilder() {
             onLoad={(id, payload) => loadVar("solutions", id, payload)}
             onSave={() => saveVariation("solutions")}
           />
-          <div className={form.showSolutions ? "" : "opacity-40"}>
+          <div className={`transition duration-200 ${form.showSolutions ? "" : HIDDEN_BLOCK}`}>
             {solReady && solutions.length === 0 ? (
               <NoCatalogNotice />
             ) : (
@@ -1441,7 +1446,7 @@ export default function ClientBuilder() {
           </SectionTitle>
           {openSecs.has("invest") && (
           <div
-            className={`rounded-lg border border-line bg-panel p-3 text-xs leading-relaxed text-ink-soft ${form.showInvestment ? "" : "opacity-40"}`}
+            className={`rounded-lg border border-line bg-panel p-3 text-xs leading-relaxed text-ink-soft transition duration-200 ${form.showInvestment ? "" : HIDDEN_BLOCK}`}
           >
             Os planos exibidos são os que você{" "}
             <strong className="text-ink">marcou em cada solução</strong> acima.
@@ -1471,7 +1476,7 @@ export default function ClientBuilder() {
             Recomendação — motivos
           </SectionTitle>
           {openSecs.has("rec") && (
-            <div className={form.showConsultantRec ? "" : "opacity-40"}>
+            <div className={`transition duration-200 ${form.showConsultantRec ? "" : HIDDEN_BLOCK}`}>
               <VariationBar
                 list={templates.filter((t) => t.block === "consultantRec")}
                 selectedId={selectedVar.consultantRec}
@@ -1511,7 +1516,7 @@ export default function ClientBuilder() {
             Próximos passos
           </SectionTitle>
           {openSecs.has("nextSteps") && (
-            <div className={form.showNextSteps ? "" : "opacity-40"}>
+            <div className={`transition duration-200 ${form.showNextSteps ? "" : HIDDEN_BLOCK}`}>
               <VariationBar
                 list={templates.filter((t) => t.block === "nextSteps")}
                 selectedId={selectedVar.nextSteps}
@@ -2110,7 +2115,7 @@ function BlockFieldsEditor({
   const fields = BLOCK_FIELDS[block].filter((f) => FIELD_META[f]);
   return (
     <div
-      className={`space-y-1.5 ${disabled ? "pointer-events-none opacity-40" : ""}`}
+      className={`space-y-1.5 transition duration-200 ${disabled ? `pointer-events-none ${HIDDEN_BLOCK}` : ""}`}
     >
       {fields.map((f) => {
         const meta = FIELD_META[f]!;
