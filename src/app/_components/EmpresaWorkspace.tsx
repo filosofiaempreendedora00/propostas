@@ -25,10 +25,23 @@ export default function EmpresaWorkspace() {
       // Veio do clique na logo do preview (?marca=clara|escura)? Abre "Sua
       // marca" e destaca o campo. Ler da URL é idempotente sob StrictMode (não
       // consumimos aqui) — a limpeza acontece só quando o usuário troca de aba.
-      const marca = new URLSearchParams(window.location.search).get("marca");
+      const params = new URLSearchParams(window.location.search);
+      const marca = params.get("marca");
       if (marca === "clara" || marca === "escura") {
         setTab("marca");
         setHighlight(marca);
+        return;
+      }
+      // Deep-link direto pra uma aba (ex: "Editar consultor" no Gerador leva a
+      // ?tab=consultores). Persiste pra continuar ali nas próximas visitas.
+      const tabParam = params.get("tab") as Tab | null;
+      if (tabParam && TABS.includes(tabParam)) {
+        setTab(tabParam);
+        try {
+          window.localStorage.setItem(TAB_KEY, tabParam);
+        } catch {
+          /* ignora */
+        }
         return;
       }
       const saved = window.localStorage.getItem(TAB_KEY) as Tab | null;
