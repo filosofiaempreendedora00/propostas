@@ -99,10 +99,11 @@ export type AdminEvent = {
   updatedAt: string | null;
 };
 
-// Custo de IA — uma linha por geração de catálogo (só admin vê).
+// Custo de IA — uma linha por geração (catálogo OU proposta), só admin vê.
 export type AdminAiGeneration = {
   createdAt: string | null;
   email: string | null;
+  kind: string; // "catalog" (catálogo) | "transcript" (proposta) | outros
   model: string;
   inputTokens: number;
   outputTokens: number;
@@ -110,9 +111,17 @@ export type AdminAiGeneration = {
   usd: number; // custo calculado a partir dos tokens
 };
 
+// Subtotal por tipo de geração — pra separar custo de catálogo vs de propostas.
+export type AdminAiKindTotal = {
+  kind: string;
+  count: number;
+  usd: number;
+};
+
 export type AdminAiUsage = {
   totalUsd: number;
   count: number;
+  byKind: AdminAiKindTotal[]; // subtotais por tipo, do mais caro pro mais barato
   generations: AdminAiGeneration[];
 };
 
@@ -315,11 +324,12 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     }));
 
   // Custo de IA por geração (try/catch: a tabela pode não existir ainda).
-  let aiUsage: AdminAiUsage = { totalUsd: 0, count: 0, generations: [] };
+  let aiUsage: AdminAiUsage = { totalUsd: 0, count: 0, byKind: [], generations: [] };
   try {
     const genRows = (await db.execute(sql`
       select
         g.created_at,
+        g.kind,
         g.model,
         g.input_tokens,
         g.output_tokens,
@@ -334,6 +344,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       limit 1000
     `)) as unknown as Array<{
       created_at: Date | string | null;
+      kind: string | null;
       model: string;
       input_tokens: number;
       output_tokens: number;
@@ -346,6 +357,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       return {
         createdAt: toIso(r.created_at),
         email: r.email,
+        kind: r.kind || "catalog",
         model: r.model,
         inputTokens: inTok,
         outputTokens: outTok,
@@ -353,9 +365,18 @@ export async function getAdminOverview(): Promise<AdminOverview> {
         usd: aiCostUsd(r.model, inTok, outTok),
       };
     });
+    // Subtotais por tipo (catálogo vs proposta), do mais caro pro mais barato.
+    const kindMap = new Map<string, AdminAiKindTotal>();
+    for (const g of generations) {
+      const cur = kindMap.get(g.kind) ?? { kind: g.kind, count: 0, usd: 0 };
+      cur.count += 1;
+      cur.usd += g.usd;
+      kindMap.set(g.kind, cur);
+    }
     aiUsage = {
       totalUsd: generations.reduce((s, g) => s + g.usd, 0),
       count: generations.length,
+      byKind: [...kindMap.values()].sort((a, b) => b.usd - a.usd),
       generations,
     };
   } catch {

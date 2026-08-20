@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ProposalData } from "@/lib/proposal/types";
 import { trackFunnel } from "@/lib/analytics/google";
 
@@ -18,15 +18,33 @@ export default function TranscriptGenerator({
   const [done, setDone] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Limpa o timer da barra se o componente desmontar no meio.
+  useEffect(() => {
+    return () => {
+      if (timer.current) clearInterval(timer.current);
+    };
+  }, []);
 
   const send = async (file: File) => {
     setError(null);
     setDone(null);
     setFileName(file.name);
     setLoading(true);
+    setProgress(0);
     trackFunnel("transcript_uploaded", {
       ext: file.name.split(".").pop()?.toLowerCase() ?? "",
     });
+    // Barra fiel ao tempo real: curva assintótica calibrada p/ ~1 min (parse +
+    // IA varia). Avança pelo tempo decorrido e NUNCA chega a 100% sozinha — só
+    // ao receber o resultado. Sem contagem de segundos, pra não prometer prazo.
+    const start = performance.now();
+    timer.current = setInterval(() => {
+      const s = (performance.now() - start) / 1000;
+      setProgress(Math.min(94, (1 - Math.exp(-s / 26)) * 100));
+    }, 150);
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -36,6 +54,7 @@ export default function TranscriptGenerator({
         blocks?: Partial<ProposalData>;
         error?: string;
       };
+      if (timer.current) clearInterval(timer.current);
       if (!res.ok) {
         trackFunnel("transcript_failed", {
           status: res.status,
@@ -44,6 +63,8 @@ export default function TranscriptGenerator({
         setError(data?.error || "Não consegui processar o arquivo. Tente de novo.");
         return;
       }
+      setProgress(100); // completa a barra visualmente antes de mostrar o sucesso
+      await new Promise((r) => setTimeout(r, 300));
       onApply(String(data.clientName || ""), data.blocks || {});
       trackFunnel("transcript_generated", {});
       setDone(
@@ -52,6 +73,7 @@ export default function TranscriptGenerator({
           : "Proposta personalizada a partir da call — revise no preview ao lado.",
       );
     } catch {
+      if (timer.current) clearInterval(timer.current);
       trackFunnel("transcript_failed", { reason: "network" });
       setError("Falha de rede ao enviar. Tente de novo.");
     } finally {
@@ -82,6 +104,19 @@ export default function TranscriptGenerator({
             Lendo sua call e personalizando a proposta…
           </p>
           <p className="mt-0.5 truncate text-[11px] text-ink-mute">{fileName}</p>
+          {/* Barra fiel ao tempo — previsibilidade do quanto falta. */}
+          <div className="mx-auto mt-3 max-w-xs">
+            <div className="h-2 overflow-hidden rounded-full bg-panel-2">
+              <div
+                className="h-full rounded-full bg-accent"
+                style={{ width: `${progress}%`, transition: "width 0.3s ease-out" }}
+              />
+            </div>
+          </div>
+          <p className="mt-2 text-[11px] text-ink-mute">
+            Lendo a conversa e escrevendo os blocos no tom dela — leva alguns
+            instantes.
+          </p>
         </div>
       ) : (
         <button

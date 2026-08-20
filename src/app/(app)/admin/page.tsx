@@ -26,6 +26,15 @@ function fmtDate(iso: string | null): string {
   }
 }
 
+// Rótulo amigável do tipo de geração de IA (catálogo vs proposta).
+const AI_KIND_LABEL: Record<string, string> = {
+  catalog: "Catálogo",
+  transcript: "Proposta",
+};
+function aiKindLabel(kind: string): string {
+  return AI_KIND_LABEL[kind] ?? kind;
+}
+
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     active: {
@@ -247,7 +256,7 @@ export default async function AdminPage() {
           </div>
         </section>
 
-        {/* IA — custo de geração de catálogo (só admin) */}
+        {/* IA — custo de geração (catálogo + propostas), centralizado no admin */}
         <section className="mt-10">
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <h2 className="font-display text-2xl font-semibold tracking-tight text-ink">
@@ -261,11 +270,38 @@ export default async function AdminPage() {
               ≈ R$ {(aiUsage.totalUsd * USD_BRL).toFixed(3)}
             </span>
           </div>
+
+          {/* Subtotais por tipo — catálogo vs propostas, separados e somados. */}
+          {aiUsage.byKind.length > 0 && (
+            <div className="mb-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {aiUsage.byKind.map((k) => (
+                <div
+                  key={k.kind}
+                  className="rounded-xl border border-line bg-panel/40 px-4 py-3"
+                >
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-mute">
+                    {aiKindLabel(k.kind)}
+                  </div>
+                  <div className="mt-1 text-lg font-semibold text-ink">
+                    R$ {(k.usd * USD_BRL).toFixed(2)}
+                    <span className="ml-1.5 text-[11px] font-normal text-ink-mute">
+                      US$ {k.usd.toFixed(4)}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-ink-mute">
+                    {k.count} geração(ões)
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="overflow-hidden rounded-2xl border border-line">
             <table className="w-full text-left text-sm">
               <thead className="bg-panel-2 text-[11px] uppercase tracking-wide text-ink-mute">
                 <tr>
                   <th className="px-4 py-3 font-medium">Quando</th>
+                  <th className="px-4 py-3 font-medium">Tipo</th>
                   <th className="px-4 py-3 font-medium">Conta</th>
                   <th className="px-4 py-3 font-medium">Soluções</th>
                   <th className="px-4 py-3 font-medium">Tokens (in/out)</th>
@@ -276,7 +312,7 @@ export default async function AdminPage() {
                 {aiUsage.generations.length === 0 && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="px-4 py-8 text-center text-ink-mute"
                     >
                       Nenhuma geração por IA ainda.
@@ -291,8 +327,15 @@ export default async function AdminPage() {
                     <td className="px-4 py-3 text-xs text-ink-mute">
                       {fmtDate(g.createdAt)}
                     </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-block rounded-full border border-line bg-panel-2 px-2 py-0.5 text-[11px] font-medium text-ink-soft">
+                        {aiKindLabel(g.kind)}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-ink">{g.email ?? "—"}</td>
-                    <td className="px-4 py-3 text-ink-soft">{g.solutions}</td>
+                    <td className="px-4 py-3 text-ink-soft">
+                      {g.kind === "catalog" ? g.solutions : "—"}
+                    </td>
                     <td className="px-4 py-3 text-xs text-ink-mute">
                       {g.inputTokens.toLocaleString("pt-BR")} /{" "}
                       {g.outputTokens.toLocaleString("pt-BR")}
@@ -309,9 +352,10 @@ export default async function AdminPage() {
             </table>
           </div>
           <p className="mt-2 text-[11px] text-ink-mute">
-            US$ é o valor cobrado pela Anthropic; R$ é aproximado (cotação ~
-            {USD_BRL.toFixed(2)}). Modelo: Claude Haiku 4.5 ($1/1M entrada ·
-            $5/1M saída). Só você (admin) vê isto.
+            Catálogo e propostas somados aqui, centralizados só na sua conta
+            (admin). US$ é o valor cobrado pela Anthropic; R$ é aproximado
+            (cotação ~{USD_BRL.toFixed(2)}). Modelo: Claude Haiku 4.5 ($1/1M
+            entrada · $5/1M saída).
           </p>
         </section>
       </div>
