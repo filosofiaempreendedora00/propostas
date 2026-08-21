@@ -1,11 +1,15 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { type ReactNode, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // /início redesenhado: um passo-a-passo de 3 etapas, visual e clicável. Cada
 // card leva pro lugar certo da ferramenta (1 → Sua Empresa; 2 e 3 → Gerador).
-// Conta nova (isNew): o Passo 1 pulsa tracejado ("comece aqui") e o CTA aponta
-// pro catálogo; conta configurada: CTA aponta pro Gerador. As "demos" de cada
-// passo são miniaturas animadas em CSS (sem GIF), coerentes com o tema creme.
+// Conta nova (isNew): o Passo 1 pulsa tracejado + anel radiante ("comece aqui")
+// e o CTA "Criar uma proposta" TRAVA (sacode) destacando o Passo 1 — pra começar
+// pelo catálogo. Conta configurada: o CTA vai direto pro Gerador. As "demos" de
+// cada passo são miniaturas animadas em CSS (sem GIF), coerentes com o tema creme.
 
 // CSS das demos (keyframes + classes prefixadas kx- pra não colidir com nada).
 const KX_STYLE = `
@@ -48,6 +52,15 @@ const KX_STYLE = `
 @keyframes kxpulse{0%,100%{box-shadow:0 0 0 0 rgba(110,82,38,.28)}50%{box-shadow:0 0 0 8px rgba(110,82,38,.07)}}
 .kcap{display:inline-block;border-radius:999px;border:1px solid rgba(40,30,20,.12);background:#f7f1e7;padding:4px 11px;font-size:11px;font-weight:500;color:#5b5249}
 .kcap b{font-weight:700;color:#6e5226}
+/* "comece aqui": anel tracejado que pulsa saindo pra fora do card e some */
+.kx-radiate{position:absolute;inset:0;border-radius:18px;border:2px dashed #6e5226;pointer-events:none;animation:kxradiate 1.8s ease-out infinite}
+@keyframes kxradiate{0%{transform:scale(1);opacity:.5}70%{opacity:.12}100%{transform:scale(1.06);opacity:0}}
+/* "trava": botão sacode na horizontal quando falta o catálogo */
+.kx-shake{animation:kxshake .5s ease-in-out}
+@keyframes kxshake{0%,100%{transform:translateX(0)}15%{transform:translateX(-9px)}30%{transform:translateX(8px)}45%{transform:translateX(-6px)}60%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+/* destaque momentâneo do card 1 ao "bater na trava" */
+.kx-pop{animation:kxpop .6s ease-out}
+@keyframes kxpop{0%{transform:scale(1)}35%{transform:scale(1.035)}100%{transform:scale(1)}}
 `;
 
 const DEMO_1 = `<div class="kx-scr">
@@ -206,9 +219,30 @@ function ArrowRight() {
 }
 
 export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
-  // Conta nova → começa pelo catálogo (Passo 1). Configurada → direto ao Gerador.
-  const ctaHref = isNew ? "/empresa" : "/cliente";
-  const ctaLabel = isNew ? "Montar meu catálogo" : "Criar uma proposta";
+  const router = useRouter();
+  const hasCatalog = !isNew;
+  const [shake, setShake] = useState(false); // botão "trava" quando falta catálogo
+  const [emphasize, setEmphasize] = useState(false); // destaca o card 1 na trava
+
+  // "Criar uma proposta": com catálogo → vai pro Gerador. Sem catálogo → trava
+  // (sacode) e joga o destaque pro Passo 1, ensinando a começar pelo catálogo.
+  const onCreate = () => {
+    if (hasCatalog) {
+      router.push("/cliente");
+      return;
+    }
+    setShake(false);
+    setEmphasize(false);
+    // reinicia as animações no próximo frame (pra retocar em cliques seguidos)
+    requestAnimationFrame(() => {
+      setShake(true);
+      setEmphasize(true);
+    });
+    window.setTimeout(() => {
+      setShake(false);
+      setEmphasize(false);
+    }, 700);
+  };
 
   return (
     <div className="cream form-scroll h-full overflow-y-auto">
@@ -240,8 +274,9 @@ export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
                   isNew && s.n === 1
                     ? "kx-pulse border-accent"
                     : "border-line"
-                }`}
+                } ${emphasize && s.n === 1 ? "kx-pop" : ""}`}
               >
+                {isNew && s.n === 1 && <span className="kx-radiate" aria-hidden />}
                 {isNew && s.n === 1 && (
                   <span className="absolute -top-2.5 left-5 rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-bg">
                     Comece aqui
@@ -264,6 +299,14 @@ export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
                   dangerouslySetInnerHTML={{ __html: s.demo }}
                 />
                 <div className="mt-3.5 flex flex-wrap gap-1.5">{s.caps}</div>
+                {/* afordância explícita de que o card é clicável (o card todo é
+                    o alvo — isto é só o sinal visual). */}
+                <span className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg border border-line bg-panel-2/70 px-3 py-1.5 text-[12px] font-semibold text-ink-soft transition group-hover:border-accent/50 group-hover:bg-accent/10 group-hover:text-accent">
+                  {s.n === 1 ? "Abrir catálogo" : "Abrir gerador"}
+                  <span className="transition-transform group-hover:translate-x-0.5">
+                    →
+                  </span>
+                </span>
               </Link>
               {i < STEPS.length - 1 && (
                 <div className="hidden items-center justify-center text-[#c8a86a] lg:flex">
@@ -274,15 +317,20 @@ export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
           ))}
         </div>
 
-        {/* CTA principal */}
-        <div className="mt-10 flex flex-wrap items-center gap-4">
-          <Link
-            href={ctaHref}
-            className="inline-flex items-center gap-2.5 rounded-xl bg-[#3a2b1c] px-6 py-3.5 text-[15px] font-semibold text-[#f6efe3] transition hover:opacity-90"
+        {/* CTA principal — centralizado (sob o 2º card), texto EMBAIXO. Sem
+            catálogo, "trava" e destaca o Passo 1; com catálogo, vai pro Gerador. */}
+        <div className="mt-10 flex flex-col items-center gap-2.5 text-center">
+          <button
+            type="button"
+            onClick={onCreate}
+            aria-disabled={!hasCatalog}
+            className={`inline-flex items-center gap-2.5 rounded-xl bg-[#3a2b1c] px-6 py-3.5 text-[15px] font-semibold text-[#f6efe3] transition hover:opacity-90 ${
+              shake ? "kx-shake" : ""
+            }`}
           >
-            ✨ {ctaLabel} <span className="text-[#c8a86a]">→</span>
-          </Link>
-          <span className="text-[13px] text-ink-mute">
+            Criar uma proposta <span className="text-[#c8a86a]">→</span>
+          </button>
+          <span className="max-w-xs text-[13px] leading-relaxed text-ink-mute">
             Leva ~1 minuto com a IA. Depois é só repetir a cada cliente.
           </span>
         </div>
