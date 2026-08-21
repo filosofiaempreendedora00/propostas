@@ -6,12 +6,11 @@ import { useRouter } from "next/navigation";
 
 // /início redesenhado: um passo-a-passo de 3 etapas, visual e clicável. Cada
 // card leva pro lugar certo da ferramenta (1 → Sua Empresa; 2 e 3 → Gerador).
-// O Passo 1 tem SEMPRE uma moldura tracejada accent (estética do dropzone do
-// transcript), pra ele nunca ser um card branco comum. Conta nova (isNew) ganha
-// o EXTRA de onboarding: o tracejado pulsa + anel radiante + selo "comece aqui",
+// Conta nova (isNew): o Passo 1 vira o chamariz — borda accent + ondas
+// tracejadas que pulsam saindo do card e somem em fade-out + selo "comece aqui",
 // e o CTA "Criar uma proposta" TRAVA (sacode) destacando o Passo 1. Conta
-// configurada: o CTA vai direto pro Gerador. As "demos" de cada passo são
-// miniaturas animadas em CSS (sem GIF), coerentes com o tema creme.
+// configurada: cards neutros e o CTA vai direto pro Gerador. As "demos" de cada
+// passo são miniaturas animadas em CSS (sem GIF), coerentes com o tema creme.
 
 // CSS das demos (keyframes + classes prefixadas kx- pra não colidir com nada).
 const KX_STYLE = `
@@ -54,9 +53,10 @@ const KX_STYLE = `
 @keyframes kxpulse{0%,100%{box-shadow:0 0 0 0 rgba(110,82,38,.28)}50%{box-shadow:0 0 0 8px rgba(110,82,38,.07)}}
 .kcap{display:inline-block;border-radius:999px;border:1px solid rgba(40,30,20,.12);background:#f7f1e7;padding:4px 11px;font-size:11px;font-weight:500;color:#5b5249}
 .kcap b{font-weight:700;color:#6e5226}
-/* "comece aqui": anel tracejado que pulsa saindo pra fora do card e some */
-.kx-radiate{position:absolute;inset:0;border-radius:18px;border:2px dashed #6e5226;pointer-events:none;animation:kxradiate 1.8s ease-out infinite}
-@keyframes kxradiate{0%{transform:scale(1);opacity:.5}70%{opacity:.12}100%{transform:scale(1.06);opacity:0}}
+/* "comece aqui": ondas tracejadas que pulsam saindo do card e somem em fade-out
+   (chamariz clássico de clique). Vários anéis escalonados = onda contínua. */
+.kx-wave{position:absolute;inset:0;border-radius:18px;border:2px dashed #6e5226;pointer-events:none;opacity:0;animation:kxwave 2.4s ease-out infinite}
+@keyframes kxwave{0%{transform:scale(1);opacity:.5}60%{opacity:.12}100%{transform:scale(1.13);opacity:0}}
 /* "trava": botão sacode na horizontal quando falta o catálogo */
 .kx-shake{animation:kxshake .5s ease-in-out}
 @keyframes kxshake{0%,100%{transform:translateX(0)}15%{transform:translateX(-9px)}30%{transform:translateX(8px)}45%{transform:translateX(-6px)}60%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
@@ -162,7 +162,7 @@ const STEPS: Step[] = [
       <>
         Todo <b>Google Meet</b> vira um Docs de transcrição — faça o{" "}
         <b>upload</b> dele e a IA lê a conversa. Vale <b>qualquer transcript</b>,
-        ou um template.
+        ou mesmo um resumo simples em texto.
       </>
     ),
     demo: DEMO_2,
@@ -274,12 +274,26 @@ export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
               <Link
                 href={s.href}
                 className={`group relative flex flex-col rounded-[18px] border bg-panel p-5 shadow-[0_18px_40px_-30px_rgba(40,30,20,0.35)] transition hover:-translate-y-0.5 hover:border-accent/45 ${
-                  s.n === 1
-                    ? `border-2 border-dashed border-accent/55 ${isNew ? "kx-pulse" : ""}`
+                  isNew && s.n === 1
+                    ? "border-2 border-accent"
                     : "border-line"
                 } ${emphasize && s.n === 1 ? "kx-pop" : ""}`}
               >
-                {isNew && s.n === 1 && <span className="kx-radiate" aria-hidden />}
+                {isNew && s.n === 1 && (
+                  <>
+                    <span className="kx-wave" aria-hidden />
+                    <span
+                      className="kx-wave"
+                      style={{ animationDelay: "0.8s" }}
+                      aria-hidden
+                    />
+                    <span
+                      className="kx-wave"
+                      style={{ animationDelay: "1.6s" }}
+                      aria-hidden
+                    />
+                  </>
+                )}
                 {isNew && s.n === 1 && (
                   <span className="absolute -top-2.5 left-5 rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-bg">
                     Comece aqui
