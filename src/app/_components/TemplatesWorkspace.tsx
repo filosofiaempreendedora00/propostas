@@ -281,7 +281,7 @@ export default function TemplatesWorkspace() {
 
       <ResizableSplit storageKey="propostas.templates.split" defaultRight={420}>
         {/* Variações do bloco (cards) */}
-        <section className="form-scroll h-full w-full overflow-y-auto">
+        <section className="form-scroll @container h-full w-full overflow-y-auto">
         <div className="px-6 py-7">
           <div className="mb-6 border-b border-line pb-4">
             <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-accent">

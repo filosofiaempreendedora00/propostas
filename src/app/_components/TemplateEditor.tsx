@@ -64,7 +64,7 @@ export default function TemplateEditor({
   const txt = (v: string | undefined) => v ?? "";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
         {template.block === "understanding" && (
           <>
             <Field label="Título do bloco">
@@ -73,7 +73,7 @@ export default function TemplateEditor({
                 onChange={(v) => setField({ understandingHeading: v })}
               />
             </Field>
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-5 @3xl:grid-cols-2">
               <Field label="Situação atual">
                 <TextArea
                   value={txt(p.currentSituation)}
@@ -115,7 +115,7 @@ export default function TemplateEditor({
               />
             </Field>
             <Field label="Rótulos das categorias">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 gap-2 @xl:grid-cols-3">
                 <TextInput
                   value={txt(p.costOperationalLabel)}
                   onChange={(v) => setField({ costOperationalLabel: v })}

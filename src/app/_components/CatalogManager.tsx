@@ -194,7 +194,7 @@ export default function CatalogManager() {
 
       <ResizableSplit storageKey="propostas.catalog.split" defaultRight={440}>
         {/* Editor */}
-        <section className="form-scroll h-full w-full overflow-y-auto">
+        <section className="form-scroll @container h-full w-full overflow-y-auto">
         {selected ? (
           <div className="mx-auto max-w-4xl px-10 py-9">
             <div className="mb-7 flex items-start justify-between gap-4 border-b border-line pb-5">
@@ -224,7 +224,7 @@ export default function CatalogManager() {
             />
 
             {tab === "detalhes" ? (
-            <div className="space-y-5">
+            <div className="space-y-6">
               <label className="block">
                 <Label>Nome da solução</Label>
                 <TextInput
@@ -248,18 +248,18 @@ export default function CatalogManager() {
                 <TextArea
                   value={selected.problemSolved}
                   onChange={(v) => update(selected.id, { problemSolved: v })}
-                  rows={2}
+                  rows={3}
                   placeholder="Qual dor concreta do cliente esta solução elimina."
                 />
               </label>
 
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-6 @3xl:grid-cols-2">
                 <label className="block">
                   <Label>Como funciona</Label>
                   <TextArea
                     value={selected.howItWorks}
                     onChange={(v) => update(selected.id, { howItWorks: v })}
-                    rows={3}
+                    rows={4}
                     placeholder="Como a solução funciona na prática."
                   />
                 </label>
@@ -270,7 +270,7 @@ export default function CatalogManager() {
                     onChange={(v) =>
                       update(selected.id, { expectedBenefit: v })
                     }
-                    rows={3}
+                    rows={4}
                     placeholder="O resultado tangível esperado."
                   />
                 </label>
@@ -295,7 +295,7 @@ export default function CatalogManager() {
                 />
               </label>
 
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-6 @3xl:grid-cols-2">
                 <div className="block">
                   <Label>Destaques</Label>
                   <ItemList
