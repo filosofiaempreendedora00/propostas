@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 
 // /início redesenhado: um passo-a-passo de 3 etapas, visual e clicável. Cada
 // card leva pro lugar certo da ferramenta (1 → Sua Empresa; 2 e 3 → Gerador).
-// Conta nova (isNew): o Passo 1 pulsa tracejado + anel radiante ("comece aqui")
-// e o CTA "Criar uma proposta" TRAVA (sacode) destacando o Passo 1 — pra começar
-// pelo catálogo. Conta configurada: o CTA vai direto pro Gerador. As "demos" de
-// cada passo são miniaturas animadas em CSS (sem GIF), coerentes com o tema creme.
+// O Passo 1 tem SEMPRE uma moldura tracejada accent (estética do dropzone do
+// transcript), pra ele nunca ser um card branco comum. Conta nova (isNew) ganha
+// o EXTRA de onboarding: o tracejado pulsa + anel radiante + selo "comece aqui",
+// e o CTA "Criar uma proposta" TRAVA (sacode) destacando o Passo 1. Conta
+// configurada: o CTA vai direto pro Gerador. As "demos" de cada passo são
+// miniaturas animadas em CSS (sem GIF), coerentes com o tema creme.
 
 // CSS das demos (keyframes + classes prefixadas kx- pra não colidir com nada).
 const KX_STYLE = `
@@ -272,8 +274,8 @@ export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
               <Link
                 href={s.href}
                 className={`group relative flex flex-col rounded-[18px] border bg-panel p-5 shadow-[0_18px_40px_-30px_rgba(40,30,20,0.35)] transition hover:-translate-y-0.5 hover:border-accent/45 ${
-                  isNew && s.n === 1
-                    ? "kx-pulse border-2 border-accent"
+                  s.n === 1
+                    ? `border-2 border-dashed border-accent/55 ${isNew ? "kx-pulse" : ""}`
                     : "border-line"
                 } ${emphasize && s.n === 1 ? "kx-pop" : ""}`}
               >
