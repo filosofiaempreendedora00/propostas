@@ -155,11 +155,12 @@ const STEPS: Step[] = [
     n: 2,
     href: "/cliente",
     kicker: "As dores do cliente",
-    title: "Traga a call",
+    title: "Traga o contexto da reunião",
     desc: (
       <>
-        Todo <b>Google Meet</b> vira um Docs de transcrição — arraste pro
-        gerador e a IA lê a call. Vale <b>qualquer transcript</b>, ou um template.
+        Todo <b>Google Meet</b> vira um Docs de transcrição — faça o{" "}
+        <b>upload</b> dele e a IA lê a conversa. Vale <b>qualquer transcript</b>,
+        ou um template.
       </>
     ),
     demo: DEMO_2,
@@ -272,7 +273,7 @@ export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
                 href={s.href}
                 className={`group relative flex flex-col rounded-[18px] border bg-panel p-5 shadow-[0_18px_40px_-30px_rgba(40,30,20,0.35)] transition hover:-translate-y-0.5 hover:border-accent/45 ${
                   isNew && s.n === 1
-                    ? "kx-pulse border-accent"
+                    ? "kx-pulse border-2 border-accent"
                     : "border-line"
                 } ${emphasize && s.n === 1 ? "kx-pop" : ""}`}
               >
@@ -300,9 +301,10 @@ export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
                 />
                 <div className="mt-3.5 flex flex-wrap gap-1.5">{s.caps}</div>
                 {/* afordância explícita de que o card é clicável (o card todo é
-                    o alvo — isto é só o sinal visual). */}
-                <span className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg border border-line bg-panel-2/70 px-3 py-1.5 text-[12px] font-semibold text-ink-soft transition group-hover:border-accent/50 group-hover:bg-accent/10 group-hover:text-accent">
-                  {s.n === 1 ? "Abrir catálogo" : "Abrir gerador"}
+                    o alvo — isto é só o sinal visual). Label universal pros 3 e
+                    cor accent destacada, mais forte que as tags acima. */}
+                <span className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg border border-accent/40 bg-accent/[0.12] px-3.5 py-1.5 text-[12px] font-semibold text-accent transition group-hover:border-accent group-hover:bg-accent/20">
+                  Abrir
                   <span className="transition-transform group-hover:translate-x-0.5">
                     →
                   </span>
@@ -330,7 +332,7 @@ export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
           >
             Criar uma proposta <span className="text-[#c8a86a]">→</span>
           </button>
-          <span className="max-w-xs text-[13px] leading-relaxed text-ink-mute">
+          <span className="max-w-xs text-balance text-[13px] leading-relaxed text-ink-mute">
             Leva ~1 minuto com a IA. Depois é só repetir a cada cliente.
           </span>
         </div>
