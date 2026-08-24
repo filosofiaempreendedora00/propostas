@@ -7,6 +7,7 @@ import { trackFunnel } from "@/lib/analytics/google";
 import {
   AuthShell,
   AuthFooter,
+  AuthLoadingOverlay,
   GoogleButton,
   OrDivider,
   Spinner,
@@ -53,14 +54,17 @@ export default function CadastroPage() {
       if (error) throw error;
       if (data.session) {
         // ?novo=1 sinaliza cadastro novo → dispara CompleteRegistration uma vez.
+        // MANTÉM o loading (overlay) até a tela trocar — não reseta, senão o
+        // feedback some no meio dos 3-6s de navegação e parece travado.
         router.push("/inicio?novo=1");
         router.refresh();
-      } else {
-        setInfo("Conta criada! Verifique seu e-mail para confirmar e depois entre.");
+        return;
       }
+      // Precisa confirmar e-mail (sem sessão): reseta e mostra o aviso.
+      setInfo("Conta criada! Verifique seu e-mail para confirmar e depois entre.");
+      setLoading(false);
     } catch (err) {
       setError(traduzErro(err instanceof Error ? err.message : ""));
-    } finally {
       setLoading(false);
     }
   };
@@ -69,6 +73,7 @@ export default function CadastroPage() {
     <AuthShell
       footer={<AuthFooter text="Já tem conta?" linkLabel="Entrar" href="/login" />}
     >
+      {loading && <AuthLoadingOverlay label="Criando sua conta…" />}
       <h1 className="font-display text-[2rem] font-semibold leading-[1.1] tracking-tight text-ink">
         Crie sua conta
       </h1>

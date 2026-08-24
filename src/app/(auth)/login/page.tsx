@@ -6,6 +6,7 @@ import { createSupabaseBrowser } from "@/lib/supabase/client";
 import {
   AuthShell,
   AuthFooter,
+  AuthLoadingOverlay,
   GoogleButton,
   OrDivider,
   Spinner,
@@ -33,11 +34,12 @@ export default function LoginPage() {
       const supabase = createSupabaseBrowser();
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      // Sucesso: navega pro app. MANTÉM o loading (overlay) até a tela trocar —
+      // não reseta aqui, senão o feedback some no meio dos 3-6s de navegação.
       router.push("/inicio");
       router.refresh();
     } catch (err) {
       setError(traduzErro(err instanceof Error ? err.message : ""));
-    } finally {
       setLoading(false);
     }
   };
@@ -65,6 +67,7 @@ export default function LoginPage() {
     <AuthShell
       footer={<AuthFooter text="Não tem conta?" linkLabel="Criar conta" href="/cadastro" />}
     >
+      {loading && <AuthLoadingOverlay label="Entrando…" />}
       <h1 className="font-display text-[2rem] font-semibold leading-[1.1] tracking-tight text-ink">
         Entrar
       </h1>
