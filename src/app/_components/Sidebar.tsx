@@ -156,7 +156,13 @@ const ITEMS = [
   { href: "/cliente", label: "Gerador", Icon: IconGerador, highlight: true },
 ];
 
-export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
+export default function Sidebar({
+  isAdmin = false,
+  needsCatalog = false,
+}: {
+  isAdmin?: boolean;
+  needsCatalog?: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
@@ -265,6 +271,10 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
             );
           }
 
+          // "Minha Empresa" ganha um ponto pulsante enquanto não há catálogo —
+          // aponta o caminho pro passo obrigatório sem gritar.
+          const needsAttention = needsCatalog && href === "/empresa";
+
           return (
             <Link
               key={href}
@@ -273,13 +283,21 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
               className={`flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-medium transition ${
                 active
                   ? "bg-panel text-ink"
-                  : "text-ink-mute hover:bg-panel/50 hover:text-ink-soft"
+                  : needsAttention
+                    ? "text-accent hover:bg-accent/10"
+                    : "text-ink-mute hover:bg-panel/50 hover:text-ink-soft"
               } ${isCollapsed ? "justify-center" : ""}`}
             >
-              <span className="grid h-7 w-7 shrink-0 place-items-center">
+              <span className="relative grid h-7 w-7 shrink-0 place-items-center">
                 <Icon className="h-5 w-5" />
+                {needsAttention && isCollapsed && (
+                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-accent ring-2 ring-bg" />
+                )}
               </span>
               {!isCollapsed && <span className="truncate">{label}</span>}
+              {needsAttention && !isCollapsed && (
+                <span className="ml-auto h-2 w-2 shrink-0 animate-pulse rounded-full bg-accent" />
+              )}
             </Link>
           );
         })}
