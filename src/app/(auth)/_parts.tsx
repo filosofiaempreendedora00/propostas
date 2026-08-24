@@ -17,6 +17,53 @@ export function Spinner() {
   );
 }
 
+// Overlay de carregamento pós-submit (login/cadastro): cobre a tela com um
+// spinner + mensagem enquanto a auth resolve E a navegação pro app acontece
+// (~3-6s). Fica no ar até a tela trocar (a página de auth desmonta). Sem ele, o
+// spinner do botão sumia no meio da espera e a tela parecia travada.
+export function AuthLoadingOverlay({ label }: { label: string }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 grid animate-[authfade_.2s_ease-out] place-items-center bg-[#f4eee3]/90 px-6 backdrop-blur-sm"
+      role="status"
+      aria-live="polite"
+    >
+      <style>{`@keyframes authfade{from{opacity:0}to{opacity:1}}`}</style>
+      <div className="flex flex-col items-center gap-4 text-center">
+        <svg
+          className="h-9 w-9 animate-spin text-[#6e5226]"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="9"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            className="opacity-25"
+          />
+          <path
+            d="M21 12a9 9 0 0 0-9-9"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+        </svg>
+        <div>
+          <p className="font-display text-lg font-semibold text-[#2a2018]">
+            {label}
+          </p>
+          <p className="mt-1 text-sm text-[#5b5249]">
+            Preparando seu gerador — só um instante.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Eye({ open }: { open: boolean }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
