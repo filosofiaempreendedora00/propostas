@@ -128,13 +128,13 @@ export default function ResizableSplit({
           type="button"
           onClick={toggleCollapsed}
           title={`Mostrar ${rightLabel.toLowerCase()}`}
-          className="group flex w-9 shrink-0 cursor-pointer flex-col items-center justify-center gap-2.5 border-l border-line bg-panel text-ink-mute transition hover:bg-panel-2 hover:text-accent"
+          className="kronos-btn-glow group relative z-10 flex w-9 shrink-0 cursor-pointer flex-col items-center justify-center gap-2.5 border-l border-accent bg-accent text-bg transition hover:opacity-90"
         >
           <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="2.2"
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden
@@ -142,7 +142,7 @@ export default function ResizableSplit({
           >
             <path d="M15 18l-6-6 6-6" />
           </svg>
-          <span className="text-[11px] font-semibold uppercase tracking-wider [writing-mode:vertical-rl] rotate-180">
+          <span className="text-[11px] font-bold uppercase tracking-wider [writing-mode:vertical-rl] rotate-180">
             {rightLabel}
           </span>
         </button>
