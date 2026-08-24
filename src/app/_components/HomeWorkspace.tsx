@@ -63,6 +63,9 @@ const KX_STYLE = `
 /* destaque momentâneo do card 1 ao "bater na trava" */
 .kx-pop{animation:kxpop .6s ease-out}
 @keyframes kxpop{0%{transform:scale(1)}35%{transform:scale(1.035)}100%{transform:scale(1)}}
+/* botão "Começar agora" do passo 1: pulso de anel pra puxar o clique */
+.kx-cta-pulse{animation:kxctapulse 1.9s ease-in-out infinite}
+@keyframes kxctapulse{0%,100%{box-shadow:0 0 0 0 rgba(110,82,38,.45)}70%{box-shadow:0 0 0 9px rgba(110,82,38,0)}}
 `;
 
 const DEMO_1 = `<div class="kx-scr">
@@ -316,15 +319,24 @@ export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
                   dangerouslySetInnerHTML={{ __html: s.demo }}
                 />
                 <div className="mt-3.5 flex flex-wrap gap-1.5">{s.caps}</div>
-                {/* afordância explícita de que o card é clicável (o card todo é
-                    o alvo — isto é só o sinal visual). Label universal pros 3 e
-                    cor accent destacada, mais forte que as tags acima. */}
-                <span className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg border border-accent/40 bg-accent/[0.12] px-3.5 py-1.5 text-[12px] font-semibold text-accent transition group-hover:border-accent group-hover:bg-accent/20">
-                  Abrir
-                  <span className="transition-transform group-hover:translate-x-0.5">
-                    →
+                {/* afordância clicável (o card todo é o alvo — isto é o sinal
+                    visual). No passo 1 SEM catálogo vira o CTA principal: maior,
+                    preenchido e pulsando, pra ser óbvio que é por onde começar. */}
+                {isNew && s.n === 1 ? (
+                  <span className="kx-cta-pulse mt-4 inline-flex w-fit items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-[14px] font-bold text-bg shadow-[0_12px_26px_-12px_rgba(110,82,38,0.9)] transition group-hover:opacity-95">
+                    Começar agora
+                    <span className="transition-transform group-hover:translate-x-0.5">
+                      →
+                    </span>
                   </span>
-                </span>
+                ) : (
+                  <span className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg border border-accent/40 bg-accent/[0.12] px-3.5 py-1.5 text-[12px] font-semibold text-accent transition group-hover:border-accent group-hover:bg-accent/20">
+                    Abrir
+                    <span className="transition-transform group-hover:translate-x-0.5">
+                      →
+                    </span>
+                  </span>
+                )}
               </Link>
               {i < STEPS.length - 1 && (
                 <div className="hidden items-center justify-center text-[#c8a86a] lg:flex">
