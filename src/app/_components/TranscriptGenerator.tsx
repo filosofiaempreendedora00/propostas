@@ -4,9 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import type { ProposalData } from "@/lib/proposal/types";
 import { trackFunnel } from "@/lib/analytics/google";
 
+// Tamanho legível do arquivo anexado (ex.: "312 KB", "1,4 MB").
+function fmtSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
+}
+
 // Sobe o transcript da call (PDF/DOCX/TXT) → a IA lê e personaliza os blocos da
-// proposta com as dores/desejos REAIS daquele cliente. Aplica no form do builder
-// via onApply. Loading e erro tratados; nunca "engole" a falha em silêncio.
+// proposta com as dores/desejos REAIS daquele cliente. O arquivo é ANEXADO e só
+// gera ao clicar no botão (não dispara ao soltar). Aplica no form via onApply.
 export default function TranscriptGenerator({
   onApply,
 }: {
@@ -18,6 +25,7 @@ export default function TranscriptGenerator({
   const [done, setDone] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null); // anexado, aguardando OK
   const [progress, setProgress] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -67,6 +75,7 @@ export default function TranscriptGenerator({
       await new Promise((r) => setTimeout(r, 300));
       onApply(String(data.clientName || ""), data.blocks || {});
       trackFunnel("transcript_generated", {});
+      setPendingFile(null); // sucesso: limpa o anexo (volta pra dropzone)
       setDone(
         data.clientName
           ? `Proposta personalizada para ${data.clientName} — revise no preview ao lado.`
@@ -92,8 +101,8 @@ export default function TranscriptGenerator({
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) void send(f);
-          e.target.value = ""; // permite reenviar o mesmo arquivo
+          if (f) setPendingFile(f); // anexa; só gera no botão
+          e.target.value = ""; // permite reescolher o mesmo arquivo
         }}
       />
 
@@ -118,6 +127,68 @@ export default function TranscriptGenerator({
             instantes.
           </p>
         </div>
+      ) : pendingFile ? (
+        /* ANEXADO — confira, remova ou gere. Nada roda sem o botão. */
+        <div>
+          <div className="flex items-center gap-3 rounded-2xl border-2 border-accent/40 bg-accent/[0.06] px-3.5 py-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent/15 text-accent">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+                className="h-5 w-5"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <path d="M14 2v6h6" />
+              </svg>
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold text-ink">
+                {pendingFile.name}
+              </div>
+              <div className="text-[11px] text-ink-mute">
+                {fmtSize(pendingFile.size)} · anexado
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPendingFile(null)}
+              title="Remover arquivo"
+              className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-lg text-ink-mute transition hover:bg-panel-2 hover:text-red-400"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+                className="h-4 w-4"
+              >
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => pendingFile && void send(pendingFile)}
+            className="kronos-btn-glow mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-bold text-bg transition hover:opacity-90"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="h-4 w-4">
+              <path d="M12 2c0 5-5 10-10 10 5 0 10 5 10 10 0-5 5-10 10-10-5 0-10-5-10-10z" />
+            </svg>
+            Gerar proposta com a IA
+            <span aria-hidden>→</span>
+          </button>
+          <p className="mt-2 text-center text-[11px] text-ink-mute">
+            Nada é gerado até você clicar aqui.
+          </p>
+        </div>
       ) : (
         <button
           type="button"
@@ -131,12 +202,12 @@ export default function TranscriptGenerator({
             e.preventDefault();
             setDragOver(false);
             const f = e.dataTransfer.files?.[0];
-            if (f) void send(f);
+            if (f) setPendingFile(f); // anexa; só gera no botão
           }}
-          className={`flex w-full cursor-pointer flex-col items-center gap-2.5 rounded-2xl border-2 border-dashed px-4 py-9 text-center transition ${
+          className={`kronos-btn-glow flex w-full cursor-pointer flex-col items-center gap-2.5 rounded-2xl border-2 border-dashed px-4 py-9 text-center transition ${
             dragOver
               ? "border-accent bg-accent/[0.12]"
-              : "border-accent/40 bg-accent/[0.05] hover:border-accent hover:bg-accent/[0.1]"
+              : "border-accent/45 bg-accent/[0.05] hover:border-accent hover:bg-accent/[0.1]"
           }`}
         >
           <span className="grid h-11 w-11 place-items-center rounded-full bg-accent/12 text-accent">

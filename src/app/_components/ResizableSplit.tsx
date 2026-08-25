@@ -167,20 +167,22 @@ export default function ResizableSplit({
               onPointerDown={(e) => e.stopPropagation()}
               onDoubleClick={(e) => e.stopPropagation()}
               title={`Ocultar ${rightLabel.toLowerCase()}`}
-              className="absolute right-full top-3 z-30 mr-1 grid h-6 w-6 cursor-pointer place-items-center rounded-full border border-line bg-panel text-ink-mute shadow-sm transition hover:border-accent hover:text-accent"
+              className="absolute right-full top-3 z-30 mr-1.5 flex h-7 cursor-pointer items-center gap-1 rounded-full bg-accent pl-2.5 pr-3 text-[11px] font-bold uppercase tracking-wide text-bg shadow-md ring-2 ring-bg transition hover:opacity-90"
             >
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="2.4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 aria-hidden
                 className="h-3.5 w-3.5"
               >
-                <path d="M9 18l6-6-6-6" />
+                <path d="M13 18l6-6-6-6" />
+                <path d="M6 18l6-6-6-6" />
               </svg>
+              Ocultar
             </button>
             {/* área de clique mais larga (invisível) */}
             <span className="absolute inset-y-0 -left-2 -right-2" />
