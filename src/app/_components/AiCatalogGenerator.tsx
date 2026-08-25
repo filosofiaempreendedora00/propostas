@@ -15,6 +15,13 @@ const EXAMPLE =
 
 type Left = { used: number; limit: number; remaining: number };
 
+// Tamanho legível do arquivo anexado (ex.: "312 KB", "1,4 MB").
+function fmtSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
+}
+
 // Botão + modal: o usuário sobe um arquivo do negócio (ou descreve) e a IA gera o
 // catálogo completo (soluções + planos + consultor), substituindo o catálogo
 // atual. Limite de gerações por conta; barra de progresso durante a geração.
@@ -27,6 +34,7 @@ export default function AiCatalogGenerator({
   const [mounted, setMounted] = useState(false); // portal só depois de montar (SSR-safe)
   const [brief, setBrief] = useState("");
   const [showDescribe, setShowDescribe] = useState(false); // "ou descreva" recolhido
+  const [pendingFile, setPendingFile] = useState<File | null>(null); // anexado, aguardando OK
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false); // sucesso → CTA pro Gerador
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +76,7 @@ export default function AiCatalogGenerator({
     setError(null);
     setDone(false);
     setShowDescribe(false);
+    setPendingFile(null);
   };
 
   const generate = async () => {
@@ -296,9 +305,9 @@ export default function AiCatalogGenerator({
                       seu negócio e a IA lê e monta o catálogo inteiro pra você.
                     </p>
 
-                    {/* Caminho PRINCIPAL e em destaque: subir um arquivo do
-                        negócio → a IA extrai e cria os serviços. Borda tracejada
-                        VIVA (marching ants) — o herói do modal, sem vazio. */}
+                    {/* Arquivo do negócio: soltar/escolher só ANEXA — nada é
+                        gerado até o OK. Input escondido, disparado pela dropzone
+                        e pelo "troque o arquivo". */}
                     <input
                       ref={fileRef}
                       type="file"
@@ -306,114 +315,182 @@ export default function AiCatalogGenerator({
                       className="hidden"
                       onChange={(e) => {
                         const f = e.target.files?.[0];
-                        if (f) void sendFile(f);
+                        if (f) setPendingFile(f); // anexa; só gera no OK
                         e.target.value = "";
                       }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => fileRef.current?.click()}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        setDragOver(true);
-                      }}
-                      onDragLeave={() => setDragOver(false)}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        setDragOver(false);
-                        const f = e.dataTransfer.files?.[0];
-                        if (f) void sendFile(f);
-                      }}
-                      className={`relative mt-4 flex w-full cursor-pointer flex-col items-center gap-2.5 rounded-2xl px-4 py-8 text-center transition ${
-                        dragOver
-                          ? "bg-accent/[0.14] text-accent shadow-[0_0_0_4px_rgba(169,126,51,0.18)]"
-                          : "bg-accent/[0.06] text-accent/60 hover:bg-accent/[0.1] hover:text-accent"
-                      }`}
-                    >
-                      {/* borda tracejada animada (fica atrás do conteúdo) */}
-                      <svg
-                        className="pointer-events-none absolute inset-0 h-full w-full"
-                        aria-hidden
-                      >
-                        <rect
-                          x="1.5"
-                          y="1.5"
-                          width="calc(100% - 3px)"
-                          height="calc(100% - 3px)"
-                          rx="15"
-                          ry="15"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeDasharray="10 8"
-                          style={{ animation: "catAnts 1.15s linear infinite" }}
-                        />
-                      </svg>
 
-                      <span className="relative z-[1] grid h-12 w-12 place-items-center rounded-full bg-accent/15 text-accent">
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.9"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-6 w-6"
-                          aria-hidden
-                        >
-                          <path d="M12 16V4M7 9l5-5 5 5" />
-                          <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
-                        </svg>
-                      </span>
-                      <span className="relative z-[1] text-sm font-semibold text-ink">
-                        Suba um arquivo do seu negócio
-                      </span>
-                      <span className="relative z-[1] text-[11px] text-ink-mute">
-                        Arraste aqui ou clique · PDF, DOCX ou TXT — a IA extrai e
-                        cria seus serviços
-                      </span>
-                    </button>
-
-                    {/* "ou descreva": recolhido por padrão, abre no clique. */}
-                    {!showDescribe ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowDescribe(true)}
-                        className="mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 text-[12px] font-medium text-ink-mute transition hover:text-accent"
-                      >
-                        <span className="h-px w-6 bg-line" />
-                        ou prefiro descrever em texto
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden
-                          className="h-3.5 w-3.5"
-                        >
-                          <path d="M6 9l6 6 6-6" />
-                        </svg>
-                      </button>
-                    ) : (
+                    {pendingFile ? (
+                      /* ANEXADO (ainda não gerou): confira, remova ou confirme. */
                       <div className="mt-4">
-                        <textarea
-                          value={brief}
-                          onChange={(e) => setBrief(e.target.value)}
-                          rows={5}
-                          maxLength={2000}
-                          autoFocus
-                          placeholder={EXAMPLE}
-                          className="w-full resize-none rounded-xl border border-line bg-panel-2 px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-mute/70 focus:border-accent/70"
-                        />
-                        <div className="mt-1 flex items-center justify-between text-[11px] text-ink-mute">
-                          <span>
-                            {tooShort ? "Conte um pouco mais…" : "Pronto para gerar."}
+                        <div className="flex items-center gap-3 rounded-2xl border-2 border-accent/40 bg-accent/[0.06] px-3.5 py-3">
+                          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent/15 text-accent">
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.9"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden
+                              className="h-5 w-5"
+                            >
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                              <path d="M14 2v6h6" />
+                            </svg>
                           </span>
-                          <span>{brief.length}/2000</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-semibold text-ink">
+                              {pendingFile.name}
+                            </div>
+                            <div className="text-[11px] text-ink-mute">
+                              {fmtSize(pendingFile.size)} · anexado
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setPendingFile(null)}
+                            title="Remover arquivo"
+                            className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-lg text-ink-mute transition hover:bg-panel-2 hover:text-red-500"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden
+                              className="h-4 w-4"
+                            >
+                              <path d="M18 6 6 18M6 6l12 12" />
+                            </svg>
+                          </button>
                         </div>
+                        <p className="mt-2.5 text-[12.5px] leading-relaxed text-ink-soft">
+                          Arquivo anexado. Clique em{" "}
+                          <strong className="text-ink">Gerar catálogo</strong> pra a
+                          IA ler o documento e montar suas soluções, planos e
+                          argumentos — ou{" "}
+                          <button
+                            type="button"
+                            onClick={() => fileRef.current?.click()}
+                            className="cursor-pointer font-semibold text-accent underline-offset-2 hover:underline"
+                          >
+                            troque o arquivo
+                          </button>
+                          . Nada é gerado até você confirmar.
+                        </p>
                       </div>
+                    ) : (
+                      <>
+                        {/* Caminho principal: soltar/escolher ANEXA o arquivo (não
+                            gera). Borda tracejada viva (marching ants). */}
+                        <button
+                          type="button"
+                          onClick={() => fileRef.current?.click()}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setDragOver(true);
+                          }}
+                          onDragLeave={() => setDragOver(false)}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            setDragOver(false);
+                            const f = e.dataTransfer.files?.[0];
+                            if (f) setPendingFile(f); // anexa; só gera no OK
+                          }}
+                          className={`relative mt-4 flex w-full cursor-pointer flex-col items-center gap-2.5 rounded-2xl px-4 py-8 text-center transition ${
+                            dragOver
+                              ? "bg-accent/[0.14] text-accent shadow-[0_0_0_4px_rgba(169,126,51,0.18)]"
+                              : "bg-accent/[0.06] text-accent/60 hover:bg-accent/[0.1] hover:text-accent"
+                          }`}
+                        >
+                          <svg
+                            className="pointer-events-none absolute inset-0 h-full w-full"
+                            aria-hidden
+                          >
+                            <rect
+                              x="1.5"
+                              y="1.5"
+                              width="calc(100% - 3px)"
+                              height="calc(100% - 3px)"
+                              rx="15"
+                              ry="15"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeDasharray="10 8"
+                              style={{ animation: "catAnts 1.15s linear infinite" }}
+                            />
+                          </svg>
+
+                          <span className="relative z-[1] grid h-12 w-12 place-items-center rounded-full bg-accent/15 text-accent">
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.9"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-6 w-6"
+                              aria-hidden
+                            >
+                              <path d="M12 16V4M7 9l5-5 5 5" />
+                              <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                            </svg>
+                          </span>
+                          <span className="relative z-[1] text-sm font-semibold text-ink">
+                            Arraste o arquivo do seu negócio aqui
+                          </span>
+                          <span className="relative z-[1] text-[11px] text-ink-mute">
+                            ou clique pra escolher · PDF, DOCX ou TXT
+                          </span>
+                        </button>
+
+                        {/* "ou descreva": um pouco mais evidente (accent), pra quem
+                            não tem arquivo não desistir. Abre no clique. */}
+                        {!showDescribe ? (
+                          <button
+                            type="button"
+                            onClick={() => setShowDescribe(true)}
+                            className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 text-[12.5px] font-semibold text-accent transition hover:opacity-80"
+                          >
+                            <span className="h-px w-6 bg-accent/30" />
+                            ou prefiro descrever em texto
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden
+                              className="h-3.5 w-3.5"
+                            >
+                              <path d="M6 9l6 6 6-6" />
+                            </svg>
+                          </button>
+                        ) : (
+                          <div className="mt-4">
+                            <textarea
+                              value={brief}
+                              onChange={(e) => setBrief(e.target.value)}
+                              rows={5}
+                              maxLength={2000}
+                              autoFocus
+                              placeholder={EXAMPLE}
+                              className="w-full resize-none rounded-xl border border-line bg-panel-2 px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-mute/70 focus:border-accent/70"
+                            />
+                            <div className="mt-1 flex items-center justify-between text-[11px] text-ink-mute">
+                              <span>
+                                {tooShort ? "Conte um pouco mais…" : "Pronto para gerar."}
+                              </span>
+                              <span>{brief.length}/2000</span>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {/* Aviso de substituição — fica por padrão, mas discreto. */}
@@ -453,13 +530,15 @@ export default function AiCatalogGenerator({
                   >
                     {noneLeft ? "Fechar" : "Cancelar"}
                   </button>
-                  {/* "Gerar catálogo" só faz sentido no caminho de texto — o
-                      upload dispara sozinho ao escolher o arquivo. */}
-                  {!noneLeft && showDescribe && (
+                  {/* OK: gera do ARQUIVO anexado ou do TEXTO. Nada roda sem este
+                      clique — arquivo/texto só ficam "prontos" até aqui. */}
+                  {!noneLeft && (pendingFile || showDescribe) && (
                     <button
                       type="button"
-                      onClick={generate}
-                      disabled={tooShort}
+                      onClick={() =>
+                        pendingFile ? void sendFile(pendingFile) : generate()
+                      }
+                      disabled={!pendingFile && tooShort}
                       className="cursor-pointer rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-bg transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Gerar catálogo
