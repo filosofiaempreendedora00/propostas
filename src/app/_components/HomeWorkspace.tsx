@@ -3,6 +3,7 @@
 import { type ReactNode, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import AiCatalogGenerator from "./AiCatalogGenerator";
 
 // /início redesenhado: um passo-a-passo de 3 etapas, visual e clicável. Cada
 // card leva pro lugar certo da ferramenta (1 → Sua Empresa; 2 e 3 → Gerador).
@@ -229,6 +230,11 @@ export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
   const hasCatalog = !isNew;
   const [shake, setShake] = useState(false); // botão "trava" quando falta catálogo
   const [emphasize, setEmphasize] = useState(false); // destaca o card 1 na trava
+  const [catalogOpen, setCatalogOpen] = useState(false); // popup de catálogo (card 1)
+
+  // Destaque progride pelo passo ATUAL: sem catálogo → passo 1; com catálogo →
+  // passo 2. Deixa óbvio o próximo passo até a proposta ficar pronta.
+  const highlightStep = hasCatalog ? 2 : 1;
 
   // "Criar uma proposta": com catálogo → vai pro Gerador. Sem catálogo → trava
   // (sacode) e joga o destaque pro Passo 1, ensinando a começar pelo catálogo.
@@ -270,36 +276,39 @@ export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
           e você só lapida e envia.
         </p>
 
-        {/* passos — clicáveis; o 1 pulsa tracejado pra conta nova */}
+        {/* passos — o destaque (ondas + CTA pulsante) fica no passo ATUAL: sem
+            catálogo no 1; com catálogo migra pro 2. O passo 1 abre a popup de
+            catálogo AQUI (sem sair da intro); os demais levam pro Gerador. */}
         <div className="mt-10 grid items-stretch gap-0 lg:grid-cols-[1fr_34px_1fr_34px_1fr]">
-          {STEPS.map((s, i) => (
-            <div key={s.n} className="contents">
-              <Link
-                href={s.href}
-                className={`group relative flex flex-col rounded-[18px] border bg-panel p-5 shadow-[0_18px_40px_-30px_rgba(40,30,20,0.35)] transition hover:-translate-y-0.5 hover:border-accent/45 ${
-                  isNew && s.n === 1
-                    ? "border-2 border-accent"
-                    : "border-line"
-                } ${emphasize && s.n === 1 ? "kx-pop" : ""}`}
-              >
-                {isNew && s.n === 1 && (
+          {STEPS.map((s, i) => {
+            const isCard1 = s.n === 1;
+            const isHi = s.n === highlightStep; // passo atual (destacado)
+            const isDone = s.n < highlightStep; // passo já concluído
+
+            const cardCls = `group relative flex w-full flex-col rounded-[18px] border bg-panel p-5 text-left shadow-[0_18px_40px_-30px_rgba(40,30,20,0.35)] transition hover:-translate-y-0.5 hover:border-accent/45 ${
+              isHi ? "border-2 border-accent" : "border-line"
+            } ${emphasize && isCard1 ? "kx-pop" : ""}`;
+
+            const inner = (
+              <>
+                {isHi && (
                   <>
                     <span className="kx-wave" aria-hidden />
-                    <span
-                      className="kx-wave"
-                      style={{ animationDelay: "0.8s" }}
-                      aria-hidden
-                    />
-                    <span
-                      className="kx-wave"
-                      style={{ animationDelay: "1.6s" }}
-                      aria-hidden
-                    />
+                    <span className="kx-wave" style={{ animationDelay: "0.8s" }} aria-hidden />
+                    <span className="kx-wave" style={{ animationDelay: "1.6s" }} aria-hidden />
                   </>
                 )}
-                {isNew && s.n === 1 && (
+                {isHi && (
                   <span className="absolute -top-2.5 left-5 rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-bg">
-                    Comece aqui
+                    {isCard1 ? "Comece aqui" : "Próximo passo"}
+                  </span>
+                )}
+                {isDone && (
+                  <span className="absolute -top-2.5 left-5 inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="h-2.5 w-2.5">
+                      <path d="M5 13l4 4L19 7" />
+                    </svg>
+                    Feito
                   </span>
                 )}
                 <div className="font-display text-[52px] font-semibold leading-[0.8] text-[#a97e33]">
@@ -314,37 +323,46 @@ export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
                 <p className="mb-4 mt-3 text-[13.5px] leading-[1.5] text-ink-soft [&_b]:font-semibold [&_b]:text-ink">
                   {s.desc}
                 </p>
-                <div
-                  className="kx-demo"
-                  dangerouslySetInnerHTML={{ __html: s.demo }}
-                />
+                <div className="kx-demo" dangerouslySetInnerHTML={{ __html: s.demo }} />
                 <div className="mt-3.5 flex flex-wrap gap-1.5">{s.caps}</div>
-                {/* afordância clicável (o card todo é o alvo — isto é o sinal
-                    visual). No passo 1 SEM catálogo vira o CTA principal: maior,
-                    preenchido e pulsando, pra ser óbvio que é por onde começar. */}
-                {isNew && s.n === 1 ? (
+                {isHi ? (
                   <span className="kx-cta-pulse mt-4 inline-flex w-fit items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-[14px] font-bold text-bg shadow-[0_12px_26px_-12px_rgba(110,82,38,0.9)] transition group-hover:opacity-95">
-                    Começar agora
-                    <span className="transition-transform group-hover:translate-x-0.5">
-                      →
-                    </span>
+                    {isCard1 ? "Começar agora" : "Continuar"}
+                    <span className="transition-transform group-hover:translate-x-0.5">→</span>
                   </span>
                 ) : (
                   <span className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg border border-accent/40 bg-accent/[0.12] px-3.5 py-1.5 text-[12px] font-semibold text-accent transition group-hover:border-accent group-hover:bg-accent/20">
-                    Abrir
-                    <span className="transition-transform group-hover:translate-x-0.5">
-                      →
-                    </span>
+                    {isDone && isCard1 ? "Refazer" : "Abrir"}
+                    <span className="transition-transform group-hover:translate-x-0.5">→</span>
                   </span>
                 )}
-              </Link>
-              {i < STEPS.length - 1 && (
-                <div className="hidden items-center justify-center text-[#c8a86a] lg:flex">
-                  <ArrowRight />
-                </div>
-              )}
-            </div>
-          ))}
+              </>
+            );
+
+            return (
+              <div key={s.n} className="contents">
+                {isCard1 ? (
+                  // Card 1 abre a popup de catálogo AQUI (não navega).
+                  <button
+                    type="button"
+                    onClick={() => setCatalogOpen(true)}
+                    className={cardCls}
+                  >
+                    {inner}
+                  </button>
+                ) : (
+                  <Link href={s.href} className={cardCls}>
+                    {inner}
+                  </Link>
+                )}
+                {i < STEPS.length - 1 && (
+                  <div className="hidden items-center justify-center text-[#c8a86a] lg:flex">
+                    <ArrowRight />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* CTA principal — centralizado (sob o 2º card), texto EMBAIXO. Sem
@@ -364,6 +382,15 @@ export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
             Leva ~1 minuto com a IA. Depois é só repetir a cada cliente.
           </span>
         </div>
+
+        {/* Popup de catálogo controlada pelo card 1 — abre AQUI (sem sair da
+            intro). Ao gerar, refresh: o destaque migra do passo 1 pro 2. */}
+        <AiCatalogGenerator
+          hideTrigger
+          open={catalogOpen}
+          onOpenChange={setCatalogOpen}
+          onGenerated={() => router.refresh()}
+        />
       </div>
     </div>
   );
