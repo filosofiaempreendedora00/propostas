@@ -103,6 +103,12 @@ const isDefaultSolution = (s: { name: string; tagline: string }) =>
   /^Solução [0-9]+$/.test(s.name) && DEFAULT_SOL_TAGS.includes(s.tagline.trim());
 const isRealPhone = (p: string) => (p.replace(/\D/g, "").replace(/0/g, "").length) > 0;
 const waLink = (p: string) => `https://wa.me/55${p.replace(/\D/g, "")}`;
+const fmtWa = (p: string) => {
+  const d = p.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return p;
+};
 
 function Signal({ on, children }: { on: boolean; children: React.ReactNode }) {
   if (!on) return null;
@@ -434,6 +440,28 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
                 >
                   {o.ownerEmail ?? "—"}
                 </div>
+                {o.ownerWhatsapp && (
+                  <div
+                    className="mt-0.5 flex items-center gap-1.5 text-xs"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <a
+                      href={waLink(o.ownerWhatsapp)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-emerald-400 hover:underline"
+                      title="Abrir WhatsApp do dono da conta"
+                    >
+                      💬 {fmtWa(o.ownerWhatsapp)} ↗
+                    </a>
+                    <span
+                      className="shrink-0 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-px text-[9px] font-semibold text-emerald-300"
+                      title="Preencheu o WhatsApp no cadastro → opt-in (pode contatar)"
+                    >
+                      ✓ opt-in
+                    </span>
+                  </div>
+                )}
                 {o.consultantWhatsapp && (
                   <div
                     className="mt-0.5 flex items-center gap-1.5 text-xs"

@@ -1,9 +1,10 @@
 import Sidebar from "@/app/_components/Sidebar";
 import TrialBar from "@/app/_components/TrialBar";
 import OnboardingBar from "@/app/_components/OnboardingBar";
+import WhatsappGate from "@/app/_components/WhatsappGate";
 import RegistrationPixel from "@/app/_components/RegistrationPixel";
 import { isCurrentUserAdmin } from "@/lib/admin/data";
-import { getAccessState } from "@/lib/auth/org";
+import { getAccessState, needsWhatsapp } from "@/lib/auth/org";
 import {
   hasRealCatalog,
   hasTranscriptGeneration,
@@ -17,13 +18,15 @@ export default async function AppLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [isAdmin, access, hasCatalog, hasProposal] = await Promise.all([
-    isCurrentUserAdmin(),
-    getAccessState(),
-    // Na dúvida (erro/sem org), trata como "tem" pra NÃO incomodar à toa.
-    hasRealCatalog().catch(() => true),
-    hasTranscriptGeneration().catch(() => false),
-  ]);
+  const [isAdmin, access, hasCatalog, hasProposal, missingWa] =
+    await Promise.all([
+      isCurrentUserAdmin(),
+      getAccessState(),
+      // Na dúvida (erro/sem org), trata como "tem" pra NÃO incomodar à toa.
+      hasRealCatalog().catch(() => true),
+      hasTranscriptGeneration().catch(() => false),
+      needsWhatsapp(),
+    ]);
 
   // Modelo MARCA D'ÁGUA: não há mais hard-paywall. Free usa o app à vontade e
   // baixa com marca d'água; a conversão vem do CTA de desbloqueio, não de travar.
@@ -50,6 +53,9 @@ export default async function AppLayout({
         <Sidebar isAdmin={isAdmin} needsCatalog={needsCatalog} />
         <main className="min-h-0 min-w-0 flex-1">{children}</main>
       </div>
+      {/* Sem WhatsApp (ex.: cadastro via Google) → passo obrigatório pra captar
+          o número. Admin nunca é bloqueado. */}
+      {!isAdmin && missingWa && <WhatsappGate />}
     </div>
   );
 }

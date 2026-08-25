@@ -56,6 +56,7 @@ export type AdminOrg = {
   members: number;
   pending: number;
   ownerEmail: string | null;
+  ownerWhatsapp: string | null; // WhatsApp do DONO, capturado no cadastro (= opt-in)
   consultantWhatsapp: string | null; // telefone real do 1º consultor (p/ wa.me)
   consultantOptin: boolean; // esse consultor autorizou aviso por WhatsApp
   acquisitionSource: string | null; // origem derivada: google | meta | direct
@@ -180,6 +181,8 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       o.acquisition_fbclid                  as acquisition_fbclid,
       o.acquisition_first_url               as acquisition_first_url,
       (select u.email from auth.users u where u.id = o.owner_id) as owner_email,
+      (select nullif(u.raw_user_meta_data->>'whatsapp','')
+        from auth.users u where u.id = o.owner_id) as owner_whatsapp,
       (select c.phone from consultants c where c.org_id = o.id
         and c.phone ~ '[1-9]' and c.phone not like '%00000%'
         order by c.sort_order, c.created_at limit 1) as consultant_wa,
@@ -227,6 +230,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     acquisition_fbclid: string | null;
     acquisition_first_url: string | null;
     owner_email: string | null;
+    owner_whatsapp: string | null;
     consultant_wa: string | null;
     consultant_wa_optin: boolean;
     members: number;
@@ -284,6 +288,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       members: o.members,
       pending: o.pending,
       ownerEmail: o.owner_email,
+      ownerWhatsapp: o.owner_whatsapp,
       consultantWhatsapp: o.consultant_wa,
       consultantOptin: !!o.consultant_wa_optin,
       acquisitionSource: o.acquisition_source,

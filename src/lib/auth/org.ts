@@ -95,6 +95,20 @@ export async function requireUser() {
   return user;
 }
 
+// Precisa capturar o WhatsApp? (ex.: quem entrou pelo Google pulou o formulário
+// de cadastro, então não temos o número). Usado pra abrir o gate de WhatsApp.
+export async function needsWhatsapp(): Promise<boolean> {
+  try {
+    const user = await requireUser();
+    const wa = (user.user_metadata as Record<string, unknown> | undefined)
+      ?.whatsapp;
+    const ok = typeof wa === "string" && wa.replace(/\D/g, "").length >= 10;
+    return !ok; // sem número válido → precisa pedir
+  } catch {
+    return false; // erro → não bloqueia (não incomoda à toa)
+  }
+}
+
 // Org do usuário logado. Cria a organização pessoal na primeira vez
 // (serializado por usuário via advisory lock, evitando corrida em cargas paralelas).
 export async function requireOrgId(): Promise<string> {
