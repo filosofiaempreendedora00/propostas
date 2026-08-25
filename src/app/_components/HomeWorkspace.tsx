@@ -396,6 +396,7 @@ export default function HomeWorkspace({
           open={catalogOpen}
           onOpenChange={setCatalogOpen}
           onGenerated={() => router.refresh()}
+          reviewHref="/empresa?tab=solucoes&bemvindo=1"
         />
       </div>
     </div>

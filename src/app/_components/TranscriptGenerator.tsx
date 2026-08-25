@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ProposalData } from "@/lib/proposal/types";
 import { trackFunnel } from "@/lib/analytics/google";
+import CyclingText from "./CyclingText";
 
 // Tamanho legível do arquivo anexado (ex.: "312 KB", "1,4 MB").
 function fmtSize(bytes: number): string {
@@ -10,6 +11,20 @@ function fmtSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
 }
+
+// Mensagens que trocam enquanto a IA lê a call e escreve a proposta — o "como"
+// da persuasão, pra a espera virar expectativa em vez de tédio.
+const PROPOSAL_STEPS = [
+  "Ouvindo a conversa com atenção…",
+  "Tocando nas dores certas…",
+  "Aguçando o desejo…",
+  "Incrementando a persuasão…",
+  "Falando o que o cliente quer ouvir…",
+  "Montando uma oferta irresistível…",
+  "Ancorando o valor…",
+  "Conectando com o momento dele…",
+  "Fechando com um convite irrecusável…",
+] as const;
 
 // Sobe o transcript da call (PDF/DOCX/TXT) → a IA lê e personaliza os blocos da
 // proposta com as dores/desejos REAIS daquele cliente. O arquivo é ANEXADO e só
@@ -109,8 +124,8 @@ export default function TranscriptGenerator({
       {loading ? (
         <div className="rounded-xl border border-accent/40 bg-accent/[0.06] px-4 py-4 text-center">
           <div className="mx-auto mb-2 h-5 w-5 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
-          <p className="text-[13px] font-medium text-ink">
-            Lendo sua call e personalizando a proposta…
+          <p className="text-[13.5px] font-semibold text-ink">
+            <CyclingText messages={PROPOSAL_STEPS} />
           </p>
           <p className="mt-0.5 truncate text-[11px] text-ink-mute">{fileName}</p>
           {/* Barra fiel ao tempo — previsibilidade do quanto falta. */}
@@ -123,7 +138,7 @@ export default function TranscriptGenerator({
             </div>
           </div>
           <p className="mt-2 text-[11px] text-ink-mute">
-            Lendo a conversa e escrevendo os blocos no tom dela — leva alguns
+            Personalizando a proposta com o que apareceu na call — leva alguns
             instantes.
           </p>
         </div>

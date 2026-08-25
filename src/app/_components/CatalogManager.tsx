@@ -107,6 +107,20 @@ export default function CatalogManager() {
     setSelectedId(id);
   };
 
+  // Chegou aqui vindo do "Conferir meu catálogo" (do /inicio) → um toque de
+  // onboarding: confira o catálogo e só então vá gerar a proposta. Lê da URL
+  // sem useSearchParams (evita o de-opt de client rendering).
+  const [welcome, setWelcome] = useState(false);
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get("bemvindo") === "1") {
+        setWelcome(true);
+      }
+    } catch {
+      /* ignora */
+    }
+  }, []);
+
   // Preview ao vivo da seção correspondente à aba aberta:
   // Detalhes → bloco "Soluções"; Planos → bloco "Investimento".
   const previewBlock: PreviewBlock = tab === "planos" ? "investment" : "solutions";
@@ -140,6 +154,13 @@ export default function CatalogManager() {
             </div>
           </div>
           <AiCatalogGenerator onGenerated={handleGenerated} />
+          {welcome && (
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-[12px] leading-relaxed text-ink-soft">
+              <strong className="text-ink">Catálogo criado pela IA!</strong>{" "}
+              Confira e ajuste o que quiser aqui. Quando estiver pronto, vá pro{" "}
+              <strong className="text-ink">Gerador</strong> criar sua proposta.
+            </div>
+          )}
         </div>
 
         <ul className="p-2">

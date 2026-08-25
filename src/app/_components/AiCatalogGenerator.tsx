@@ -9,9 +9,24 @@ import {
 } from "@/lib/catalog/actions";
 import { trackFunnel } from "@/lib/analytics/google";
 import KronosLoader from "./KronosLoader";
+import CyclingText from "./CyclingText";
 
 const EXAMPLE =
   "Ex: Sou uma agência de marketing para clínicas odontológicas. Faço gestão de tráfego pago (Google e Meta), criação de conteúdo e otimização de perfil. Ticket entre R$ 1.500 e R$ 5.000/mês.";
+
+// Mensagens que trocam durante a geração — mostram a IA "trabalhando" no que
+// importa (copy que vende), pra a espera não entediar.
+const CATALOG_STEPS = [
+  "Lendo o seu negócio…",
+  "Extraindo suas soluções…",
+  "Dando aquele ar de copywriter…",
+  "Destacando os benefícios que vendem…",
+  "Ancorando os preços com estratégia…",
+  "Montando os planos irresistíveis…",
+  "Afinando os argumentos de venda…",
+  "Escrevendo no tom do seu nicho…",
+  "Polindo cada detalhe…",
+] as const;
 
 type Left = { used: number; limit: number; remaining: number };
 
@@ -30,6 +45,7 @@ export default function AiCatalogGenerator({
   open: controlledOpen,
   onOpenChange,
   hideTrigger = false,
+  reviewHref,
 }: {
   onGenerated: () => void;
   /** Modo controlado: abre/fecha de fora (ex.: card 1 do /inicio). */
@@ -37,6 +53,10 @@ export default function AiCatalogGenerator({
   onOpenChange?: (open: boolean) => void;
   /** Esconde o botão-âncora interno (quem dispara é o pai). */
   hideTrigger?: boolean;
+  /** Se passado (ex.: /inicio), "Conferir meu catálogo" NAVEGA pra cá (a tela
+   * de Sua Empresa) em vez de só fechar o modal — evita a pessoa dar de cara na
+   * home e se perder. */
+  reviewHref?: string;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
@@ -227,22 +247,43 @@ export default function AiCatalogGenerator({
                   Catálogo pronto!
                 </h2>
                 <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-ink-mute">
-                  Soluções, planos e textos escritos no tom do seu nicho. Agora
-                  é montar a proposta — ela já sai pronta pra baixar.
+                  Soluções, planos e textos no tom do seu nicho — prontos.
+                  Confira, ajuste o que quiser e depois é só gerar a proposta.
                 </p>
-                <Link
-                  href="/cliente?bemvindo=1"
-                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:opacity-90"
-                >
-                  Gerar minha proposta →
-                </Link>
-                <button
-                  type="button"
-                  onClick={close}
-                  className="mt-2 w-full cursor-pointer rounded-lg px-4 py-2 text-[13px] font-medium text-ink-mute transition hover:text-ink"
-                >
-                  Revisar o catálogo primeiro
-                </button>
+                {reviewHref ? (
+                  /* Veio do /inicio: leva pra Sua Empresa conferir (não some na
+                     home). Depois, o próximo passo é o Gerador. */
+                  <>
+                    <Link
+                      href={reviewHref}
+                      className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:opacity-90"
+                    >
+                      Conferir meu catálogo →
+                    </Link>
+                    <Link
+                      href="/cliente?bemvindo=1"
+                      className="mt-2 inline-block w-full cursor-pointer rounded-lg px-4 py-2 text-[13px] font-medium text-ink-mute transition hover:text-ink"
+                    >
+                      Ir direto pro Gerador
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/cliente?bemvindo=1"
+                      className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:opacity-90"
+                    >
+                      Gerar minha proposta →
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={close}
+                      className="mt-2 w-full cursor-pointer rounded-lg px-4 py-2 text-[13px] font-medium text-ink-mute transition hover:text-ink"
+                    >
+                      Revisar o catálogo primeiro
+                    </button>
+                  </>
+                )}
               </div>
             ) : loading ? (
               <div className="py-6">
@@ -261,9 +302,8 @@ export default function AiCatalogGenerator({
                   </div>
                 </div>
 
-                <p className="mt-3 text-center text-xs text-ink-mute">
-                  Escrevendo soluções, planos e diferenciais no tom do seu nicho
-                  — leva alguns instantes.
+                <p className="mt-3 text-center text-sm font-medium text-ink-soft">
+                  <CyclingText messages={CATALOG_STEPS} />
                 </p>
               </div>
             ) : (

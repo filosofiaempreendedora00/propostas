@@ -158,6 +158,26 @@ body {
   }
 }
 
+/* Troca suave das mensagens dinâmicas de carregamento (UX writing). */
+@keyframes cyc {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.cyc-fade {
+  animation: cyc 0.5s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cyc-fade {
+    animation: none;
+  }
+}
+
 /* Scrollbar discreta no painel do formulário */
 .form-scroll {
   scrollbar-width: thin;
