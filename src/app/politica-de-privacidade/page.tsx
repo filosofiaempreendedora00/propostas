@@ -7,9 +7,7 @@ export const metadata: Metadata = {
     "Como a Kronos coleta, usa, armazena e compartilha dados pessoais, em conformidade com a LGPD.",
 };
 
-// Placeholders da entidade legal — troque pelos dados reais da empresa.
-const RAZAO = "[Razão Social] (CNPJ [•])";
-const EMAIL_PRIV = "privacidade@kronos-ias.com.br";
+const EMAIL = "contato@kronos-ias.com.br";
 
 export default function PoliticaPrivacidade() {
   return (
@@ -19,19 +17,19 @@ export default function PoliticaPrivacidade() {
       intro={
         <>
           Esta Política descreve como a <strong>Kronos</strong> (a
-          &ldquo;plataforma&rdquo;), operada por {RAZAO}, coleta, utiliza,
-          armazena e compartilha dados pessoais, em conformidade com a Lei Geral
-          de Proteção de Dados (LGPD — Lei nº 13.709/2018). Ao criar uma conta e
-          usar a Kronos, você declara ter lido e compreendido esta Política.
+          &ldquo;plataforma&rdquo;) coleta, utiliza, armazena e compartilha dados
+          pessoais, em conformidade com a Lei Geral de Proteção de Dados (LGPD —
+          Lei nº 13.709/2018). Ao criar uma conta e usar a Kronos, você declara
+          ter lido e compreendido esta Política.
         </>
       }
     >
       <Section title="1. Quem é o controlador">
         <p>
-          {RAZAO} é a controladora dos dados, responsável por decidir sobre as
-          finalidades e os meios de tratamento (art. 5º, VI, da LGPD). Para
-          questões de privacidade, fale com a gente em{" "}
-          <a href={`mailto:${EMAIL_PRIV}`}>{EMAIL_PRIV}</a>.
+          A <strong>Kronos</strong> é a controladora dos dados, responsável por
+          decidir sobre as finalidades e os meios de tratamento (art. 5º, VI, da
+          LGPD). Para questões de privacidade, fale com a gente em{" "}
+          <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.
         </p>
       </Section>
 
@@ -200,9 +198,9 @@ export default function PoliticaPrivacidade() {
         </ul>
         <p>
           Para exercer, escreva para{" "}
-          <a href={`mailto:${EMAIL_PRIV}`}>{EMAIL_PRIV}</a> — respondemos em até 15
-          dias. Podemos pedir confirmação de identidade. Reclamações também podem
-          ser levadas à ANPD (gov.br/anpd).
+          <a href={`mailto:${EMAIL}`}>{EMAIL}</a> — respondemos em até 15 dias.
+          Podemos pedir confirmação de identidade. Reclamações também podem ser
+          levadas à ANPD (gov.br/anpd).
         </p>
       </Section>
 

@@ -7,7 +7,6 @@ export const metadata: Metadata = {
     "Termos e condições de uso da Kronos, gerador de propostas comerciais com IA.",
 };
 
-const RAZAO = "[Razão Social] (CNPJ [•])";
 const EMAIL = "contato@kronos-ias.com.br";
 
 export default function Termos() {
@@ -18,9 +17,8 @@ export default function Termos() {
       intro={
         <>
           Estes Termos regem o uso da <strong>Kronos</strong>, plataforma de
-          geração de propostas comerciais com inteligência artificial, operada por{" "}
-          {RAZAO}. Ao criar uma conta ou usar a Kronos, você concorda com estes
-          Termos e com a{" "}
+          geração de propostas comerciais com inteligência artificial. Ao criar
+          uma conta ou usar a Kronos, você concorda com estes Termos e com a{" "}
           <a
             href="/politica-de-privacidade"
             className="font-medium text-[#6e5226] underline underline-offset-2"
