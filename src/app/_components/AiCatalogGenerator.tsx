@@ -27,10 +27,23 @@ function fmtSize(bytes: number): string {
 // atual. Limite de gerações por conta; barra de progresso durante a geração.
 export default function AiCatalogGenerator({
   onGenerated,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
 }: {
   onGenerated: () => void;
+  /** Modo controlado: abre/fecha de fora (ex.: card 1 do /inicio). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Esconde o botão-âncora interno (quem dispara é o pai). */
+  hideTrigger?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (v: boolean) => {
+    if (onOpenChange) onOpenChange(v);
+    else setInternalOpen(v);
+  };
   const [mounted, setMounted] = useState(false); // portal só depois de montar (SSR-safe)
   const [brief, setBrief] = useState("");
   const [showDescribe, setShowDescribe] = useState(false); // "ou descreva" recolhido
@@ -173,22 +186,25 @@ export default function AiCatalogGenerator({
           mesma linguagem viva da demo do /inicio, aplicada à zona de upload. */}
       <style>{`@keyframes catAnts{to{stroke-dashoffset:-36}}`}</style>
 
-      {/* Botão-âncora do /empresa: agora é o CTA principal (grande e evidente). */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="group flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-bg shadow-[0_12px_26px_-16px_rgba(120,90,40,0.85)] transition hover:opacity-95"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          aria-hidden
-          className="h-4 w-4 transition-transform group-hover:scale-110"
+      {/* Botão-âncora do /empresa: CTA principal. No /inicio ele é escondido
+          (quem abre o modal é o card 1). */}
+      {!hideTrigger && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="group flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-bg shadow-[0_12px_26px_-16px_rgba(120,90,40,0.85)] transition hover:opacity-95"
         >
-          <path d="M12 2c0 5-5 10-10 10 5 0 10 5 10 10 0-5 5-10 10-10-5 0-10-5-10-10z" />
-        </svg>
-        Gerar catálogo com IA
-      </button>
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden
+            className="h-4 w-4 transition-transform group-hover:scale-110"
+          >
+            <path d="M12 2c0 5-5 10-10 10 5 0 10 5 10 10 0-5 5-10 10-10-5 0-10-5-10-10z" />
+          </svg>
+          Gerar catálogo com IA
+        </button>
+      )}
 
       {open &&
         mounted &&
