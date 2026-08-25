@@ -319,6 +319,22 @@ export async function hasRealCatalog(): Promise<boolean> {
   }
 }
 
+// Se a org JÁ gerou alguma proposta a partir de um transcript (passo 2 feito).
+// Alimenta o destaque progressivo do /inicio (passo 2 → passo 3).
+export async function hasTranscriptGeneration(): Promise<boolean> {
+  const orgId = await requireOrgId();
+  try {
+    const rows = (await db.execute(sql`
+      select 1 from ai_generations
+      where org_id = ${orgId} and kind = 'transcript'
+      limit 1
+    `)) as unknown as unknown[];
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 // Quantas gerações por IA a org ainda tem (mostra "X de 3" no modal).
 export async function getAiGenerationsLeft(): Promise<{
   used: number;

@@ -1,5 +1,8 @@
 import HomeWorkspace from "@/app/_components/HomeWorkspace";
-import { hasRealCatalog } from "@/lib/catalog/actions";
+import {
+  hasRealCatalog,
+  hasTranscriptGeneration,
+} from "@/lib/catalog/actions";
 
 // Depende do estado do catálogo (muda após gerar) — sempre recalcular.
 export const dynamic = "force-dynamic";
@@ -13,7 +16,12 @@ export default async function InicioPage({
   // ?novo=1 força o estado "sem catálogo" pra QA (ver o pulse/trava sem zerar
   // o catálogo real).
   const sp = await searchParams;
-  const configured =
-    sp?.novo === "1" ? false : await hasRealCatalog().catch(() => false);
-  return <HomeWorkspace isNew={!configured} />;
+  const forceNew = sp?.novo === "1";
+  const [configured, hasProposal] = await Promise.all([
+    forceNew ? Promise.resolve(false) : hasRealCatalog().catch(() => false),
+    forceNew
+      ? Promise.resolve(false)
+      : hasTranscriptGeneration().catch(() => false),
+  ]);
+  return <HomeWorkspace isNew={!configured} hasProposal={hasProposal} />;
 }

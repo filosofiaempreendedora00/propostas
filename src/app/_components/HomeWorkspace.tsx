@@ -225,16 +225,22 @@ function ArrowRight() {
   );
 }
 
-export default function HomeWorkspace({ isNew = false }: { isNew?: boolean }) {
+export default function HomeWorkspace({
+  isNew = false,
+  hasProposal = false,
+}: {
+  isNew?: boolean;
+  hasProposal?: boolean;
+}) {
   const router = useRouter();
   const hasCatalog = !isNew;
   const [shake, setShake] = useState(false); // botão "trava" quando falta catálogo
   const [emphasize, setEmphasize] = useState(false); // destaca o card 1 na trava
   const [catalogOpen, setCatalogOpen] = useState(false); // popup de catálogo (card 1)
 
-  // Destaque progride pelo passo ATUAL: sem catálogo → passo 1; com catálogo →
-  // passo 2. Deixa óbvio o próximo passo até a proposta ficar pronta.
-  const highlightStep = hasCatalog ? 2 : 1;
+  // Destaque progride pelo passo ATUAL: sem catálogo → 1; com catálogo mas sem
+  // proposta (transcript) → 2; já trouxe a call → 3. Deixa óbvio o próximo passo.
+  const highlightStep = !hasCatalog ? 1 : !hasProposal ? 2 : 3;
 
   // "Criar uma proposta": com catálogo → vai pro Gerador. Sem catálogo → trava
   // (sacode) e joga o destaque pro Passo 1, ensinando a começar pelo catálogo.

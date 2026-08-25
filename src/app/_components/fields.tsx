@@ -49,13 +49,25 @@ export function TextArea({
   rows?: number;
   placeholder?: string;
 }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  // Cresce com o conteúdo — nada de texto cortado nem caixinha apertada.
+  const autosize = (el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+  useEffect(() => autosize(ref.current), [value]);
   return (
     <textarea
+      ref={ref}
       value={value}
       rows={rows}
       placeholder={placeholder}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full resize-y rounded-lg border border-field-line bg-field px-3 py-2 text-sm leading-relaxed text-field-ink outline-none transition placeholder:text-field-mute focus:border-accent focus:ring-2 focus:ring-accent/30"
+      onChange={(e) => {
+        onChange(e.target.value);
+        autosize(e.target);
+      }}
+      className="w-full resize-none overflow-hidden rounded-lg border border-field-line bg-field px-3.5 py-2.5 text-sm leading-relaxed text-field-ink outline-none transition placeholder:text-field-mute focus:border-accent focus:ring-2 focus:ring-accent/30"
     />
   );
 }
@@ -98,8 +110,15 @@ export function ItemList({
   placeholder?: string;
   addLabel?: string;
 }) {
-  const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const inputs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const focusAt = useRef<number | null>(null);
+
+  // Cada item cresce com o texto (quebra linha) — nada de item cortado.
+  const autosize = (el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
 
   // Depois de adicionar/remover, devolve o foco pra linha certa.
   useEffect(() => {
@@ -141,15 +160,21 @@ export function ItemList({
             unoptimized
             className="-mx-1 h-9 w-9 shrink-0 rotate-90 select-none"
           />
-          <input
+          <textarea
             ref={(el) => {
               inputs.current[i] = el;
+              autosize(el);
             }}
             value={item}
+            rows={1}
             placeholder={placeholder}
-            onChange={(e) => setAt(i, e.target.value)}
+            onChange={(e) => {
+              setAt(i, e.target.value);
+              autosize(e.target);
+            }}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              // Enter cria o próximo item (Shift+Enter quebra linha no mesmo).
+              if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 addAfter(i);
               } else if (e.key === "Backspace" && item === "") {
@@ -157,7 +182,7 @@ export function ItemList({
                 removeAt(i);
               }
             }}
-            className="flex-1 rounded-lg border border-field-line bg-field px-3 py-2 text-sm text-field-ink outline-none transition placeholder:text-field-mute focus:border-accent focus:ring-2 focus:ring-accent/30"
+            className="flex-1 resize-none overflow-hidden rounded-lg border border-field-line bg-field px-3 py-2 text-sm leading-relaxed text-field-ink outline-none transition placeholder:text-field-mute focus:border-accent focus:ring-2 focus:ring-accent/30"
           />
           <button
             type="button"
