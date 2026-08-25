@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { trackFunnel } from "@/lib/analytics/google";
@@ -16,11 +17,21 @@ import {
   traduzErro,
 } from "../_parts";
 
+// Máscara leve de telefone BR: "(11) 99999-8888" (guardamos só os dígitos).
+function formatPhone(v: string): string {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 2) return d;
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
 export default function CadastroPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +49,11 @@ export default function CadastroPage() {
     e.preventDefault();
     setError(null);
     setInfo(null);
+    const phoneDigits = phone.replace(/\D/g, "");
+    if (phoneDigits.length < 10) {
+      setError("Informe seu WhatsApp com DDD (ex: (11) 99999-8888).");
+      return;
+    }
     if (password.length < 6) {
       setError("A senha precisa ter pelo menos 6 caracteres.");
       return;
@@ -49,7 +65,13 @@ export default function CadastroPage() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { first_name: first.trim(), last_name: last.trim() } },
+        options: {
+          data: {
+            first_name: first.trim(),
+            last_name: last.trim(),
+            whatsapp: phoneDigits,
+          },
+        },
       });
       if (error) throw error;
       if (data.session) {
@@ -115,6 +137,25 @@ export default function CadastroPage() {
             className={fieldCls}
           />
         </div>
+        {/* WhatsApp: campo obrigatório e com máscara — atrito mínimo. */}
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#25D366]">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="h-5 w-5">
+              <path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.1-.6.2-.2.3-.7.9-.8 1-.2.2-.3.2-.6.1-1.7-.9-2.9-1.6-4-3.5-.3-.5.3-.5.8-1.5.1-.2 0-.3 0-.5s-.6-1.6-.9-2.2c-.2-.5-.4-.4-.6-.5h-.5c-.2 0-.5.1-.7.3-1 .9-1.2 2-1.1 3.3.4 2 1.5 3.4 3.2 4.8 2.4 2 3.9 2.2 4.8 2.2.6 0 1.9-.5 2.2-1.2.3-.7.3-1.3.2-1.4-.1-.2-.3-.2-.6-.4Z" />
+              <path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.5A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-2.9.9.9-2.8-.2-.3A8.2 8.2 0 1 1 12 20.2Z" />
+            </svg>
+          </span>
+          <input
+            type="tel"
+            required
+            inputMode="numeric"
+            value={phone}
+            onChange={(e) => setPhone(formatPhone(e.target.value))}
+            placeholder="Seu WhatsApp com DDD"
+            autoComplete="tel-national"
+            className={`${fieldCls} pl-11`}
+          />
+        </div>
         <div className="relative">
           <input
             type={showPw ? "text" : "password"}
@@ -157,6 +198,28 @@ export default function CadastroPage() {
           {loading && <Spinner />}
           {loading ? "Criando conta…" : "Criar conta"}
         </button>
+
+        {/* Consentimento por ação: ao criar a conta, aceita os termos e autoriza
+            o contato via WhatsApp. Links pequenos e clicáveis (respaldo LGPD). */}
+        <p className="pt-0.5 text-center text-[11.5px] leading-relaxed text-ink-mute">
+          Ao criar sua conta, você concorda com os{" "}
+          <Link
+            href="/termos"
+            target="_blank"
+            className="font-medium text-ink-soft underline underline-offset-2 transition hover:text-ink"
+          >
+            Termos de Uso
+          </Link>{" "}
+          e a{" "}
+          <Link
+            href="/politica-de-privacidade"
+            target="_blank"
+            className="font-medium text-ink-soft underline underline-offset-2 transition hover:text-ink"
+          >
+            Política de Privacidade
+          </Link>
+          , e autoriza o contato pelo WhatsApp informado.
+        </p>
       </form>
     </AuthShell>
   );

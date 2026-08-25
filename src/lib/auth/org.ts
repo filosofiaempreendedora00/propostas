@@ -201,6 +201,7 @@ export async function requireOrgId(): Promise<string> {
           str("last_name", "family_name") ??
           full?.split(" ").slice(1).join(" ") ??
           null,
+        whatsapp: str("whatsapp", "phone"),
       });
 
       // Espelha o estado inicial no Brevo (mirror pras automações segmentarem).

@@ -58,6 +58,15 @@ export async function syncBrevoContact(
   }
 }
 
+// Normaliza um telefone BR pra E.164 ("+55" + DDD + número). Devolve null se não
+// parecer um número válido (10 ou 11 dígitos locais) — aí não manda nada.
+function toE164BR(raw: string | null | undefined): string | null {
+  const d = (raw ?? "").replace(/\D/g, "");
+  const local = d.startsWith("55") && d.length >= 12 ? d.slice(2) : d;
+  if (local.length < 10 || local.length > 11) return null;
+  return `+55${local}`;
+}
+
 // Adiciona/atualiza o lead como contato no Brevo e o coloca na lista de leads.
 // Entrar na lista é o gatilho da automação de boas-vindas no Brevo.
 // Não-bloqueante e à prova de erro: NUNCA pode quebrar o cadastro/login.
@@ -65,10 +74,16 @@ export async function addLeadToBrevo(opts: {
   email: string;
   firstName?: string | null;
   lastName?: string | null;
+  whatsapp?: string | null;
 }): Promise<void> {
   const key = process.env.BREVO_API_KEY;
   const email = opts.email?.trim().toLowerCase();
   if (!key || !email) return; // sem chave (dev local) ou sem e-mail → no-op
+
+  // WhatsApp em E.164 BR ("+5511999998888"). Vai num atributo custom (texto),
+  // que o Brevo IGNORA se não existir — nunca quebra o contato. Cria o atributo
+  // "WHATSAPP" (texto) no Brevo pra ele ser salvo.
+  const wa = toE164BR(opts.whatsapp);
 
   try {
     const res = await fetch("https://api.brevo.com/v3/contacts", {
@@ -87,6 +102,7 @@ export async function addLeadToBrevo(opts: {
           SOBRENOME: opts.lastName ?? "",
           FIRSTNAME: opts.firstName ?? "",
           LASTNAME: opts.lastName ?? "",
+          ...(wa ? { WHATSAPP: wa } : {}),
         },
         listIds: [LIST_ID],
         updateEnabled: true, // idempotente: já existe → atualiza e garante na lista

@@ -2,7 +2,13 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Rotas acessíveis sem login.
-const PUBLIC_PREFIXES = ["/login", "/cadastro", "/auth"];
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/cadastro",
+  "/auth",
+  "/termos",
+  "/politica-de-privacidade",
+];
 
 // Proxy (no Next 16 substitui o middleware): mantém a sessão do Supabase
 // atualizada nos cookies e protege as rotas — sem login → /login.
