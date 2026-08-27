@@ -11,7 +11,11 @@ import {
   blockTemplates,
   organizations,
 } from "@/lib/db/schema";
-import { requireOrgId, requireUser } from "@/lib/auth/org";
+import {
+  requireOrgId,
+  requireUser,
+  getSignupWhatsappDigits,
+} from "@/lib/auth/org";
 import {
   syncBrevoContact,
   brevoLifecycle,
@@ -202,11 +206,16 @@ export async function listConsultants(): Promise<CatalogConsultant[]> {
     .orderBy(asc(consultants.sortOrder), asc(consultants.createdAt));
 
   if (rows.length === 0) {
+    // Reaproveita o WhatsApp do cadastro (opt-in) no 1º consultor — nunca o
+    // placeholder "(00) 00000-0000". Só na semeadura (rows vazio), então nunca
+    // pisa num telefone real que o usuário já tenha posto.
+    const signupWa = await getSignupWhatsappDigits();
     await db
       .insert(consultants)
       .values(
         SEED_CONSULTANTS.map((c, i) => ({
           ...c,
+          phone: i === 0 ? signupWa : "",
           id: randomUUID(),
           orgId,
           sortOrder: i,
@@ -450,6 +459,18 @@ export async function generateAndReplaceCatalog(
   const { solutions: generated, consultant, blocks, usage } =
     await generateCatalogFromBrief(brief);
 
+  // Antes de apagar: preserva um telefone REAL de consultor já configurado (não
+  // pisar nele); senão, usa o WhatsApp do cadastro (opt-in). Nunca o placeholder.
+  const prevPhones = await db
+    .select({ phone: consultants.phone })
+    .from(consultants)
+    .where(eq(consultants.orgId, orgId));
+  const realPhone =
+    prevPhones
+      .map((r) => r.phone ?? "")
+      .find((p) => /[1-9]/.test(p) && !p.includes("00000")) ?? "";
+  const consultantPhone = realPhone || (await getSignupWhatsappDigits());
+
   // Substitui o catálogo: apaga soluções (cascata nos planos) e consultores
   // antigos desta org, depois grava o que a IA gerou.
   await db.delete(solutions).where(eq(solutions.orgId, orgId));
@@ -472,7 +493,7 @@ export async function generateAndReplaceCatalog(
     name: consultant.name,
     role: consultant.role,
     email: "", // contato real é preenchido pelo usuário (IA não inventa)
-    phone: "",
+    phone: consultantPhone, // WhatsApp do cadastro (ou o real já posto) — opt-in
     whatsappOptin: true, // nudge: já vem marcado; só vale ao pôr telefone real
     sortOrder: 0,
   });
