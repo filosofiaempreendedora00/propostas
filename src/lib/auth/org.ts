@@ -95,6 +95,21 @@ export async function requireUser() {
   return user;
 }
 
+// WhatsApp do cadastro (só dígitos, 10-11) ou "" se não houver/for inválido.
+// Reaproveitado pra preencher o phone do consultor do signup (opt-in).
+export async function getSignupWhatsappDigits(): Promise<string> {
+  try {
+    const user = await requireUser();
+    const wa = (user.user_metadata as Record<string, unknown> | undefined)
+      ?.whatsapp;
+    if (typeof wa !== "string") return "";
+    const d = wa.replace(/\D/g, "");
+    return d.length >= 10 && d.length <= 11 ? d : "";
+  } catch {
+    return "";
+  }
+}
+
 // Precisa capturar o WhatsApp? (ex.: quem entrou pelo Google pulou o formulário
 // de cadastro, então não temos o número). Usado pra abrir o gate de WhatsApp.
 export async function needsWhatsapp(): Promise<boolean> {
