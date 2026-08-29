@@ -440,58 +440,43 @@ export default function AdminAccounts({ accounts }: { accounts: AdminOrg[] }) {
                 >
                   {o.ownerEmail ?? "—"}
                 </div>
-                {o.ownerWhatsapp && (
-                  <div
-                    className="mt-0.5 flex items-center gap-1.5 text-xs"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <a
-                      href={waLink(o.ownerWhatsapp)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-emerald-400 hover:underline"
-                      title="Abrir WhatsApp do dono da conta"
+                {/* UM WhatsApp só: prioriza o do CADASTRO (opt-in); se não houver,
+                    cai pro do consultor. Evita mostrar o mesmo número 2x. */}
+                {(() => {
+                  const wa = o.ownerWhatsapp || o.consultantWhatsapp;
+                  if (!wa) return null;
+                  const optin = !!o.ownerWhatsapp || o.consultantOptin;
+                  return (
+                    <div
+                      className="mt-0.5 flex items-center gap-1.5 text-xs"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      💬 {fmtWa(o.ownerWhatsapp)} ↗
-                    </a>
-                    <span
-                      className="shrink-0 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-px text-[9px] font-semibold text-emerald-300"
-                      title="Preencheu o WhatsApp no cadastro → opt-in (pode contatar)"
-                    >
-                      ✓ opt-in
-                    </span>
-                  </div>
-                )}
-                {o.consultantWhatsapp && (
-                  <div
-                    className="mt-0.5 flex items-center gap-1.5 text-xs"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <a
-                      href={waLink(o.consultantWhatsapp)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-emerald-400 hover:underline"
-                      title="Abrir WhatsApp do consultor"
-                    >
-                      💬 {o.consultantWhatsapp} ↗
-                    </a>
-                    <span
-                      className={`shrink-0 rounded-full border px-1.5 py-px text-[9px] font-semibold ${
-                        o.consultantOptin
-                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-                          : "border-line text-ink-mute"
-                      }`}
-                      title={
-                        o.consultantOptin
-                          ? "Autorizou aviso por WhatsApp (opt-in)"
-                          : "Sem opt-in de WhatsApp"
-                      }
-                    >
-                      {o.consultantOptin ? "✓ opt-in" : "sem opt-in"}
-                    </span>
-                  </div>
-                )}
+                      <a
+                        href={waLink(wa)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-emerald-400 hover:underline"
+                        title="Abrir WhatsApp do lead"
+                      >
+                        💬 {fmtWa(wa)} ↗
+                      </a>
+                      <span
+                        className={`shrink-0 rounded-full border px-1.5 py-px text-[9px] font-semibold ${
+                          optin
+                            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                            : "border-line text-ink-mute"
+                        }`}
+                        title={
+                          optin
+                            ? "WhatsApp com opt-in (autorizou contato)"
+                            : "Sem opt-in de WhatsApp"
+                        }
+                      >
+                        {optin ? "✓ opt-in" : "sem opt-in"}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
               <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
                 <div className="whitespace-nowrap text-[11px] text-ink-mute">
