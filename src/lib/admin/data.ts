@@ -147,21 +147,50 @@ export type AdminOverview = {
 // Temperatura do lead — pé no chão. A IA preenche soluções + consultor num
 // clique, então "ter catálogo" NÃO é sinal de intenção: é só ter experimentado.
 // Só conta como QUENTE quem fez esforço REAL além do 1-clique da IA.
+// Temperatura DINÂMICA (idêntica à da Central pra bater 100%): a base sai dos
+// sinais de intenção, mas DECAI por inatividade (dias desde a última atividade no
+// funil). Um lead que baixou mas sumiu há semanas esfria — não fica "quente" pra
+// sempre. Fonte de recência = funnel_events (nunca e-mail/Brevo). Thresholds em
+// dias: quente 7/21 · morno 14. 'novo' (createdDays<=3) é sub-rótulo de frio na
+// Central; aqui a saída colapsa em 'frio' (o tipo Temperature não tem 'novo').
 function temperatureOf(o: {
   status: string;
   downloadsUsed: number;
   hasLogo: boolean;
   consultantHasContact: boolean;
   customSolution: boolean;
+  unlockClicks: number;
+  watermark: number;
+  upgradeViews: number;
+  transcripts: number;
+  daysSince: number;
 }): Temperature {
   if (o.status === "active") return "cliente";
-  // QUENTE = ativou DE VERDADE: baixou ao menos uma proposta. Só isso. Preencher
-  //   catálogo/logo/contato é esforço, mas não é intenção de compra — vira morno.
-  if (o.downloadsUsed >= 1) return "quente";
-  // MORNO = fez algum setup real (logo, catálogo, ou contato do consultor), mas
-  //   não chegou a baixar — engajou, não ativou.
-  if (o.hasLogo || o.customSolution || o.consultantHasContact) return "morno";
-  // FRIO = cadastrou e parou (catálogo vazio / de exemplo).
+
+  // money = sinal de INTENÇÃO DE COMPRA (baixou / clicou desbloquear / gerou marca
+  //   d'água / viu o prompt de upgrade). activated = engajou de verdade (transcript,
+  //   logo, catálogo real ou contato do consultor), mesmo sem intenção de compra.
+  const money =
+    o.downloadsUsed >= 1 ||
+    o.unlockClicks > 0 ||
+    o.watermark > 0 ||
+    o.upgradeViews > 0;
+  const activated =
+    money ||
+    o.transcripts > 0 ||
+    o.hasLogo ||
+    o.customSolution ||
+    o.consultantHasContact;
+  const base: "quente" | "morno" | "frio" = money
+    ? "quente"
+    : activated
+      ? "morno"
+      : "frio";
+
+  // Decaimento por recência (dias desde a última atividade).
+  const d = o.daysSince;
+  if (base === "quente") return d <= 7 ? "quente" : d <= 21 ? "morno" : "frio";
+  if (base === "morno") return d <= 14 ? "morno" : "frio";
   return "frio";
 }
 
@@ -213,7 +242,23 @@ export async function getAdminOverview(): Promise<AdminOverview> {
         select 1 from solution_plans p where p.org_id = o.id
         and (p.name !~ '^Plano [0-9]+$'
           or p.price not in ('R$ 2.997', 'R$ 4.997', 'R$ 14.997'))
-      ) as custom_plan
+      ) as custom_plan,
+      -- Recência + sinais de intenção do funil (MESMA fonte da Central → temperatura
+      -- DINÂMICA que decai por inatividade). days_since = dias desde a última atividade:
+      -- max(created_at) de QUALQUER evento do org (fallback = criação da org).
+      floor(extract(epoch from (now() - coalesce(
+        (select max(fe.created_at) from funnel_events fe where fe.org_id = o.id),
+        o.created_at
+      ))) / 86400)::int                                                as days_since,
+      (select count(*)::int from funnel_events fe
+        where fe.org_id = o.id and fe.event = 'unlock_click')          as fe_unlock,
+      (select count(*)::int from funnel_events fe
+        where fe.org_id = o.id and fe.event = 'watermark_download')    as fe_watermark,
+      (select count(*)::int from funnel_events fe
+        where fe.org_id = o.id and fe.event = 'upgrade_prompt_view')   as fe_upgrade,
+      (select count(*)::int from funnel_events fe
+        where fe.org_id = o.id
+        and fe.event in ('transcript_generated','transcript_uploaded')) as fe_transcripts
     from organizations o
     order by o.created_at desc
   `)) as unknown as Array<{
@@ -239,6 +284,11 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     consultant_contact: boolean;
     custom_solution: boolean;
     custom_plan: boolean;
+    days_since: number;
+    fe_unlock: number;
+    fe_watermark: number;
+    fe_upgrade: number;
+    fe_transcripts: number;
   }>;
 
   // Contas internas/minhas (e a demo) — NUNCA contabilizam em métrica nenhuma.
@@ -298,7 +348,15 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       createdAt: toIso(o.created_at),
       firstDownloadAt: toIso(o.first_download_at),
       ...base,
-      temperature: temperatureOf({ status: o.status, ...base }),
+      temperature: temperatureOf({
+        status: o.status,
+        ...base,
+        unlockClicks: Number(o.fe_unlock) || 0,
+        watermark: Number(o.fe_watermark) || 0,
+        upgradeViews: Number(o.fe_upgrade) || 0,
+        transcripts: Number(o.fe_transcripts) || 0,
+        daysSince: Number(o.days_since) || 0,
+      }),
     };
   });
 
