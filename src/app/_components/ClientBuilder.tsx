@@ -676,16 +676,35 @@ export default function ClientBuilder() {
   // ----- export (modelo MARCA D'ÁGUA) -----
   const exportRef = useRef<HTMLAnchorElement | null>(null);
   const isPaid = !!usage?.unlimited; // assinante → download limpo
+  // O gate do nome do cliente vale SÓ pro download LIMPO (assinante). No download
+  // com marca d'água (free) não trava — era o bloqueio nº1 de conversão (42% dos
+  // que geravam batiam em "cliente vazio" e não baixavam). Ver doDownload.
+  const downloadBlocked = clientMissing && isPaid;
 
-  // Baixa como .html (com ou sem marca d'água).
-  const handleExport = (watermark: boolean) => {
-    if (clientMissing) return;
-    const html = renderProposalHTML(data, { editable: false, watermark });
+  // No download com marca d'água (free), o nome do cliente NÃO é obrigatório — o
+  // PDF já sai com marca e quem só avalia não tem um cliente real na mão. Preenche
+  // um placeholder discreto pra deixar baixar direto (sem afastar).
+  const CLIENT_FALLBACK = "Cliente";
+  const withClientFallback = (d: ProposalData): ProposalData => {
+    const name = d.clientName.trim();
+    const legal = d.clientLegalName.trim();
+    if (name && legal) return d;
+    return {
+      ...d,
+      clientName: name || CLIENT_FALLBACK,
+      clientLegalName: legal || name || CLIENT_FALLBACK,
+    };
+  };
+
+  // Baixa como .html (com ou sem marca d'água). `d` já vem resolvido por doDownload
+  // (com placeholder no fluxo free), então aqui não há mais gate de cliente.
+  const handleExport = (watermark: boolean, d: ProposalData = data) => {
+    const html = renderProposalHTML(d, { editable: false, watermark });
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = exportRef.current ?? document.createElement("a");
     a.href = url;
-    a.download = `proposta-${slugify(data.clientName)}.html`;
+    a.download = `proposta-${slugify(d.clientName)}.html`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
@@ -720,20 +739,13 @@ export default function ClientBuilder() {
     };
     iframe.srcdoc = html;
   };
-  const handleExportPDF = (watermark: boolean) => {
-    if (clientMissing) return;
-    printProposalPDF(data, watermark);
+  const handleExportPDF = (watermark: boolean, d: ProposalData = data) => {
+    printProposalPDF(d, watermark);
   };
 
   // Download: SEMPRE liberado (sem cap/paywall). Assinante = LIMPO; free = com
   // MARCA D'ÁGUA + oferta de desbloqueio. Registra e dispara os eventos.
   const doDownload = async (format: "PDF" | "HTML") => {
-    if (clientMissing) {
-      focusClientField();
-      return;
-    }
-    trackFunnel("download_attempt", { format });
-
     // Confirma se é assinante (pode não ter carregado ainda) → decide a marca.
     let u = usage;
     if (!u) {
@@ -746,8 +758,19 @@ export default function ClientBuilder() {
     }
     const watermark = !u?.unlimited;
 
-    if (format === "PDF") handleExportPDF(watermark);
-    else handleExport(watermark);
+    // Download LIMPO (assinante) ainda exige o nome do cliente — não faz sentido
+    // entregar um PDF final sem destinatário. Já o download com MARCA D'ÁGUA (free)
+    // baixa direto, com placeholder se o cliente estiver vazio.
+    if (!watermark && clientMissing) {
+      focusClientField();
+      return;
+    }
+    const dl = watermark ? withClientFallback(data) : data;
+
+    trackFunnel("download_attempt", { format });
+
+    if (format === "PDF") handleExportPDF(watermark, dl);
+    else handleExport(watermark, dl);
 
     trackFunnel("download_success", { format, watermark });
     if (watermark) trackFunnel("watermark_download", { format });
@@ -789,7 +812,7 @@ export default function ClientBuilder() {
       {/* Sub-header */}
       <div className="flex items-center justify-between border-b border-line px-6 py-2.5">
         <div className="text-[11px] text-ink-mute">
-          {clientMissing ? (
+          {downloadBlocked ? (
             <button
               type="button"
               onClick={focusClientField}
@@ -827,7 +850,7 @@ export default function ClientBuilder() {
           )}
           <DownloadActions
             layout="header"
-            blocked={clientMissing}
+            blocked={downloadBlocked}
             onBlocked={focusClientField}
             highlight={firstRun && !clientMissing}
             onPdf={() => doDownload("PDF")}
@@ -1658,7 +1681,7 @@ export default function ClientBuilder() {
           )}
           <DownloadActions
             layout="panel"
-            blocked={clientMissing}
+            blocked={downloadBlocked}
             onBlocked={focusClientField}
             onPdf={() => doDownload("PDF")}
             onHtml={() => doDownload("HTML")}
