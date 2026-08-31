@@ -167,23 +167,20 @@ function temperatureOf(o: {
 }): Temperature {
   if (o.status === "active") return "cliente";
 
-  // money = sinal de INTENÇÃO DE COMPRA (baixou / clicou desbloquear / gerou marca
-  //   d'água / viu o prompt de upgrade). activated = engajou de verdade (transcript,
-  //   logo, catálogo real ou contato do consultor), mesmo sem intenção de compra.
-  const money =
-    o.downloadsUsed >= 1 ||
+  // QUENTE exige BAIXAR uma proposta (download). Só ver o paywall, clicar em
+  //   desbloquear ou preencher NÃO é quente — é intenção/engajamento = MORNO.
+  const baixou = o.downloadsUsed >= 1 || o.watermark > 0;
+  const engajou =
+    baixou ||
     o.unlockClicks > 0 ||
-    o.watermark > 0 ||
-    o.upgradeViews > 0;
-  const activated =
-    money ||
+    o.upgradeViews > 0 ||
     o.transcripts > 0 ||
     o.hasLogo ||
     o.customSolution ||
     o.consultantHasContact;
-  const base: "quente" | "morno" | "frio" = money
+  const base: "quente" | "morno" | "frio" = baixou
     ? "quente"
-    : activated
+    : engajou
       ? "morno"
       : "frio";
 
