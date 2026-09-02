@@ -143,7 +143,7 @@ const STEPS: Step[] = [
     n: 1,
     href: "/empresa",
     kicker: "Uma vez só",
-    title: "Seu catálogo, pela IA",
+    title: "Sua empresa, pela IA",
     desc: (
       <>
         Descreva seu negócio ou <b>solte um PDF/texto</b> — a IA escreve suas
@@ -161,7 +161,7 @@ const STEPS: Step[] = [
     n: 2,
     href: "/cliente",
     kicker: "As dores do cliente",
-    title: "Traga o contexto da reunião",
+    title: "Seu cliente",
     desc: (
       <>
         Todo <b>Google Meet</b> vira um Docs de transcrição — faça o{" "}
@@ -185,7 +185,7 @@ const STEPS: Step[] = [
     n: 3,
     href: "/cliente",
     kicker: "A cada proposta",
-    title: "Monte e baixe",
+    title: "Baixe a proposta",
     desc: (
       <>
         Escolha as soluções que <b>batem com a dor dele</b>, ajuste os textos no
@@ -277,7 +277,7 @@ export default function HomeWorkspace({
           em <span className="italic text-accent">3 passos</span>.
         </h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-soft sm:text-lg">
-          Do catálogo à proposta baixada — a{" "}
+          Da sua empresa à proposta baixada — a{" "}
           <strong className="font-semibold text-ink">IA faz o trabalho pesado</strong>{" "}
           e você só lapida e envia.
         </p>
