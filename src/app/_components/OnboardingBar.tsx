@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 // Barra de ONBOARDING: guia VISUAL até a 1ª proposta, em 3 passos autoexplicativos
 // (ícone grande + rótulo curto), com UM único próximo passo em destaque. É de
 // propósito MAIOR e mais visível que a TrialBar (conversão), que fica logo abaixo.
-// Some de vez após o 1º download (o objetivo); nunca aparece na home (/inicio já
-// tem os cards). Linguagem sem jargão: "Sua empresa" (não "catálogo") e "Seu
-// cliente" (não "a call") — pra qualquer pessoa entender de primeira.
+// Aparece em TODAS as telas do app — inclusive na home (/inicio) — como reforço
+// constante do próximo passo, e some de vez após o 1º download (o objetivo).
+// Linguagem sem jargão: "Sua empresa" (não "catálogo") e "Seu cliente" (não "a
+// call") — pra qualquer pessoa entender de primeira.
 const STEPS = [
   {
     icon: "🏢",
@@ -56,11 +56,9 @@ export default function OnboardingBar({
   hasProposal: boolean;
   hasDownloaded: boolean;
 }) {
-  const pathname = usePathname();
-
-  // Some após o 1º download; nunca aparece na home.
+  // Some de vez após o 1º download (o objetivo). Aparece em todas as telas,
+  // inclusive na home.
   if (hasDownloaded) return null;
-  if (pathname.startsWith("/inicio")) return null;
 
   const done = [hasCatalog, hasProposal, hasDownloaded];
   const current = !hasCatalog ? 1 : !hasProposal ? 2 : 3; // 1º passo incompleto
